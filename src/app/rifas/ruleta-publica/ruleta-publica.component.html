@@ -71,8 +71,7 @@
         <ng-container *ngIf="esPrueba">
           <button type="button" class="pk-btn pk-btn--primary pk-btn--block"
                   [disabled]="sorteando || !boletosEnJuego.length || rifaTerminada" (click)="sortear()">
-            <span *ngIf="!sorteando">🎡 Girar</span>
-            <span *ngIf="sorteando" class="spinner-border spinner-border-sm"></span>
+            <span>🎡 Girar</span>
           </button>
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--block" (click)="reiniciar()">🔄 Reiniciar prueba</button>
         </ng-container>

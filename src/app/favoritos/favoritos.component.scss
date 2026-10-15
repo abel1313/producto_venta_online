@@ -15,14 +15,14 @@
     padding: 24px 0;
   }
   &__title { margin: 0; font-size: 1.4rem; font-weight: 800; color: var(--app-text); }
-  &__sub   { color: var(--app-text-muted, #64748b); }
+  &__sub   { color: var(--app-text-muted); }
 }
 
 // ── Loading / Empty ───────────────────────────────────────────────────────
 .fv-loading, .fv-empty {
   text-align: center;
   padding: 60px 16px;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   font-size: 1rem;
 }
 .fv-empty__icon { font-size: 2.4rem; display: block; margin-bottom: 8px; }
@@ -52,7 +52,7 @@
   &__img-wrap {
     position: relative;
     height: 150px;
-    background: var(--app-surface-2, #f1f5f9);
+    background: var(--app-surface-2, var(--form-section-bg));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -79,10 +79,10 @@
   // Personalización (grupo "Card").
   &__header { padding: 10px 14px; background: var(--card-header-bg); }
   // .95rem -- mismo tamaño de título que el resto de los headers de card de la app.
-  &__nombre { font-weight: 700; font-size: .95rem; color: var(--card-header-text, #fff); margin: 0; }
+  &__nombre { font-weight: 700; font-size: .95rem; color: var(--card-header-text); margin: 0; }
 
   &__body { padding: 12px 14px; flex: 1; }
-  &__detalle { font-size: .78rem; color: var(--app-text-muted, #64748b); margin: 0 0 8px; }
+  &__detalle { font-size: .78rem; color: var(--app-text-muted); margin: 0 0 8px; }
   &__row { display: flex; align-items: center; justify-content: space-between; }
   &__precio { font-weight: 800; font-size: 1.05rem; color: var(--app-accent); }
   &__stock {
@@ -112,10 +112,10 @@
   text-decoration: none;
   display: inline-block;
   transition: opacity .15s, background .15s, color .15s;
-  &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted, #5F8375); }
-  &--add    { background: var(--app-accent); color: var(--app-accent-ink); &:hover:not(:disabled) { opacity: .85; } }
+  &:disabled { cursor: not-allowed; background: var(--card-border); color: var(--app-text-muted); }
+  &--add    { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); &:hover:not(:disabled) { opacity: .85; } }
   &--remove { background: var(--pk-danger-soft); color: var(--pk-danger-to); }
-  &--primary { background: var(--app-accent); color: var(--app-accent-ink); padding: 9px 22px; }
+  &--primary { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); padding: 9px 22px; }
 }
 
 // ── Paginación ────────────────────────────────────────────────────────────
@@ -140,12 +140,12 @@
 
 // ── Dark / Light ────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .fv-card { background: rgba(255,255,255,.04); }
-  .fv-card__img-wrap { background: rgba(255,255,255,.03); }
+  .fv-card { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
+  .fv-card__img-wrap { background: color-mix(in srgb, var(--app-text) 3%, transparent); }
 }
 
 :host-context(body.theme-light) {
-  .fv-card { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
-  .fv-header__title { color: var(--app-text, #1e293b); }
-  .fv-header__sub { color: var(--app-text-muted, rgba(0,0,0,.55)); }
+  .fv-card { background: var(--card-bg, var(--card-body-bg)); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .fv-header__title { color: var(--app-text); }
+  .fv-header__sub { color: var(--app-text-muted); }
 }

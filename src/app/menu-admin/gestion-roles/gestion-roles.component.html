@@ -76,6 +76,25 @@
             <span class="gr-grupo__chevron">›</span>
           </button>
           <div class="gr-grupo__lista" *ngIf="grupoEstaAbierto(g)">
+            <!-- Marca o quita de un jalón todas las pantallas del grupo con Ver, Editar y todas sus
+                 acciones. Solo cambia los checks; se guarda con "Actualizar todo el grupo". -->
+            <div class="gr-todo gr-todo--grupo">
+              <label class="gr-check">
+                <input type="checkbox"
+                       [checked]="grupoCompleto(g)"
+                       [disabled]="guardandoGrupo(g)"
+                       (change)="seleccionarTodoGrupo(g, !grupoCompleto(g))" />
+                <span>Seleccionar todo de {{ g.menu?.nombre ?? 'Sin grupo' }}</span>
+              </label>
+              <ng-container *ngIf="grupoTieneCambios(g)">
+                <button type="button" class="pk-btn pk-btn--cancel" [disabled]="guardandoGrupo(g)" (click)="descartarCambiosGrupo(g)">
+                  ✕ Descartar
+                </button>
+                <button type="button" class="pk-btn pk-btn--save" [disabled]="guardandoGrupo(g)" (click)="actualizarGrupo(g)">
+                  {{ guardandoGrupo(g) ? 'Guardando…' : '💾 Actualizar todo el grupo' }}
+                </button>
+              </ng-container>
+            </div>
             <div class="gr-submenu-block" [class.gr-submenu-block--pendiente]="hayCambios(s)" *ngFor="let s of g.submenus">
               <div class="gr-check-row">
                 <label class="gr-check"
@@ -113,6 +132,14 @@
                    la pantalla tiene alguna dada de alta en el catalogo. Agrupadas por categoria
                    (Filtros / Tarjeta / Buscador, ver gruposDeAcciones()) para no mostrar 15+
                    casillas todas juntas en una sola lista. -->
+              <!-- Fuera de .gr-acciones: esa caja se ve apagada sin Ver, y este check también prende Ver. -->
+              <label class="gr-check gr-todo gr-todo--pantalla" *ngIf="accionesDe(s).length > 0">
+                <input type="checkbox"
+                       [checked]="pantallaCompleta(s)"
+                       [disabled]="estaGuardando(s)"
+                       (change)="seleccionarTodoPantalla(s, !pantallaCompleta(s))" />
+                <span>Seleccionar todo de {{ s.nombre }}</span>
+              </label>
               <div class="gr-acciones" *ngIf="accionesDe(s).length > 0" [class.gr-acciones--bloqueado]="!tieneSubmenu(s)">
                 <div class="gr-accion-grupo" *ngFor="let grupo of gruposDeAcciones(s)">
                   <div class="gr-accion-grupo__titulo">{{ grupo.categoria }}</div>

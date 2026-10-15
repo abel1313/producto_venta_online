@@ -4,7 +4,7 @@ import { Observable, throwError, BehaviorSubject, EMPTY } from 'rxjs';
 import { AuthenticateService } from '../auth.service';
 import { AuthService } from '../auth/auth.service';
 import { catchError, switchMap, filter, take, timeout, finalize } from 'rxjs/operators';
-import { environment } from 'src/environments/environment';
+import { renovarAccessToken } from './refresh-token';
 import { Router } from '@angular/router';
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/registrar', '/auth/logout'];
@@ -113,9 +113,7 @@ export class TokenInterceptor implements HttpInterceptor {
     this.isRefreshing = true;
     this.refreshToken$.next(null);
 
-    return this.http.post<any>(
-      `${environment.api_Url}/v1/auth/refresh`, {}, { withCredentials: true }
-    ).pipe(
+    return renovarAccessToken(this.http).pipe(
       timeout(10_000),
       switchMap(response => {
         const token: string = response?.response?.accessToken

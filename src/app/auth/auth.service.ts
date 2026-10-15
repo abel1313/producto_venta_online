@@ -86,6 +86,11 @@ export class AuthService {
     return this.userId.value;
   }
 
+  /** Roles y permisos del token, sin tener que suscribirse. */
+  get rolesValue(): string[] {
+    return this.userRoles.value;
+  }
+
   get isAdminService(): boolean {
     return this.userRoles.value.includes('ROLE_ADMIN');
   }

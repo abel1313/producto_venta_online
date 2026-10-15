@@ -2,13 +2,13 @@
 :host {
   display: block;
   padding: 1.25rem 1rem;
-  background: var(--page-bg, #f1f5f9);
+  background: var(--page-bg, var(--form-section-bg));
   min-height: 100%;
 }
 
 // ── Botones Bootstrap ──────────────────────────────────────────────────────
 .btn-primary {
-  background: var(--app-accent, var(--brand-1));
+  background: var(--btn-primary-bg);
   border-color: var(--app-accent, var(--brand-1));
   font-weight: 600;
   border-radius: 8px;
@@ -18,19 +18,19 @@
 }
 
 // ── Labels / totales ───────────────────────────────────────────────────────
-label { color: var(--app-text, #1e293b); font-weight: 600; }
-p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
+label { color: var(--app-text); font-weight: 600; }
+p     { color: var(--app-text); font-size: 1rem; font-weight: 700; }
 
 .row { margin-bottom: 0.75rem; }
 
 // ── AG Grid — tema base ────────────────────────────────────────────────────
 ::ng-deep .ag-theme-alpine {
-  --ag-header-background-color: var(--table-header-bg, #f8fafc);
-  --ag-background-color: var(--card-bg, #ffffff);
-  --ag-odd-row-background-color: #fafafa;
-  --ag-border-color: var(--card-border, #e2e8f0);
-  --ag-header-foreground-color: var(--app-text, #1e293b);
-  --ag-foreground-color: var(--app-text, #374151);
+  --ag-header-background-color: var(--table-header-bg);
+  --ag-background-color: var(--card-bg);
+  --ag-odd-row-background-color: color-mix(in srgb, var(--app-text) 2%, transparent);
+  --ag-border-color: var(--card-border);
+  --ag-header-foreground-color: var(--app-text);
+  --ag-foreground-color: var(--app-text);
   --ag-row-hover-color: rgba(var(--app-accent-rgb), 0.06);
   --ag-selected-row-background-color: rgba(var(--app-accent-rgb), 0.12);
   --ag-range-selection-border-color: var(--app-accent, var(--brand-1));
@@ -38,48 +38,48 @@ p     { color: var(--app-text, #1e293b); font-size: 1rem; font-weight: 700; }
 
   border-radius: 12px;
   overflow: hidden;
-  border: 1px solid var(--card-border, #e2e8f0);
+  border: 1px solid var(--card-border, var(--app-border));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 
   .ag-header { font-weight: 600; font-size: 0.825rem; }
-  .ag-header-cell-label { color: var(--app-text-muted, #475569); }
+  .ag-header-cell-label { color: var(--app-text-muted); }
   .ag-row { font-size: 0.875rem; }
 }
 
 // ── Dark mode ──────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
   ::ng-deep .ag-theme-alpine {
-    --ag-header-background-color: var(--table-header-bg, rgba(255, 255, 255, 0.05));
-    --ag-background-color: var(--card-bg, #1e1e2e);
-    --ag-odd-row-background-color: var(--table-row-hover, rgba(255, 255, 255, 0.03));
-    --ag-border-color: var(--table-border, rgba(255, 255, 255, 0.08));
-    --ag-header-foreground-color: var(--app-text, #e2e8f0);
-    --ag-foreground-color: var(--app-text, #cbd5e1);
-    --ag-row-hover-color: var(--table-row-active, rgba(255, 255, 255, 0.04));
+    --ag-header-background-color: var(--table-header-bg);
+    --ag-background-color: var(--card-bg);
+    --ag-odd-row-background-color: var(--table-row-hover);
+    --ag-border-color: var(--table-border);
+    --ag-header-foreground-color: var(--app-text);
+    --ag-foreground-color: var(--app-text);
+    --ag-row-hover-color: var(--table-row-active);
     --ag-selected-row-background-color: rgba(var(--app-accent-rgb), 0.15);
-    --ag-icon-color: var(--app-text-muted, #94a3b8);
-    --ag-header-column-resize-handle-color: var(--table-border, rgba(255, 255, 255, 0.2));
-    --ag-cell-horizontal-border: solid var(--table-border, rgba(255, 255, 255, 0.06));
-    --ag-input-border-color: var(--input-border, rgba(255, 255, 255, 0.15));
+    --ag-icon-color: var(--app-text-muted);
+    --ag-header-column-resize-handle-color: var(--table-border);
+    --ag-cell-horizontal-border: solid var(--table-border);
+    --ag-input-border-color: var(--input-border);
     --ag-input-focus-border-color: var(--app-accent, var(--brand-1));
 
-    border-color: var(--app-border, rgba(255, 255, 255, 0.1));
+    border-color: var(--app-border);
     box-shadow: var(--card-shadow, 0 2px 12px rgba(0, 0, 0, 0.3));
 
-    .ag-header-cell-label { color: var(--app-text-muted, #94a3b8); }
-    .ag-paging-panel      { color: var(--app-text-muted, #94a3b8); }
-    .ag-row-even { background-color: var(--card-bg, #1e1e2e); }
-    .ag-row-odd { background-color: var(--table-row-hover, rgba(255,255,255,0.03)); }
+    .ag-header-cell-label { color: var(--app-text-muted); }
+    .ag-paging-panel      { color: var(--app-text-muted); }
+    .ag-row-even { background-color: var(--card-bg); }
+    .ag-row-odd { background-color: var(--table-row-hover); }
   }
 
-  label { color: var(--app-text, #e2e8f0); }
-  p     { color: var(--app-text, #e2e8f0); }
+  label { color: var(--app-text); }
+  p     { color: var(--app-text); }
 }
 
 // ── Light mode ─────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
   .btn-primary {
-    background: var(--app-accent);
+    background: var(--btn-primary-bg);
     border-color: var(--app-accent);
     &:hover { background: var(--brand-2); border-color: var(--brand-2); }
   }

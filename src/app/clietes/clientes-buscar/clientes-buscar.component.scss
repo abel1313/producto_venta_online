@@ -1,4 +1,4 @@
-.cb-page { min-height: 100vh; background: var(--page-bg, #f1f5f9); }
+.cb-page { min-height: 100vh; background: var(--page-bg, var(--form-section-bg)); }
 
 .cb-header {
   position: sticky;
@@ -13,7 +13,7 @@
   box-shadow: 0 2px 12px rgba(0,0,0,.18);
 
   &__content {
-    max-width: 900px;
+    max-width: var(--lista-ancho, 1100px);
     margin: 0 auto;
     display: flex;
     align-items: center;
@@ -26,8 +26,8 @@
     align-items: center;
     gap: 10px;
     flex: 1;
-    color: #fff;
-    h4, small { color: #fff; margin: 0; }
+    color: var(--app-text);
+    h4, small { color: var(--app-text); margin: 0; }
   }
 
   &__icon { font-size: 1.4rem; }
@@ -36,40 +36,40 @@
 .cb-search {
   display: flex;
   align-items: center;
-  background: rgba(255,255,255,.15);
-  border: 1px solid rgba(255,255,255,.25);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 10px;
   padding: 0 14px;
   gap: 8px;
   flex: 1;
   max-width: 360px;
 
-  &__icon { font-size: .9rem; color: rgba(255,255,255,.7); }
+  &__icon { font-size: .9rem; color: var(--app-text-muted); }
 
   &__input {
     flex: 1;
     background: transparent;
     border: none;
     outline: none;
-    color: #fff;
+    color: var(--app-text);
     font-size: .93rem;
     padding: 8px 0;
-    &::placeholder { color: rgba(255,255,255,.55); }
+    &::placeholder { color: var(--input-placeholder); }
   }
 }
 
 .cb-body {
-  max-width: 900px;
+  max-width: var(--lista-ancho, 1100px);
   margin: 24px auto;
   padding: 0 16px;
 }
 
 .cb-empty {
   text-align: center;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   padding: 40px 0;
   font-size: .95rem;
-  &--hint { color: var(--app-text-muted, #94a3b8); font-size: .88rem; }
+  &--hint { color: var(--app-text-muted, var(--app-text-faint)); font-size: .88rem; }
 }
 
 .cb-card {
@@ -77,8 +77,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: var(--card-bg, #fff);
-  border: 1px solid var(--card-border, #e2e8f0);
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border, var(--app-border));
   border-radius: var(--card-radius, 14px);
   box-shadow: var(--card-shadow);
   padding: 14px 16px;
@@ -89,7 +89,7 @@
   &__name {
     font-weight: 600;
     font-size: .95rem;
-    color: var(--app-text, #1e293b);
+    color: var(--app-text);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -102,10 +102,10 @@
     flex-wrap: wrap;
     margin-top: 4px;
     font-size: .82rem;
-    color: var(--app-text-muted, #64748b);
+    color: var(--app-text-muted);
   }
 
-  &__id { color: var(--app-text-muted, #94a3b8); }
+  &__id { color: var(--app-text-muted, var(--app-text-faint)); }
   &__actions { flex-shrink: 0; }
 }
 
@@ -155,34 +155,34 @@
   align-items: center;
   justify-content: center;
   gap: 16px;
-  padding: 20px 0;
+  padding: 0;
 }
 
 .cb-page-btn {
-  border: 1px solid var(--card-border, #e2e8f0);
-  background: var(--card-bg, #fff);
-  color: var(--app-text, #1e293b);
+  border: 1px solid var(--card-border, var(--app-border));
+  background: var(--card-bg, var(--card-body-bg));
+  color: var(--app-text);
   border-radius: 8px;
   padding: 6px 14px;
   cursor: pointer;
   font-size: .85rem;
   &:disabled { opacity: .4; cursor: not-allowed; }
-  &:not(:disabled):hover { background: var(--form-section-bg, #f8fafc); }
+  &:not(:disabled):hover { background: var(--form-section-bg, var(--card-body-bg)); }
 }
 
-.cb-page-info { font-size: .85rem; color: var(--app-text-muted, #64748b); }
+.cb-page-info { font-size: .85rem; color: var(--app-text-muted); }
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto blanco debe pasar a oscuro ──
 :host-context(body.theme-light) {
-  .cb-header__title { color: #1e293b; h4, small { color: #1e293b; } }
+  .cb-header__title { color: var(--app-text); h4, small { color: var(--app-text); } }
 
   .cb-search {
     background: rgba(0,0,0,.05);
-    border-color: rgba(0,0,0,.12);
-    &__icon { color: rgba(0,0,0,.5); }
+    border-color: color-mix(in srgb, var(--app-text) 12%, transparent);
+    &__icon { color: color-mix(in srgb, var(--app-text) 50%, transparent); }
     &__input {
-      color: #1e293b;
-      &::placeholder { color: rgba(0,0,0,.42); }
+      color: var(--app-text);
+      &::placeholder { color: color-mix(in srgb, var(--app-text) 42%, transparent); }
     }
   }
 }

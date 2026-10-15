@@ -1,10 +1,12 @@
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
+import { Constants } from 'src/app/Constants';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
 import { environment } from 'src/environments/environment';
 import { PedidosService } from '../pedidos.service';
+import { GrupoPedidoService } from '../grupo-pedido.service';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { AbonoRequest, MetodoPago, PedidoDetalleItem, PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -24,6 +26,27 @@ import {
 } from '../models/editar-pedido.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { preguntarYEntregar } from '../entrega/entrega';
+import { GrupoPedidos } from '../models/grupo-pedido.model';
+
+function escaparHtml(texto: string | null | undefined): string {
+  return (texto ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** Un pedido del mismo grupo, para mostrar sus artículos debajo de los de este. */
+interface OtroPedidoDelGrupo {
+  pedidoId:  number;
+  cliente:   string;
+  esTitular: boolean;
+  total:     number;
+  estado:    string;
+  /** Un ramo solo se cambia desde su configurador: aquí sus líneas no se editan. */
+  esRamo:    boolean;
+  lineas:    PedidoDetalleItem[];
+  cargando:  boolean;
+  error:     boolean;
+}
 @Component({
   selector: 'app-detalle-pedido',
   templateUrl: './detalle-pedido.component.html',
@@ -32,6 +55,8 @@ import { hoyIso } from '../../shared/fecha.util';
 export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Input() pedido!: IPedidoGenerico;
   @Output() regresarProductos = new EventEmitter<boolean>();
+  /** Abrir otro pedido del grupo: la lista lo busca por número y abre su detalle. */
+  @Output() abrirPedido = new EventEmitter<number>();
 
   // Base correcta del microservicio de imágenes: GET /v1/imagenes/{productoId}
   public env: string = environment.api_Url + '/v1/imagenes/';
@@ -159,6 +184,127 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return !this.pedidoEstaCerrado || this.esContadoEntregado;
   }
 
+  /**
+   * Unir pedidos: no cancelados ni cobrados de contado. Uno a crédito ya pagado sí se une: su
+   * dinero pasa a ser del grupo y al separar se reparte.
+   */
+  get pedidoAbiertoParaUnir(): boolean {
+    return !this.pedidoEstaCerrado;
+  }
+
+  /** Unir, abonar al grupo o deshacer cambian totales y observaciones: se recarga el detalle. */
+  alCambiarGrupo(): void {
+    this.cargarDetalleCompleto();
+  }
+
+  /** El grupo activo de este pedido. Con él, el encabezado muestra el total de todos. */
+  grupo: GrupoPedidos | null = null;
+  otrosPedidos: OtroPedidoDelGrupo[] = [];
+
+  /**
+   * Unidos se ven como uno: debajo de los artículos de este pedido van los de los demás, cada
+   * bloque con su número. Por dentro siguen separados, por eso se editan abriendo su pedido.
+   */
+  alCargarGrupo(grupo: GrupoPedidos | null): void {
+    this.grupo = grupo?.activo ? grupo : null;
+    const propio = this.pedido.pedido.id;
+    this.otrosPedidos = (this.grupo?.pedidos ?? [])
+      .filter(p => p.pedidoId !== propio)
+      .map(p => ({ pedidoId: p.pedidoId, cliente: p.cliente, esTitular: p.esTitular, total: p.total,
+                   estado: p.estadoPedido, esRamo: false, lineas: [], cargando: true, error: false }));
+    for (const otro of this.otrosPedidos) {
+      this.pedidosService.getDetallePedido(otro.pedidoId).subscribe({
+        next: r => {
+          otro.lineas = r?.data?.detalles ?? [];
+          otro.esRamo = !!r?.data?.esRamoFlores;
+          otro.cargando = false;
+        },
+        error: () => { otro.cargando = false; otro.error = true; }
+      });
+    }
+  }
+
+  /** Los pedidos unidos arrancan cerrados (una fila cada uno); se abren con clic. */
+  private otrosAbiertos = new Set<number>();
+
+  otroAbierto(o: OtroPedidoDelGrupo): boolean {
+    return this.otrosAbiertos.has(o.pedidoId);
+  }
+
+  alternarOtro(o: OtroPedidoDelGrupo): void {
+    if (this.otrosAbiertos.has(o.pedidoId)) this.otrosAbiertos.delete(o.pedidoId);
+    else this.otrosAbiertos.add(o.pedidoId);
+  }
+
+  /** El pedido abierto tal como sale en la tabla del grupo (para darle la misma cabecera). */
+  get esteEnGrupo() {
+    return this.grupo?.pedidos.find(p => p.pedidoId === this.pedido.pedido.id) ?? null;
+  }
+
+  get piezasEste(): number {
+    return (this.detalle?.detalles ?? []).reduce((s: number, l: any) => s + (l.cantidad ?? 0), 0);
+  }
+
+  piezasDe(o: OtroPedidoDelGrupo): number {
+    return o.lineas.reduce((s, l) => s + (l.cantidad ?? 0), 0);
+  }
+
+  /**
+   * Los artículos de los otros pedidos del grupo se editan desde aquí, pero el cambio se guarda
+   * en su propio pedido: al separar, cada uno se lleva lo suyo con los cambios.
+   */
+  private otroEstaCerrado(o: OtroPedidoDelGrupo): boolean {
+    const estado = (o.estado ?? '').toUpperCase();
+    return estado === 'ENTREGADO' || estado === 'CANCELADO';
+  }
+
+  puedeQuitarDeOtro(o: OtroPedidoDelGrupo): boolean {
+    return this.isAdmin && !o.esRamo && !this.otroEstaCerrado(o)
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'ajustar-cantidad');
+  }
+
+  puedeCambiarDeOtro(o: OtroPedidoDelGrupo): boolean {
+    return this.isAdmin && !o.esRamo && !this.otroEstaCerrado(o)
+        && this.authService.tieneAccion('pedidos/mis-pedidos', 'cambiar-articulo');
+  }
+
+  /** Los pedidos a los que se les puede agregar: este y los del grupo que no estén cerrados. */
+  private get destinosParaAgregar(): { pedidoId: number; cliente: string }[] {
+    const propio = this.pedidoEstaCerrado || this.esPedidoDeFlores
+      ? [] : [{ pedidoId: this.pedido.pedido.id, cliente: 'este pedido' }];
+    const otros = this.otrosPedidos.filter(o => !o.esRamo && !this.otroEstaCerrado(o))
+      .map(o => ({ pedidoId: o.pedidoId, cliente: o.cliente }));
+    return [...propio, ...otros];
+  }
+
+  get sinDondeAgregar(): boolean {
+    return this.destinosParaAgregar.length === 0;
+  }
+
+  /** "➕ Agregar artículo": si el pedido está unido, primero pregunta a cuál de los pedidos va. */
+  agregarArticulo(): void {
+    const destinos = this.destinosParaAgregar;
+    if (destinos.length <= 1) {
+      this.abrirBuscadorArticulo(null, destinos[0]?.pedidoId ?? this.pedido.pedido.id);
+      return;
+    }
+    const opciones: Record<string, string> = {};
+    destinos.forEach(d => opciones[String(d.pedidoId)] =
+      d.pedidoId === this.pedido.pedido.id ? `Pedido #${d.pedidoId} (este)` : `Pedido #${d.pedidoId} — ${d.cliente}`);
+    Swal.fire({
+      title: '¿A qué pedido lo agregas?',
+      text: 'Cada pedido guarda sus artículos: si después se separan, el artículo se va con ese pedido.',
+      input: 'select',
+      inputOptions: opciones,
+      inputValue: String(destinos[0].pedidoId),
+      showCancelButton: true,
+      confirmButtonText: 'Elegir artículo',
+      cancelButtonText: 'Cancelar'
+    }).then(res => {
+      if (res.isConfirmed && res.value) this.abrirBuscadorArticulo(null, Number(res.value));
+    });
+  }
+
   editarRamo(): void {
     this.router.navigate(['/flores/configurar'], {
       queryParams: { pedidoId: this.detalle?.pedidoId ?? this.pedido?.pedido?.id }
@@ -222,10 +368,65 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // arriba ("📦 Apartado" seguido de "APARTADO"). Se reemplaza por el estado de pago real.
   get estadoPedidoLabel(): string {
     if (this.estaCancelado) return 'Cancelado';
+    // Pago y entrega van aparte desde 2026-10-06: aquí solo el pago. Un contado cobrado se
+    // guarda 'Entregado', que es el pago, no la entrega.
     if (this.esCredito) {
-      return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Por cobrar';
+      return this.estadoPedido === 'PAGADO' ? 'Pagado' : 'Falta pagar';
     }
-    return this.estadoPedido;
+    return this.estadoPedido === 'Entregado' ? 'Pagado' : 'Falta pagar';
+  }
+
+  // ── Entrega (dominio entrega del back, 2026-10-06) ──────────────────────────────────
+  /** null mientras el detalle no llega (no se pinta la etiqueta). */
+  get entregadoDetalle(): boolean | null {
+    const d = this.detalle?.entregado;
+    if (d !== undefined && d !== null) return d;
+    const l = this.pedido?.pedido?.entregado;
+    return l === undefined ? null : l;
+  }
+
+  private get pagadoDetalle(): boolean {
+    if (this.esCredito) return this.estadoPedido === 'PAGADO' || (this.detalle?.saldoPendiente ?? 1) <= 0.005;
+    return this.estadoPedido === 'Entregado';
+  }
+
+  private get esIrPagandoDetalle(): boolean {
+    return (this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido) === 'FIADO';
+  }
+
+  get puedeEntregarDetalle(): boolean {
+    return this.isAdmin && !this.estaCancelado && this.entregadoDetalle === false
+      && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')
+      && (this.pagadoDetalle || this.esIrPagandoDetalle);
+  }
+
+  get puedeRegresarEntregaDetalle(): boolean {
+    return this.isAdmin && !this.estaCancelado && this.entregadoDetalle === true
+      && this.authService.tieneAccion('pedidos/mis-pedidos', 'regresar-entrega');
+  }
+
+  entregarDetalle(): void {
+    const id = this.pedido.pedido.id;
+    Swal.fire({ icon: 'question', title: '📦 Entregar', text: `¿El cliente ya se llevó el pedido #${id}${this.grupo ? ' (y los de su grupo)' : ''}?`,
+      showCancelButton: true, confirmButtonText: 'Sí, entregado', cancelButtonText: 'No' }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidosService.entregar(id).subscribe({
+        next: () => { Swal.fire({ icon: 'success', title: 'Entregado', timer: 1500, showConfirmButton: false }); this.cargarDetalleCompleto(); },
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo marcar como entregado', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
+  regresarEntregaDetalle(): void {
+    const id = this.pedido.pedido.id;
+    Swal.fire({ icon: 'warning', title: 'Regresar a "Falta entregar"', text: `El pedido #${id} quedará como "Falta entregar". ¿Seguro?`,
+      showCancelButton: true, confirmButtonText: 'Sí, regresar', cancelButtonText: 'No' }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidosService.regresarEntrega(id).subscribe({
+        next: () => this.cargarDetalleCompleto(),
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo regresar', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
   }
 
   // "Registrar abono" seguía apareciendo clickeable en un crédito ya liquidado — esCredito
@@ -266,19 +467,62 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     return this.detalle?.latitudEncuentro != null && this.detalle?.longitudEncuentro != null;
   }
 
+  /** Ubicación del local, la misma que usa el "Cómo llegar" del login (config del negocio). */
+  latLocal: number | null = null;
+  lngLocal: number | null = null;
+  private contactosCargados = false;
+
+  private get tienePuntoEscrito(): boolean {
+    return !!this.detalle?.puntoEncuentro?.trim();
+  }
+
+  /**
+   * Pasa por él al local y el local no tiene ubicación configurada. Solo se avisa al admin (es
+   * quien puede arreglarlo) y ya cargada la config: antes de eso lat/lng están en null y el aviso
+   * parpadeaba en cada pedido.
+   */
+  get faltaUbicacionLocal(): boolean {
+    return this.isAdmin && this.contactosCargados
+      && !!this.detalle?.recogeEnLocal && !this.vaAlPuntoDeEncuentro && !this.tienePuntoEscrito
+      && (this.latLocal == null || this.lngLocal == null);
+  }
+
+  /**
+   * En orden: (1) punto del viaje marcado en el mapa; (2) punto del viaje solo escrito -- antes
+   * se lo saltaba y mandaba a la casa del cliente; (3) recoge en el local -> el local;
+   * (4) a domicilio -> coordenadas o dirección del cliente.
+   */
   get linkComoLlegar(): string | null {
+    const d = this.detalle;
+    if (!d) return null;
     if (this.vaAlPuntoDeEncuentro) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle!.latitudEncuentro},${this.detalle!.longitudEncuentro}`;
+      return `https://www.google.com/maps/dir/?api=1&destination=${d.latitudEncuentro},${d.longitudEncuentro}`;
     }
-    if (this.detalle?.latitud != null && this.detalle?.longitud != null) {
-      return `https://www.google.com/maps/dir/?api=1&destination=${this.detalle.latitud},${this.detalle.longitud}`;
+    if (this.tienePuntoEscrito) {
+      const punto = [d.puntoEncuentro, d.lugarEntregaNombre].map(p => (p ?? '').trim()).filter(p => p !== '');
+      return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(punto.join(', '))}`;
     }
-    const partes = [this.detalle?.puntoEncuentro, this.detalle?.direccionEntrega, this.detalle?.lugarEntregaNombre]
-      .map(p => (p ?? '').trim())
-      .filter(p => p !== '');
+    if (d.recogeEnLocal) {
+      return this.latLocal != null && this.lngLocal != null
+        ? `https://www.google.com/maps/dir/?api=1&destination=${this.latLocal},${this.lngLocal}`
+        : null;
+    }
+    if (d.latitud != null && d.longitud != null) {
+      return `https://www.google.com/maps/dir/?api=1&destination=${d.latitud},${d.longitud}`;
+    }
+    const partes = [d.direccionEntrega, d.lugarEntregaNombre].map(p => (p ?? '').trim()).filter(p => p !== '');
     if (!partes.length) return null;
 
     return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(partes.join(', '))}`;
+  }
+
+  get notaComoLlegar(): string {
+    if (this.vaAlPuntoDeEncuentro) return 'Se abre en tu app de mapas con la ruta al punto donde te entregamos.';
+    if (this.tienePuntoEscrito) return 'Se abre en tu app de mapas buscando el punto de encuentro.';
+    if (this.detalle?.recogeEnLocal) return 'Se abre en tu app de mapas con la ruta al local.';
+    return this.tieneUbicacionExacta
+      ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
+      : 'Se abre en tu app de mapas con la dirección escrita.';
   }
 
   get yaLiquidado(): boolean {
@@ -314,17 +558,24 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly negocioService: NegocioService,
     private readonly floresService:  FloresService,
     private readonly varianteService: VarianteService,
-    private readonly router:         Router
+    private readonly router:         Router,
+    private readonly grupoPedidoService: GrupoPedidoService
   ) {}
 
   ngOnInit(): void {
     this.authService.userId$.pipe(takeUntil(this.destroy$)).subscribe(id => { this.idUsuario = id; });
 
     this.negocioService.getContactosPublicos().subscribe({
-      next: c => { this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl; },
+      next: c => {
+        this.qrWhatsapp = c.whatsappUrl || null; this.qrFacebook = c.facebookUrl || null; this.qrInstagram = c.instagramUrl || null; this.qrTiktok = c.tiktokUrl || null; if (c.tiendaUrl) this.qrTienda = c.tiendaUrl;
+        this.latLocal = c.latitud ?? null;
+        this.lngLocal = c.longitud ?? null;
+        this.contactosCargados = true;
+      },
       error: () => {}
     });
 
+    this.prepararBuscadorArticulo();
     this.cargarDetalleCompleto();
   }
 
@@ -357,18 +608,26 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * ahora lo rechaza; acá lo interceptamos antes de mandarlo para ofrecer la salida correcta
    * en vez de mostrar un error.
    */
-  reducirCantidad(item: PedidoDetalleItem): void {
+  reducirCantidad(item: PedidoDetalleItem, pedidoId: number = this.pedido.pedido.id): void {
     if (this.eliminando.has(item) || item.productoId == null) return;
 
     if (item.promocionId) {
-      this.ofrecerQuitarPromocionCompleta(item);
+      this.ofrecerQuitarPromocionCompleta(item, pedidoId);
       return;
     }
 
     this.eliminando.add(item);
 
-    this.pedidosService.eliminarDetalle(this.pedido.pedido.id, item.productoId).subscribe({
+    this.pedidosService.eliminarDetalle(pedidoId, item.productoId, item.id).subscribe({
       next: () => {
+        if (pedidoId !== this.pedido.pedido.id || this.esCredito) {
+          // Línea de otro pedido del grupo: se recarga todo para que el total del grupo cuadre.
+          // Apartado / Ir pagando: al bajar el total puede quedar Pagado (lo abonado ya lo cubre);
+          // sin recargar, el estado de arriba seguía diciendo que debía hasta salir y volver a entrar.
+          this.eliminando.delete(item);
+          this.cargarDetalleCompleto();
+          return;
+        }
         item.cantidad -= 1;
         if (item.cantidad <= 0 && this.detalle) {
           this.detalle.detalles = this.detalle.detalles.filter(d => d !== item);
@@ -401,9 +660,19 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   // ── Abono inline ──────────────────────────────────────────────────
 
   abrirFormAbono(): void {
-    this.abonoForm = { monto: 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
+    this.abonoForm = { monto: this.esApartado ? this.saldoPendiente : 0, fechaPago: this.hoy(), metodoPago: 'EFECTIVO', nota: '' };
     this.montoDado = 0;
+    this.verPorqueMontoFijo = false;
     this.mostrarFormAbono = true;
+  }
+
+  /** Apartado: el monto queda fijo en el total; este botón explica por qué (QA 2026-10-08). */
+  verPorqueMontoFijo = false;
+
+  pasarApartadoAIrPagando(): void {
+    this.mostrarFormAbono = false;
+    this.abrirFormTipo();
+    this.seleccionarTipo('FIADO');
   }
 
   cancelarFormAbono(): void {
@@ -419,10 +688,23 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * ⚠️ Este es el **segundo** punto de cobro de la app; el otro es `/abonos`. Lo que se toque
    * aquí hay que revisarlo allá y al revés.
    */
+  /** Aviso debajo del monto, al escribir: así no se llenan los demás campos para nada. */
+  get errorMontoAbono(): string | null {
+    const monto = this.abonoForm.monto;
+    if (!(monto > 0) || !this.detalle) return null;
+    if (monto - this.saldoPendiente > 0.01) return `Es más de lo que se debe: el saldo es de $${this.saldoPendiente.toFixed(2)}.`;
+    if (this.esApartado && this.saldoPendiente - monto > 0.01) return `Es un Apartado: se paga completo ($${this.saldoPendiente.toFixed(2)}).`;
+    return null;
+  }
+
   registrarAbono(): void {
     if (this.registrandoAbono) return;
     if (!this.abonoForm.monto || this.abonoForm.monto <= 0) {
       Swal.fire({ icon: 'warning', title: 'Monto inválido', text: 'El monto debe ser mayor a 0.' });
+      return;
+    }
+    if (this.esApartado && this.saldoPendiente - this.abonoForm.monto > 0.01) {
+      this.avisarApartadoSinAbonos(this.abonoForm.monto);
       return;
     }
     this.registrandoAbono = true;
@@ -481,7 +763,13 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
           ? `El pedido #${pedidoId} ha sido liquidado.${txtCambio}`
           : `Saldo restante: $${saldoCalculado.toFixed(2)}.${txtCambio}`;
 
-        Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(() => {
+        const preguntarEntrega = liquidado && this.entregadoDetalle === false
+          && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar');
+        Swal.fire({ icon: 'success', title: titulo, text: texto, timer: 3000, showConfirmButton: false }).then(async () => {
+          if (preguntarEntrega) {
+            // E1: al liquidar se pregunta si ya se lo llevó (si no, queda "Falta entregar").
+            await preguntarYEntregar(() => this.pedidosService.entregar(pedidoId), () => this.cargarDetalleCompleto());
+          }
           if (correoDisponibleSnap && enviarCorreoSnap) {
             // Cliente con correo y checkbox marcado → enviar automáticamente al correo registrado
             this.enviarTicketPorCorreo(pedidoId, this.pedido.cliente.correoElectronico);
@@ -543,7 +831,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       const nombre = d.clienteNombre || this.pedido.cliente.nombreCliente;
       Swal.fire({
         title: '📧 Reenviar ticket',
-        html: `¿Enviar el ticket al correo de <b>${nombre}</b>:<br><b>${correoReg}</b>?`,
+        // Nombre y correo los escribe el cliente: se escapan antes de meterlos en HTML.
+        html: `¿Enviar el ticket al correo de <b>${escaparHtml(nombre)}</b>:<br><b>${escaparHtml(correoReg)}</b>?`,
         icon: 'question',
         showCancelButton: true,
         showDenyButton: true,
@@ -699,20 +988,49 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   mostrarFormTipo = false;
   cambiandoTipo   = false;
-  tipoForm: CambiarTipoPedidoRequest = { tipoPedido: 'NORMAL', montoCobrado: 0, descripcion: '' };
+  // Arranca sin tipo elegido: preseleccionar uno hacía que el resaltado pareciera la forma de
+  // cobro vigente, y la vigente (deshabilitada) pareciera bloqueada.
+  tipoForm: { tipoPedido: TipoPedido | null; montoCobrado: number; descripcion: string } =
+    { tipoPedido: null, montoCobrado: 0, descripcion: '' };
 
   readonly tiposPedido: { valor: TipoPedido; etiqueta: string; ayuda: string }[] = [
     { valor: 'NORMAL',   etiqueta: 'Normal (contado)', ayuda: 'Se paga completo ahora' },
-    { valor: 'APARTADO', etiqueta: 'Apartado',         ayuda: 'Abona y se lo lleva al terminar de pagar' },
-    { valor: 'FIADO',    etiqueta: 'Ir pagando',       ayuda: 'Se lo lleva ahora y va abonando' }
+    { valor: 'APARTADO', etiqueta: 'Apartado',         ayuda: 'Sin dinero: lo paga completo al recogerlo' },
+    { valor: 'FIADO',    etiqueta: 'Ir pagando',       ayuda: 'Ya dio algo y va abonando' }
   ];
 
   get tipoActual(): string {
     return this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido ?? '';
   }
 
+  /** Pedidos viejos traen el tipo vacío: son de contado. */
+  get tipoVigente(): TipoPedido {
+    return (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
+  }
+
   get saldoPendiente(): number {
     return this.detalle?.saldoPendiente ?? 0;
+  }
+
+  /**
+   * El pedido que el cliente hizo desde su cuenta y nadie ha cobrado ni apartado (contado con estado
+   * 'Pendiente'). Se pasa a Apartado o Ir pagando aquí; para cobrarlo completo está 💵 Cobrar de la card.
+   */
+  get esPedidoEnLinea(): boolean {
+    return this.tipoVigente === 'NORMAL' && this.estadoPedido.toLowerCase() === 'pendiente';
+  }
+
+  /**
+   * Lo que falta en un pedido a crédito que ya tiene abonos; `null` si no aplica. Se calcula
+   * contra `totalGeneral` porque quitar un artículo recalcula el total aquí sin volver a pedir el
+   * detalle, y `saldoPendiente` del back se quedaría con el total viejo.
+   */
+  get debeCredito(): number | null {
+    const estado = this.estadoPedido.toUpperCase();
+    if (!this.esCredito || estado === 'PAGADO' || estado === 'CANCELADO') return null;
+    const pagado = this.detalle?.totalPagado ?? 0;
+    if (pagado <= 0) return null;
+    return Math.max(0, Math.round((this.totalGeneral - pagado) * 100) / 100);
   }
 
   /**
@@ -730,14 +1048,64 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   abrirFormTipo(): void {
-    const actual = (this.tipoActual || 'NORMAL').toUpperCase() as TipoPedido;
-    this.tipoForm = {
-      tipoPedido:   this.esContadoEntregado ? 'FIADO' : actual === 'NORMAL' ? 'APARTADO' : 'NORMAL',
-      montoCobrado: 0,
-      descripcion:  ''
-    };
-    this.tipoForm.montoCobrado = this.cobroSugerido;
+    this.tipoForm = { tipoPedido: null, montoCobrado: 0, descripcion: '' };
     this.mostrarFormTipo = true;
+  }
+
+  /** Un Apartado es sin dinero: si el cliente ya dio algo, el pedido es Ir pagando. En un grupo cuenta lo de todos. */
+  get tieneDinero(): boolean {
+    if (this.grupo) return this.dineroDelCambio > 0;
+    return !this.esContadoEntregado && (this.detalle?.totalPagado ?? 0) > 0;
+  }
+
+  /** Lo que ya dio el cliente: del grupo completo si el pedido está unido, si no del pedido. */
+  get dineroDelCambio(): number {
+    return this.grupo ? (this.grupo.pagadoGrupo ?? 0) : (this.detalle?.totalPagado ?? 0);
+  }
+
+  /** Los pedidos que cambian juntos: "#1159, #1160". */
+  get pedidosDelGrupoTexto(): string {
+    return (this.grupo?.pedidos ?? [])
+      .filter(p => (p.estadoPedido ?? '').toLowerCase() !== 'cancelado')
+      .map(p => `#${p.pedidoId}`).join(', ');
+  }
+
+  get esApartado(): boolean {
+    return (this.detalle?.tipoPedido ?? this.pedido?.pedido?.tipoPedido) === 'APARTADO';
+  }
+
+  /** Un Apartado solo acepta el pago completo; para un adelanto hay que pasarlo a Ir pagando. */
+  private avisarApartadoSinAbonos(monto: number): void {
+    const puedeCambiar = this.puedeCambiarTipo && this.puedeAbrirFormTipo;
+    Swal.fire({
+      icon: 'info',
+      title: 'Un Apartado se paga completo',
+      html: `<p>Un Apartado es un pedido sin dinero: el cliente lo paga completo
+             (<b>$${this.saldoPendiente.toFixed(2)}</b>) cuando lo recoge.</p>
+             <p>Si te dejó un adelanto, primero cambia el pedido a <b>Ir pagando</b> y ahí registra el abono.</p>`,
+      showCancelButton: puedeCambiar,
+      confirmButtonText: puedeCambiar ? '🔁 Cambiar a Ir pagando' : 'Entendido',
+      cancelButtonText: 'Cancelar'
+    }).then(res => {
+      if (!res.isConfirmed || !puedeCambiar) return;
+      this.mostrarFormAbono = false;
+      this.abrirFormTipo();
+      this.seleccionarTipo('FIADO');
+      this.tipoForm.montoCobrado = monto;
+    });
+  }
+
+  private queSigueTrasCambiarTipo(tipo: TipoPedido): string {
+    switch (tipo) {
+      case 'APARTADO':
+        return 'Un Apartado es sin dinero. Cuando el cliente venga a recogerlo, cobra el total con '
+          + '<b>💳 Registrar abono</b>: se paga completo, en un solo pago.';
+      case 'FIADO':
+        return 'Cada vez que el cliente dé dinero, regístralo con <b>💳 Registrar abono</b>. '
+          + 'Cuando complete el total, el pedido queda Pagado solo.';
+      default:
+        return 'El pedido queda cobrado de contado.';
+    }
   }
 
   cancelarFormTipo(): void {
@@ -751,10 +1119,17 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   cambiarTipoPedido(): void {
-    if (this.cambiandoTipo) return;
+    const tipoNuevo = this.tipoForm.tipoPedido;
+    if (this.cambiandoTipo || !tipoNuevo) return;
 
-    if (this.tipoForm.tipoPedido === (this.tipoActual || '').toUpperCase()) {
+    if (tipoNuevo === this.tipoVigente) {
       Swal.fire({ icon: 'info', title: 'Sin cambios', text: 'El pedido ya está en esa forma de cobro.' });
+      return;
+    }
+
+    // Unido: la forma de cobro es de todo el grupo (antes salía "deshaz el grupo antes…", QA 2026-10-13).
+    if (this.grupo && tipoNuevo !== 'NORMAL') {
+      this.cambiarTipoDelGrupo(this.grupo.grupoId, tipoNuevo);
       return;
     }
 
@@ -769,7 +1144,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     this.cambiandoTipo = true;
     const body: CambiarTipoPedidoRequest = {
-      tipoPedido:   this.tipoForm.tipoPedido,
+      tipoPedido:   tipoNuevo,
       montoCobrado: this.tipoForm.montoCobrado || 0,
       descripcion:  (this.tipoForm.descripcion ?? '').trim() || undefined,
       usuarioId:    this.idUsuario || undefined
@@ -780,19 +1155,50 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.cambiandoTipo   = false;
         this.mostrarFormTipo = false;
         this.detalle = r?.data ?? this.detalle;
+        // Se queda hasta que lo cierren y dice qué sigue: con 3 segundos no se alcanzaba a leer (QA 2026-10-08).
+        const cobro = body.montoCobrado ?? 0;
         Swal.fire({
           icon: 'success',
-          title: 'Forma de cobro actualizada',
-          text: (body.montoCobrado ?? 0) > 0
-            ? `Quedó como ${this.etiquetaTipo(body.tipoPedido)} y se registró el cobro de ${(body.montoCobrado ?? 0).toFixed(2)}.`
-            : `Quedó como ${this.etiquetaTipo(body.tipoPedido)}.`,
-          timer: 3000,
-          showConfirmButton: false
+          title: `Quedó como ${this.etiquetaTipo(body.tipoPedido)}`,
+          html: (cobro > 0 ? `<p>Se registró el cobro de <b>$${cobro.toFixed(2)}</b>.</p>` : '')
+            + `<p>${this.queSigueTrasCambiarTipo(body.tipoPedido)}</p>`,
+          confirmButtonText: 'Entendido'
         }).then(() => this.cargarDetalleCompleto());
       },
       error: err => {
         this.cambiandoTipo = false;
         this.avisarError(err, 'No se pudo cambiar la forma de cobro.');
+      }
+    });
+  }
+
+  private cambiarTipoDelGrupo(grupoId: number, tipoNuevo: 'APARTADO' | 'FIADO'): void {
+    this.cambiandoTipo = true;
+    const monto = tipoNuevo === 'FIADO' ? (this.tipoForm.montoCobrado || 0) : 0;
+    this.grupoPedidoService.cambiarFormaDeCobro(grupoId, {
+      tipoPedido: tipoNuevo,
+      monto:      monto || undefined,
+      nota:       (this.tipoForm.descripcion ?? '').trim() || undefined
+    }).subscribe({
+      next: r => {
+        this.cambiandoTipo   = false;
+        this.mostrarFormTipo = false;
+        const cambiados = (r?.data?.pedidosCambiados ?? []).map(id => `#${id}`).join(', ');
+        const sigue = tipoNuevo === 'APARTADO'
+          ? 'Un Apartado es sin dinero. Cuando el cliente venga a recogerlos, cobra el total con <b>💵 Pagar el grupo completo</b>.'
+          : 'Cada vez que el cliente dé dinero, regístralo con <b>💵 Abonar al grupo</b>. Cuando complete el total, los pedidos quedan Pagados solos.';
+        Swal.fire({
+          icon: 'success',
+          title: `El grupo quedó como ${this.etiquetaTipo(tipoNuevo)}`,
+          html: `<p>Cambiaron los pedidos <b>${cambiados}</b>.</p>`
+            + (monto > 0 ? `<p>Se registró el abono del grupo de <b>$${monto.toFixed(2)}</b>.</p>` : '')
+            + `<p>${sigue}</p>`,
+          confirmButtonText: 'Entendido'
+        }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.cambiandoTipo = false;
+        this.avisarError(err, 'No se pudo cambiar la forma de cobro del grupo.');
       }
     });
   }
@@ -811,64 +1217,162 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   /** La línea que se está reemplazando. `null` = se está agregando uno nuevo. */
   private lineaACambiar: PedidoDetalleItem | null = null;
+  /** A qué pedido va el cambio: este, u otro de su grupo. */
+  private pedidoDestino: number | null = null;
 
-  get tituloBuscador(): string {
-    return this.lineaACambiar ? 'Cambiar por otro artículo' : 'Agregar un artículo';
+  private get destino(): number {
+    return this.pedidoDestino ?? this.pedido.pedido.id;
   }
 
-  abrirBuscadorArticulo(linea: PedidoDetalleItem | null = null): void {
+  private get destinoEsOtro(): boolean {
+    return this.destino !== this.pedido.pedido.id;
+  }
+
+  get tituloBuscador(): string {
+    const base = this.lineaACambiar ? 'Cambiar por otro artículo' : 'Agregar un artículo';
+    return this.destinoEsOtro ? `${base} — pedido #${this.destino}` : base;
+  }
+
+  abrirBuscadorArticulo(linea: PedidoDetalleItem | null = null, pedidoId: number = this.pedido.pedido.id): void {
     this.lineaACambiar           = linea;
+    this.pedidoDestino           = pedidoId;
     this.terminoArticulo         = '';
     this.resultadosArticulo      = [];
     this.mostrarBuscadorArticulo = true;
+    // El buscador vive debajo del bloque del grupo: en celular quedaba una pantalla abajo del
+    // botón que se tocó y parecía que no había pasado nada.
+    setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>('.dp-art-buscador__input');
+      input?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      input?.focus({ preventScroll: true });
+    });
   }
 
   cerrarBuscadorArticulo(): void {
     this.mostrarBuscadorArticulo = false;
     this.lineaACambiar           = null;
+    this.pedidoDestino           = null;
   }
 
-  /**
-   * Menos de 3 caracteres no sale al back: con 1 o 2 el LIKE barre casi todo el catálogo y el
-   * resultado no le sirve a nadie (regla de CLAUDE.md). Vacío limpia la lista.
-   */
-  buscarArticulo(): void {
-    const termino = (this.terminoArticulo ?? '').trim();
-    if (!termino) { this.resultadosArticulo = []; return; }
-    if (termino.length < 3) return;
+  /** Cada tecla del buscador de ⇄ / ➕ pasa por aquí (skill `buscadores`). */
+  private readonly terminoArticulo$ = new Subject<string>();
 
-    this.buscandoArticulo = true;
-    this.varianteService.buscar({ termino, pagina: 0, size: 20 }).subscribe({
-      next: r => {
-        this.resultadosArticulo = (r?.t ?? []) as IVarianteResumen[];
-        this.buscandoArticulo   = false;
-      },
-      // El back contesta 404 cuando no encuentra nada: eso es "sin resultados", no un error.
-      error: () => { this.resultadosArticulo = []; this.buscandoArticulo = false; }
+  /**
+   * Reglas de buscadores (skill `buscadores`, CLAUDE.md):
+   * - Se espera 400 ms después de la última tecla: antes salía una búsqueda por cada letra desde la
+   *   3.ª ("blu", "blus", "blusa"…) y la lista brincaba (QA 2026-10-06).
+   * - Menos de 3 letras no sale al back y limpia la lista. Vacío limpia de inmediato.
+   * - switchMap descarta la respuesta de una búsqueda vieja que llega tarde, y el catchError va
+   *   adentro: si fuera en el subscribe, un error mataría el buscador hasta recargar.
+   * - Solo artículos que se pueden vender ahora: `GET /v1/variantes/para-pedido`.
+   */
+  private prepararBuscadorArticulo(): void {
+    this.terminoArticulo$.pipe(
+      debounceTime(400),
+      map(t => t.trim()),
+      switchMap(termino => {
+        if (termino.length < Constants.MIN_CARACTERES_BUSQUEDA) {
+          return of<IVarianteResumen[]>([]);
+        }
+        this.buscandoArticulo = true;
+        return this.varianteService.buscarParaPedido({ termino, pagina: 1, size: 20 }).pipe(
+          map(r => (r?.t ?? []) as IVarianteResumen[]),
+          catchError(() => of<IVarianteResumen[]>([]))
+        );
+      }),
+      takeUntil(this.destroy$)
+    ).subscribe(lista => {
+      this.resultadosArticulo = lista;
+      this.buscandoArticulo   = false;
     });
   }
 
+  buscarArticulo(): void {
+    const termino = (this.terminoArticulo ?? '').trim();
+    // Vacío y corto se atienden aquí mismo: esperar los 400 ms dejaría en pantalla la lista anterior.
+    if (termino.length < Constants.MIN_CARACTERES_BUSQUEDA) {
+      this.resultadosArticulo = [];
+      this.buscandoArticulo   = false;
+    }
+    this.terminoArticulo$.next(termino);
+  }
+
   /**
-   * El precio que se le va a cobrar: la rebaja si existe, si no el normal.
+   * "Otro precio" cobra el descuento; "Elegir" cobra el normal (hotfix 2026-09-29). El monto no
+   * viene en la lista (R9): se le pide al back en el momento y no se muestra.
    *
-   * El back solo acepta uno de esos dos — cualquier otro número lo rechaza con 400, que es
-   * justo lo que cierra el agujero de mandar el precio desde la pantalla.
+   * El back solo acepta el normal o el descuento — cualquier otro número lo rechaza con 400, que
+   * es justo lo que cierra el agujero de mandar el precio desde la pantalla.
    */
-  precioACobrar(v: IVarianteResumen): number {
-    const rebaja = v.precioRebaja ?? 0;
-    return rebaja > 0 ? rebaja : (v.precio ?? 0);
+  elegirConOtroPrecio(v: IVarianteResumen): void {
+    if (this.guardandoArticulo) return;
+    this.guardandoArticulo = true;
+    this.varianteService.descuentoArticulo(v.id).subscribe({
+      next: d => {
+        this.guardandoArticulo = false;
+        if (!d.tieneDescuento) {
+          Swal.fire({ icon: 'info', title: 'Este artículo no tiene precio con descuento', timer: 1800, showConfirmButton: false });
+          return;
+        }
+        this.elegirArticulo(v, d.precioRebaja);
+      },
+      error: err => {
+        this.guardandoArticulo = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el descuento',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
-  tieneRebaja(v: IVarianteResumen): boolean {
-    return (v.precioRebaja ?? 0) > 0;
+  /** El precio de la última elección, para repetirlo tal cual si el back pregunta por el combo. */
+  private precioElegido = 0;
+  /** Piezas de la línea que se cambian (1 a 1 por el artículo nuevo); el resto se queda. */
+  private piezasACambiar = 1;
+
+  /**
+   * Al cambiar una línea con varias piezas se pregunta cuántas: cambiar 1 de 3 deja 2 del
+   * artículo de antes y agrega 1 del nuevo. Una línea de promoción se cambia completa (el back
+   * no deja partir un combo).
+   */
+  elegirArticulo(v: IVarianteResumen, precioOtro?: number): void {
+    if (this.guardandoArticulo) return;
+    const linea = this.lineaACambiar;
+    const piezas = linea?.cantidad ?? 1;
+    if (!linea || piezas <= 1 || linea.promocionId) {
+      this.guardarArticulo(v, precioOtro, linea ? piezas : 1);
+      return;
+    }
+    Swal.fire({
+      icon: 'question',
+      title: '¿Cuántas piezas cambias?',
+      text: `En el pedido hay ${piezas} de "${this.nombreVisible(linea.productoNombre)}". `
+          + `Las que cambies se reemplazan por "${v.nombreProducto ?? 'el artículo nuevo'}" `
+          + 'y las demás se quedan como están.',
+      input: 'number',
+      inputValue: '1',
+      inputAttributes: { min: '1', max: String(piezas), step: '1' },
+      showCancelButton: true,
+      confirmButtonText: 'Cambiar',
+      cancelButtonText: 'Cancelar',
+      inputValidator: valor => {
+        const n = Number(valor);
+        if (!Number.isInteger(n) || n < 1) return 'Escribe al menos 1 pieza';
+        if (n > piezas) return `Solo hay ${piezas} pieza(s) en el pedido`;
+        return null;
+      }
+    }).then(res => {
+      if (res.isConfirmed) this.guardarArticulo(v, precioOtro, Number(res.value));
+    });
   }
 
-  elegirArticulo(v: IVarianteResumen): void {
+  private guardarArticulo(v: IVarianteResumen, precioOtro: number | undefined, piezas: number): void {
     if (this.guardandoArticulo) return;
     this.guardandoArticulo = true;
 
-    const pedidoId = this.pedido.pedido.id;
-    const body     = { varianteId: v.id, cantidad: 1, precioUnitario: this.precioACobrar(v) };
+    const pedidoId = this.destino;
+    this.precioElegido = precioOtro ?? v.precio ?? 0;
+    this.piezasACambiar = piezas;
+    const body     = { varianteId: v.id, cantidad: piezas, precioUnitario: this.precioElegido };
 
     const peticion = this.lineaACambiar
       ? this.pedidosService.cambiarArticulo(pedidoId, this.lineaACambiar.id!, body)
@@ -877,11 +1381,14 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     peticion.subscribe({
       next: r => {
         this.guardandoArticulo = false;
-        this.detalle = r?.data ?? this.detalle;
+        const eraCambio = !!this.lineaACambiar;
+        const quedan = (this.lineaACambiar?.cantidad ?? 0) - piezas;
+        if (!this.destinoEsOtro) this.detalle = r?.data ?? this.detalle;
         this.cerrarBuscadorArticulo();
         Swal.fire({
           icon: 'success',
-          title: this.lineaACambiar ? 'Artículo cambiado' : 'Artículo agregado',
+          title: eraCambio ? 'Artículo cambiado' : (pedidoId !== this.pedido.pedido.id ? `Artículo agregado al pedido #${pedidoId}` : 'Artículo agregado'),
+          text: eraCambio && quedan > 0 ? `Se cambiaron ${piezas} pieza(s); quedan ${quedan} del artículo de antes.` : undefined,
           timer: 1800,
           showConfirmButton: false
         }).then(() => this.cargarDetalleCompleto());
@@ -943,15 +1450,16 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     if (!this.lineaACambiar) return;
     this.guardandoArticulo = true;
 
-    this.pedidosService.cambiarArticulo(this.pedido.pedido.id, this.lineaACambiar.id!, {
+    const esOtro = this.destinoEsOtro;
+    this.pedidosService.cambiarArticulo(this.destino, this.lineaACambiar.id!, {
       varianteId:     v.id,
-      cantidad:       1,
-      precioUnitario: this.precioACobrar(v),
+      cantidad:       this.piezasACambiar,
+      precioUnitario: this.precioElegido,
       modo
     }).subscribe({
       next: r => {
         this.guardandoArticulo = false;
-        this.detalle = r?.data ?? this.detalle;
+        if (!esOtro) this.detalle = r?.data ?? this.detalle;
         this.cerrarBuscadorArticulo();
         Swal.fire({
           icon: 'success',
@@ -976,7 +1484,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * Lo que se ofrece cuando alguien le da al "−" sobre una línea de promoción. Quitar una sola
    * dejaría el resto del combo a precio promocional sin que se cumpla la condición.
    */
-  private ofrecerQuitarPromocionCompleta(item: PedidoDetalleItem): void {
+  private ofrecerQuitarPromocionCompleta(item: PedidoDetalleItem, pedidoId: number = this.pedido.pedido.id): void {
     const promo = item.promocionDescripcion || 'esta promoción';
 
     if (!this.puedeQuitarPromocion) {
@@ -1000,20 +1508,20 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       cancelButtonText:  'Cancelar',
       reverseButtons: true
     }).then(res => {
-      if (res.isConfirmed && item.promocionId) this.quitarPromocion(item.promocionId);
+      if (res.isConfirmed && item.promocionId) this.quitarPromocion(item.promocionId, pedidoId);
     });
   }
 
   quitandoPromocion = false;
 
-  quitarPromocion(promocionId: number): void {
+  quitarPromocion(promocionId: number, pedidoId: number = this.pedido.pedido.id): void {
     if (this.quitandoPromocion) return;
     this.quitandoPromocion = true;
 
-    this.pedidosService.quitarPromocion(this.pedido.pedido.id, promocionId).subscribe({
+    this.pedidosService.quitarPromocion(pedidoId, promocionId).subscribe({
       next: r => {
         this.quitandoPromocion = false;
-        this.detalle = r?.data ?? this.detalle;
+        if (pedidoId === this.pedido.pedido.id) this.detalle = r?.data ?? this.detalle;
         Swal.fire({
           icon: 'success',
           title: 'Promoción quitada',

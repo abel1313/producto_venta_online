@@ -122,9 +122,7 @@ export class GestionPalabrasClave implements OnInit {
       showCancelButton:   true,
       confirmButtonText:  'Sí, eliminar',
       cancelButtonText:   'Cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor:  '#6b7280'
-    }).then(r => {
+      confirmButtonColor: 'var(--pk-danger)',}).then(r => {
       if (!r.isConfirmed) return;
       this.svc.delete(p.id).subscribe({
         next: () => {

@@ -36,6 +36,42 @@ export interface ITicketData {
   qrTiktok?:       string | null;
 }
 
+/**
+ * Datos del negocio para el encabezado de todos los tickets (LFPC arts. 12 y 76 bis III). Los
+ * fija AppComponent una vez con lo que trae `GET /v1/datos-legales`; así ninguna de las pantallas
+ * que imprimen tiene que pasarlos. Lo que no esté capturado no se imprime.
+ */
+export interface ITicketNegocio {
+  nombreResponsable?: string | null;
+  rfc?:               string | null;
+  domicilio?:         string | null;
+  telefono?:          string | null;
+  correo?:            string | null;
+}
+
+let negocioTicket: ITicketNegocio | null = null;
+
+export function fijarDatosNegocioTicket(d: ITicketNegocio | null): void {
+  negocioTicket = d;
+}
+
+const esc = (t: string): string =>
+  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+function encabezadoNegocio(): string {
+  const n = negocioTicket;
+  if (!n) return '';
+  const tel = (n.telefono ?? '').replace(/\D/g, '');
+  const lineas = [
+    n.nombreResponsable,
+    n.rfc ? `RFC ${n.rfc}` : null,
+    n.domicilio,
+    tel.length === 10 ? `Tel. ${tel.slice(0, 2)} ${tel.slice(2, 6)} ${tel.slice(6)}` : null,
+    n.correo
+  ].filter((x): x is string => !!x);
+  return lineas.length ? `<div class="centro" style="font-size:9px">${lineas.map(esc).join('<br>')}</div>` : '';
+}
+
 const fmt = (n: number | null | undefined): string =>
   n != null ? `$${n.toFixed(2)}` : '';
 
@@ -88,6 +124,9 @@ export function generarHtmlTicket(d: ITicketData): string {
     ? `<div class="fila"><span>Saldo pendiente:</span><span>${fmt(d.saldoPendiente)}</span></div>` : '';
   const filaLiquidado   = d.tipo === 'liquidado' ? `<div class="centro bold">✅ PAGADO COMPLETAMENTE</div>` : '';
   const filaMotivo      = d.motivo ? `<div>Motivo: ${d.motivo}</div>` : '';
+  // LFPC art. 66: en Apartado e Ir pagando no se cobran intereses; el comprobante lo dice.
+  const filaSinIntereses = (d.tipo === 'abono' || d.tipo === 'liquidado')
+    ? `<div class="centro" style="font-size:9px">Abonos sin intereses (CAT 0%)</div>` : '';
 
   const qrUrl = (url: string) =>
     `https://api.qrserver.com/v1/create-qr-code/?size=80x80&ecc=L&data=${encodeURIComponent(url)}`;
@@ -104,6 +143,7 @@ export function generarHtmlTicket(d: ITicketData): string {
 
   return `
     <div class="titulo">NOVEDADES JADE</div>
+    ${encabezadoNegocio()}
     <div class="subtitulo">${encabezado}</div>
     <div class="linea"></div>
     <div class="fila"><span>Folio #${d.numero}</span><span>${hoy}</span></div>
@@ -111,11 +151,12 @@ export function generarHtmlTicket(d: ITicketData): string {
     <div class="linea"></div>
     ${filasArticulos}
     <div class="linea"></div>
-    ${filaTotal}${filaHistorialAbonos}${filaTotalPagado}${filaAbono}${filaSaldo}${filaLiquidado}${filaMotivo}
+    ${filaTotal}${filaHistorialAbonos}${filaTotalPagado}${filaAbono}${filaSaldo}${filaLiquidado}${filaMotivo}${filaSinIntereses}
     <div class="linea"></div>
     ${filaPago}
     <div class="linea"></div>
     <div class="centro">¡Gracias por tu compra!</div>
+    <div class="centro" style="font-size:9px">Garantía de 90 días desde que lo recibes</div>
     ${seccionQr}
   `;
 }

@@ -3,12 +3,20 @@ $pd: var(--brand-2);
 $t:  all 0.2s ease;
 
 .ez-wrap {
-  max-width: 640px;
+  box-sizing: border-box;
+  max-width: var(--form-ancho, 820px);
   margin: 24px auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 0 16px;
+  padding: 20px;
+  // Mismo fondo que la card de Agregar Modelo (Personalización → Card).
+  background: var(--card-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--form-card-radius, 14px);
+  box-shadow: var(--card-shadow, none);
+
+  @media (max-width: 576px) { margin: 16px; padding: 16px; }
 }
 
 .ez-header {
@@ -62,6 +70,11 @@ $t:  all 0.2s ease;
 
 .ez-tabla-wrap {
   overflow-x: auto;
+}
+
+.ez-sin-fecha {
+  color: var(--app-text-muted);
+  font-style: italic;
 }
 
 .ez-tabla {
@@ -121,32 +134,25 @@ $t:  all 0.2s ease;
   transition: $t;
 
   &--enviar {
-    background: linear-gradient(135deg, $p, $pd);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:disabled { opacity: .5; cursor: not-allowed; }
   }
 }
 
 // ── Dark mode ────────────────────────────────────────────────────────
-// Mismo bug/arreglo que gestion-lugares.component.scss (.pk-input) para el <input>, pero el
-// <select> necesita el fix real encontrado en venta-variante.component.scss (2026-09-04): el
-// popup nativo de <option> no respeta background-color de autor, y además src/styles.scss
-// (global) fuerza con !important el color del texto de TODOS los .form-select -- pero acá NO es
-// .form-select (es .ez-input, clase propia), así que esa regla global ni aplica; aun así se deja
-// el mismo patrón robusto (colores fijos + !important) para no repetir el mismo bug si el día de
-// mañana esta clase también queda alcanzada por alguna regla global nueva.
-:host-context(body.theme-dark) {
-  .ez-input { color-scheme: dark; color: var(--app-text); }
-  select.ez-input {
-    color-scheme: light !important;
-    background-color: #ffffff !important;
-    color: #1f2937 !important;
-    border-color: var(--card-border) !important;
-  }
+// Mismo bug/arreglo que gestion-lugares.component.scss (.pk-input) para el <input>.
+// El menú de opciones del <select> (lo que se ve al abrirlo) NO se arregla aquí: sale del trío
+// --menu-bg / --menu-text / --menu-scheme de styles.scss ("Menú de opciones", 2026-10-13). Hasta
+// esa fecha aquí se forzaba el select blanco con letra oscura; con la regla global de <option>
+// quedaba menú blanco con letra blanca en los diseños Clásico de noche. Skill: revision-colores.
+:host-context(body.theme-dark:not([data-estilo="jade"])) {
+  .ez-input:not(select) { color-scheme: dark; color: var(--app-text); }
 }
 
 :host-context(body.theme-light) {
-  .ez-input { color-scheme: light; color: var(--app-text); }
+  .ez-input:not(select) { color-scheme: light; color: var(--app-text); }
 }
 
 

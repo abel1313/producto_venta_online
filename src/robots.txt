@@ -1,4 +1,12 @@
 User-agent: *
 Allow: /
+# Pantallas de cuenta y administración: piden sesión, no sirven en Google.
+Disallow: /login
+Disallow: /usuarios/
+Disallow: /admin/
+Disallow: /pedidos/
+Disallow: /productos/
+Disallow: /gastos/
+Disallow: /reportes/
 
 Sitemap: https://shop.novedades-jade.com.mx/sitemap.xml

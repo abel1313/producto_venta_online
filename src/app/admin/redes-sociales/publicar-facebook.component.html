@@ -95,7 +95,6 @@
         <input class="fb-input" type="text"
                placeholder="Código, nombre o categoría…"
                [(ngModel)]="termino" (input)="onInput()" [disabled]="publicando" appUppercase>
-        <span class="fb-search-spinner" *ngIf="buscando">⏳</span>
       </div>
 
       <div class="fb-dropdown" *ngIf="resultados.length > 0">

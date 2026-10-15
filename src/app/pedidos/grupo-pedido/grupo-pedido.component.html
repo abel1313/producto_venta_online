@@ -1,0 +1,380 @@
+<ng-container *ngIf="puedeVer">
+
+  <!-- ── PEDIDO UNIDO ───────────────────────────────────────────────────────────── -->
+  <section class="gp" *ngIf="grupo?.activo">
+    <header class="gp__head">
+      <span class="gp__head-titulo">
+        <h4 class="gp__titulo">🔗 Unido en el grupo #{{ grupo!.grupoId }}</h4>
+        <span class="gp__chip gp__chip--cuantos">{{ grupo!.pedidos.length }} pedidos</span>
+      </span>
+      <span class="gp__chip">{{ etiquetaTipo(grupo!.tipoPedido) }}</span>
+    </header>
+
+    <div class="gp-recoge">
+      <div class="gp-recoge__quien">
+        <span class="gp-recoge__avatar" aria-hidden="true">{{ inicial(grupo!.titularNombre) }}</span>
+        <div class="gp-recoge__datos">
+          <span class="gp-recoge__eyebrow">Paga y recoge</span>
+          <span class="gp-recoge__nombre">{{ grupo!.titularNombre || 'Sin nombre' }}</span>
+          <span class="gp-recoge__pedido">Pedido #{{ grupo!.pedidoTitularId }}</span>
+        </div>
+      </div>
+
+      <div class="gp-recoge__cambiar" *ngIf="puedeUnir && candidatosRecoger.length > 1">
+        <label for="gpCambiarTitular">Cambiar quién recoge</label>
+        <div class="gp-select" [class.gp-select--ocupado]="cambiandoTitular">
+          <select id="gpCambiarTitular" [ngModel]="grupo!.pedidoTitularId" (ngModelChange)="cambiarTitular($event)"
+                  [disabled]="cambiandoTitular">
+            <option *ngFor="let c of candidatosRecoger" [ngValue]="c.pedidoId">
+              {{ c.cliente || 'Sin nombre' }} · pedido #{{ c.pedidoId }}
+            </option>
+          </select>
+          <i class="pi pi-chevron-down" aria-hidden="true"></i>
+        </div>
+      </div>
+    </div>
+    <p class="gp__texto gp__texto--muted" *ngIf="grupo!.nota">{{ grupo!.nota }}</p>
+
+    <div class="gp__tabla-wrap">
+      <table class="gp__tabla gp__tabla--miembros">
+        <thead>
+          <tr>
+            <th>Pedido</th>
+            <th>Cliente</th>
+            <th>Estado</th>
+            <th class="num">Total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of grupo!.pedidos" [class.gp__fila--actual]="p.pedidoId === pedidoId">
+            <td>
+              <span *ngIf="p.pedidoId === pedidoId">#{{ p.pedidoId }} (este)</span>
+              <a *ngIf="p.pedidoId !== pedidoId" [routerLink]="['/pedidos/mis-pedidos']"
+                 [queryParams]="{ pedidoId: p.pedidoId }" target="_blank" rel="noopener"
+                 title="Abrir el pedido en otra pestaña">#{{ p.pedidoId }} ↗</a>
+              <span class="gp__titular" *ngIf="p.esTitular">titular</span>
+            </td>
+            <td>{{ p.cliente }}</td>
+            <td><span class="gp-estado" [ngClass]="claseEstado(p.estadoPedido)">{{ etiquetaEstado(p.estadoPedido) }}</span></td>
+            <td class="num">{{ p.total | currency:'$' }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <dl class="gp__totales">
+      <div><dt>Total del grupo</dt><dd>{{ grupo!.totalGrupo | currency:'$' }}</dd></div>
+      <div><dt>Pagado</dt><dd>{{ grupo!.pagadoGrupo | currency:'$' }}</dd></div>
+      <div class="gp__saldo"><dt>Saldo</dt><dd>{{ grupo!.saldoGrupo | currency:'$' }}</dd></div>
+    </dl>
+    <!-- El dinero es del grupo: lo que se queda cada pedido se decide al separar (regla 2026-10-01). -->
+    <p class="gp__texto gp__texto--muted" *ngIf="esCredito && grupo!.pagadoGrupo > 0">
+      Lo pagado es de todo el grupo. Cuánto se queda cada pedido se decide al ✂️ Separar pedidos.
+    </p>
+
+    <p class="gp__texto gp__texto--muted" *ngIf="!esCredito">
+      Es de contado: cada pedido se confirma desde su propio detalle.
+    </p>
+
+    <div class="gp__acciones" *ngIf="!mostrarFormAbono && !mostrarFormSeparar && !mostrarFormAgregar">
+      <button class="gp-btn gp-btn--principal" type="button"
+              *ngIf="puedeAbonar && esCredito && grupo!.saldoGrupo > 0"
+              (click)="abrirFormAbono()">
+        {{ esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}
+      </button>
+      <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormAgregar()"
+              title="Sumar más pedidos a este grupo; tienen que tener la misma forma de cobro">
+        ➕ Agregar pedidos
+      </button>
+      <button class="gp-btn" type="button" *ngIf="puedeUnir" (click)="abrirFormSeparar()"
+              title="Separar uno o todos los pedidos; lo que ha dado el cliente se reparte entre ellos">
+        ✂️ Separar pedidos
+      </button>
+    </div>
+
+    <!-- Agregar pedidos al grupo -->
+    <div class="gp-form" *ngIf="mostrarFormAgregar">
+      <h5 class="gp-form__titulo">➕ Agregar pedidos al grupo</h5>
+      <p class="gp__texto gp__texto--muted">
+        Solo salen los de {{ etiquetaTipo(grupo!.tipoPedido) }} que no estén en otro grupo. Lo que ya
+        tengan abonado cuenta para el grupo y queda anotado en cada pedido.
+      </p>
+      <ng-container *ngTemplateOutlet="buscador"></ng-container>
+      <ng-container *ngTemplateOutlet="errores"></ng-container>
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormAgregar()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="agregando || elegidos.length === 0"
+                (click)="agregarAlGrupo()">
+          {{ agregando ? 'Agregando…' : elegidos.length > 1 ? 'Agregar ' + elegidos.length + ' pedidos' : 'Agregar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Separar -->
+    <div class="gp-form" *ngIf="mostrarFormSeparar">
+      <h5 class="gp-form__titulo">✂️ Separar pedidos</h5>
+      <p class="gp__texto gp__texto--muted">
+        Marca los que se separan. Los que no marques siguen unidos; si queda uno solo, también se separa.
+        <ng-container *ngIf="hayQueRepartir">
+          El cliente ha dado <b>{{ abonadoGrupo | currency:'$' }}</b>: escribe cuánto se queda cada pedido
+          que sale. Tiene que sumar exacto. El que cubre su total queda <b>pagado</b>; el que no, queda
+          debiendo lo que le falte.
+        </ng-container>
+      </p>
+
+      <div class="gp__tabla-wrap">
+        <table class="gp__tabla">
+          <thead>
+            <tr>
+              <th>Sale</th>
+              <th>Pedido</th>
+              <th class="num">Total</th>
+              <th class="num" *ngIf="hayQueRepartir">Tiene hoy</th>
+              <th class="num" *ngIf="hayQueRepartir">Se queda con</th>
+              <th class="num" *ngIf="hayQueRepartir">Queda debiendo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let f of filasSeparar" [class.gp__fila--sale]="f.sale">
+              <td>
+                <input class="gp-check" type="checkbox" [(ngModel)]="f.sale"
+                       [attr.aria-label]="'Separar el pedido #' + f.pedidoId" />
+              </td>
+              <td>#{{ f.pedidoId }} <span class="gp__texto--muted">{{ f.cliente }}</span></td>
+              <td class="num">{{ f.total | currency:'$' }}</td>
+              <td class="num" *ngIf="hayQueRepartir">{{ f.pagado | currency:'$' }}</td>
+              <td class="num" *ngIf="hayQueRepartir">
+                <label *ngIf="f.sale" class="gp-dinero" [class.gp-dinero--error]="(f.monto || 0) - f.total > 0.001">
+                  <span class="gp-dinero__signo" aria-hidden="true">$</span>
+                  <input type="number" inputmode="decimal" min="0" step="0.01" [max]="f.total"
+                         [(ngModel)]="f.monto" [attr.aria-label]="'Cuánto se queda el pedido #' + f.pedidoId" />
+                </label>
+                <span *ngIf="!f.sale" class="gp__texto--muted">sigue unido</span>
+              </td>
+              <td class="num" *ngIf="hayQueRepartir">
+                <ng-container *ngIf="f.sale">
+                  <b *ngIf="quedaDebiendo(f) > 0">{{ quedaDebiendo(f) | currency:'$' }}</b>
+                  <span *ngIf="quedaDebiendo(f) === 0" class="gp-estado gp-estado--ok">Pagado</span>
+                </ng-container>
+                <span *ngIf="!f.sale" class="gp__texto--muted">—</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <dl class="gp__totales" *ngIf="hayQueRepartir">
+        <div><dt>Ha dado el cliente</dt><dd>{{ abonadoGrupo | currency:'$' }}</dd></div>
+        <div><dt>Repartido</dt><dd>{{ repartido | currency:'$' }}</dd></div>
+        <div class="gp__saldo" *ngIf="quedan.length > 0">
+          <dt>{{ terminaGrupo ? 'Se queda el #' + quedan[0] : 'Sigue en el grupo' }}</dt>
+          <dd>{{ restoParaLosQueQuedan | currency:'$' }}</dd>
+        </div>
+      </dl>
+
+      <div class="gp-campo" *ngIf="necesitaTitular">
+        <label for="gpNuevoTitular">¿Quién recoge los que siguen unidos?</label>
+        <select id="gpNuevoTitular" [(ngModel)]="nuevoTitularId">
+          <option [ngValue]="null" disabled>Elige</option>
+          <option *ngFor="let id of quedan" [ngValue]="id">El cliente del pedido #{{ id }}</option>
+        </select>
+      </div>
+
+      <div class="gp-campo">
+        <label for="gpMotivoSeparar">Motivo (opcional)</label>
+        <input id="gpMotivoSeparar" type="text" maxlength="150" [(ngModel)]="motivoSeparar"
+               placeholder="Ej: cada quien paga lo suyo" />
+      </div>
+
+      <p class="gp-error" role="alert" *ngIf="problemaSeparar">{{ problemaSeparar }}</p>
+
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormSeparar()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button"
+                [disabled]="separando || !!problemaSeparar" (click)="separar()">
+          {{ separando ? 'Separando…' : 'Separar' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- Abono al grupo -->
+    <div class="gp-form" *ngIf="mostrarFormAbono">
+      <h5 class="gp-form__titulo">{{ esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}</h5>
+      <p class="gp__texto gp__texto--muted" *ngIf="!esApartado">
+        El abono es para todo el grupo. Saldo del grupo: {{ grupo!.saldoGrupo | currency:'$' }}.
+      </p>
+      <p class="gp__texto gp__texto--muted" *ngIf="esApartado">
+        Son Apartados: se pagan completos, {{ grupo!.saldoGrupo | currency:'$' }}. Para dejar un adelanto,
+        los pedidos tienen que pasar a Ir pagando.
+      </p>
+
+      <div class="gp-form__fila">
+        <div class="gp-campo">
+          <label for="gpMonto">Monto</label>
+          <!-- Apartados: un solo pago por el total del grupo, el monto no se mueve (QA 2026-10-08). -->
+          <div class="pk-monto-fijo" *ngIf="esApartado; else gpMontoLibre">
+            <input id="gpMonto" class="pk-monto-fijo__input" type="number" [(ngModel)]="abono.monto" readonly tabindex="-1" />
+            <button type="button" class="pk-monto-fijo__porque" (click)="verPorqueMontoFijo = !verPorqueMontoFijo"
+                    [attr.aria-expanded]="verPorqueMontoFijo">
+              🔒 ¿Por qué no puedo cambiar el monto?
+            </button>
+          </div>
+          <ng-template #gpMontoLibre>
+            <input id="gpMonto" type="number" min="0" step="0.01" [(ngModel)]="abono.monto" placeholder="0.00"
+                   [class.gp-campo__input--error]="!!errorMontoAbono" />
+          </ng-template>
+          <div class="pk-monto-fijo__explica" *ngIf="esApartado && verPorqueMontoFijo">
+            <p>Son <b>Apartados</b>: pedidos sin dinero que se pagan <b>completos, en un solo pago</b>, cuando
+              los recogen. Por eso el monto es lo que debe todo el grupo ({{ grupo!.saldoGrupo | currency:'$' }}).</p>
+            <p>Si el cliente quiere dejar solo una parte, los pedidos tienen que pasar a <b>Ir pagando</b>:
+              sepáralos, cambia cada uno con 🔁 Cambiar forma de cobro y vuelve a unirlos.</p>
+          </div>
+          <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->
+          <small class="gp-campo__error" *ngIf="errorMontoAbono">{{ errorMontoAbono }}</small>
+          <small *ngIf="!errorMontoAbono && abono.monto > 0">
+            Quedaría debiendo {{ (grupo!.saldoGrupo - abono.monto) | currency:'$' }}
+          </small>
+        </div>
+        <div class="gp-campo">
+          <label for="gpMetodo">Forma de pago</label>
+          <select id="gpMetodo" [(ngModel)]="abono.metodoPago">
+            <option *ngFor="let m of metodos" [value]="m">{{ m === 'EFECTIVO' ? 'Efectivo' : 'Transferencia' }}</option>
+          </select>
+        </div>
+        <div class="gp-campo" *ngIf="abono.metodoPago === 'EFECTIVO'">
+          <label for="gpDado">¿Con cuánto paga?</label>
+          <input id="gpDado" type="number" min="0" step="0.01" [(ngModel)]="abono.montoDado" placeholder="0.00" />
+          <small *ngIf="cambioDelAbono > 0">Cambio: {{ cambioDelAbono | currency:'$' }}</small>
+        </div>
+      </div>
+
+      <div class="gp-campo">
+        <label for="gpNota">Nota (opcional)</label>
+        <input id="gpNota" type="text" maxlength="150" [(ngModel)]="abono.nota" placeholder="Ej: abono de la semana" />
+      </div>
+
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormAbono()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="abonando || !!errorMontoAbono" (click)="abonar()">
+          {{ abonando ? 'Guardando…' : (esApartado ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo') }}
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── UNIR ───────────────────────────────────────────────────────────────────── -->
+  <ng-container *ngIf="!grupo?.activo && puedeUnir">
+    <div class="gp-unir-boton" *ngIf="!mostrarFormUnir">
+      <button class="gp-btn" type="button" [disabled]="!pedidoAbierto" (click)="abrirFormUnir()"
+              [title]="pedidoAbierto ? 'Cobrar y entregar este pedido junto con otros'
+                                     : 'Un pedido cancelado no se une. Uno cobrado de contado primero se pasa a Apartado o Ir pagando'">
+        🔗 Unir con otros pedidos
+      </button>
+    </div>
+
+    <section class="gp gp-form" *ngIf="mostrarFormUnir">
+      <h4 class="gp__titulo">🔗 Unir con otros pedidos</h4>
+      <p class="gp__texto gp__texto--muted">
+        Los pedidos no se mezclan: cada uno conserva sus artículos. Se ve la suma y lo que dé el cliente
+        es del grupo. Se pueden separar cuando quieras; al separar decides cuánto se queda cada pedido.
+      </p>
+
+      <ng-container *ngTemplateOutlet="buscador"></ng-container>
+
+      <div class="gp-campo" *ngIf="elegidos.length > 0">
+        <label for="gpTitular">¿Quién paga y recoge?</label>
+        <select id="gpTitular" [(ngModel)]="titularId">
+          <option *ngFor="let c of candidatosTitular" [ngValue]="c.pedidoId">
+            {{ c.cliente ? c.cliente + ' · ' : '' }}pedido #{{ c.pedidoId }}{{ c.pedidoId === pedidoId ? ' (este)' : '' }}
+          </option>
+        </select>
+      </div>
+
+      <div class="gp-campo">
+        <label for="gpNotaUnir">Nota (opcional)</label>
+        <input id="gpNotaUnir" type="text" maxlength="200" [(ngModel)]="notaUnir"
+               placeholder="Ej: los recoge su hermana" />
+      </div>
+
+      <ng-container *ngTemplateOutlet="errores"></ng-container>
+
+      <div class="gp-form__acciones">
+        <button class="gp-btn" type="button" (click)="cerrarFormUnir()">Cancelar</button>
+        <button class="gp-btn gp-btn--principal" type="button" [disabled]="uniendo || elegidos.length === 0" (click)="unir()">
+          {{ uniendo ? 'Uniendo…' : elegidos.length ? 'Unir ' + (elegidos.length + 1) + ' pedidos' : 'Unir' }}
+        </button>
+      </div>
+    </section>
+  </ng-container>
+
+  <!-- ── BUSCADOR DE PEDIDOS A UNIR (unir y agregar) ─────────────────────────────── -->
+  <ng-template #buscador>
+    <div class="gp-buscar">
+      <label class="gp-buscar__label" for="gpBuscar">Buscar pedido</label>
+      <input id="gpBuscar" class="gp-buscar__input" type="search" autocomplete="off"
+             [(ngModel)]="terminoBusqueda" (ngModelChange)="alEscribir($event)"
+             placeholder="Número de pedido o nombre del cliente" appUppercase />
+      <small class="gp-buscar__ayuda" [class.gp-buscar__ayuda--aviso]="avisoBusqueda">
+        {{ avisoBusqueda || 'Solo salen los que se pueden unir: misma forma de cobro, abiertos y sin otro grupo.' }}
+      </small>
+
+      <div class="gp-elegidos" *ngIf="elegidos.length > 0">
+        <span class="gp-elegidos__resumen">
+          {{ elegidos.length }} {{ elegidos.length === 1 ? 'elegido' : 'elegidos' }} · {{ totalElegidos | currency:'$' }}
+        </span>
+        <span class="gp-etiqueta" *ngFor="let e of elegidos">
+          #{{ e.pedidoId }} {{ e.cliente }}
+          <button type="button" class="gp-etiqueta__quitar" (click)="quitarElegido(e)"
+                  [attr.aria-label]="'Quitar el pedido #' + e.pedidoId">✕</button>
+        </span>
+      </div>
+
+      <ul class="gp-resultados" (scroll)="alHacerScroll($event)" aria-label="Pedidos que se pueden unir">
+        <li *ngFor="let c of resultados">
+          <button type="button" class="gp-resultado" [class.gp-resultado--elegido]="estaElegido(c)"
+                  [attr.aria-pressed]="estaElegido(c)" (click)="alternarElegido(c)">
+            <span class="gp-resultado__marca" aria-hidden="true">{{ estaElegido(c) ? '✓' : '+' }}</span>
+            <span class="gp-resultado__datos">
+              <span class="gp-resultado__linea">
+                <b>#{{ c.pedidoId }}</b> {{ c.cliente || 'Sin nombre' }}
+              </span>
+              <span class="gp-resultado__sub">
+                <span class="gp-estado" [ngClass]="claseEstado(c.estadoPedido)">{{ etiquetaEstado(c.estadoPedido) }}</span>
+                <span *ngIf="c.fecha">{{ c.fecha | date:'dd/MM/yyyy' }}</span>
+                <span *ngIf="c.pagado > 0">abonado {{ c.pagado | currency:'$' }}</span>
+              </span>
+            </span>
+            <span class="gp-resultado__total">{{ c.total | currency:'$' }}</span>
+          </button>
+        </li>
+        <li class="gp-resultados__vacio" *ngIf="buscado && resultados.length === 0">
+          No hay pedidos que se puedan unir{{ terminoBusqueda.trim() ? ' con "' + terminoBusqueda.trim() + '"' : '' }}.
+        </li>
+        <li class="gp-resultados__mas" *ngIf="hayMas">
+          <button type="button" class="gp-btn" (click)="cargarMas()" [disabled]="cargandoMas">
+            {{ cargandoMas ? 'Trayendo más…' : 'Ver más' }}
+          </button>
+        </li>
+      </ul>
+    </div>
+  </ng-template>
+
+  <ng-template #errores>
+    <div class="gp-error" *ngIf="errorUnir" role="alert">
+      <p>{{ errorUnir }}</p>
+      <ul *ngIf="tiposDistintos.length">
+        <li *ngFor="let t of tiposDistintos">
+          <ng-container *ngIf="t.pedidoId === pedidoId">Pedido #{{ t.pedidoId }} (este)</ng-container>
+          <a *ngIf="t.pedidoId !== pedidoId" [routerLink]="['/pedidos/mis-pedidos']"
+             [queryParams]="{ pedidoId: t.pedidoId }" target="_blank" rel="noopener">Pedido #{{ t.pedidoId }} ↗</a>
+          — {{ etiquetaTipo(t.tipoPedido) }}
+        </li>
+      </ul>
+      <p *ngIf="tiposDistintos.length" class="gp-error__ayuda">
+        Abre el que no coincida, usa <b>🔁 Cambiar forma de cobro</b> y después vuelve a presionar <b>Unir</b>.
+        Si es este pedido, el botón está aquí arriba.
+      </p>
+    </div>
+
+  </ng-template>
+</ng-container>

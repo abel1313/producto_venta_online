@@ -59,7 +59,7 @@ export class FavoritosComponent implements OnInit {
   }
 
   irACompletarPerfil(): void {
-    this.router.navigate(['/clientes/agregar']);
+    this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: this.router.url } });
   }
 
   anteriorPagina(): void {

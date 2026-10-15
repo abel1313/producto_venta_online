@@ -1,0 +1,29 @@
+<ng-container *ngIf="puedeVer && conAyuda.length > 0">
+  <button type="button" class="ao-boton" cdkOverlayOrigin #origen="cdkOverlayOrigin"
+          [attr.aria-expanded]="abierto"
+          [attr.aria-label]="'Qué significa cada opción' + (titulo ? ' de ' + titulo : '')"
+          [title]="'Qué significa cada opción' + (titulo ? ' de ' + titulo : '')"
+          (click)="alternar($event)">i</button>
+
+  <ng-template cdkConnectedOverlay
+               [cdkConnectedOverlayOrigin]="origen"
+               [cdkConnectedOverlayOpen]="abierto"
+               [cdkConnectedOverlayPositions]="posiciones"
+               [cdkConnectedOverlayViewportMargin]="8"
+               cdkConnectedOverlayPush
+               (overlayOutsideClick)="cerrarPorFuera($event)"
+               (detach)="abierto = false">
+    <div class="ao-pop" role="dialog" [attr.aria-label]="titulo || 'Ayuda'">
+      <div class="ao-pop__head">
+        <span class="ao-pop__titulo">{{ titulo || 'Qué significa' }}</span>
+        <button type="button" class="ao-pop__cerrar" aria-label="Cerrar" (click)="abierto = false">✕</button>
+      </div>
+      <dl class="ao-pop__lista">
+        <ng-container *ngFor="let o of conAyuda">
+          <dt>{{ o.texto }}</dt>
+          <dd>{{ o.ayuda }}</dd>
+        </ng-container>
+      </dl>
+    </div>
+  </ng-template>
+</ng-container>

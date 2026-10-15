@@ -17,7 +17,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     padding: 16px 24px 0;
     border-radius: 24px;
     box-shadow: 0 6px 24px var(--header-brand-shadow);
-    border: 1px solid var(--header-brand-border, transparent);
+    border: 1px solid var(--header-brand-border);
   }
 
   &__inner {
@@ -25,7 +25,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: center;
     justify-content: space-between;
     margin-bottom: 16px;
-    color: var(--header-text, white);
+    color: var(--header-text, var(--card-header-text));
   }
 
   &__title {
@@ -33,8 +33,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     align-items: center;
     gap: 14px;
 
-    h4    { color: var(--header-text, #fff); font-weight: 700; margin: 0; }
-    small { color: var(--header-text-muted, rgba(255,255,255,0.75)); }
+    h4    { color: var(--header-text, var(--card-header-text)); font-weight: 700; margin: 0; }
+    small { color: var(--header-text-muted); }
   }
 
   &__icon {
@@ -47,12 +47,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .bu-search {
   display: flex;
   align-items: center;
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--input-bg);
   border-radius: 50px;
   padding: 10px 16px;
   margin-bottom: 20px;
   backdrop-filter: blur(6px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  border: 1px solid var(--input-border);
   transition: $transition;
 
   &__icon {
@@ -66,21 +66,21 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: transparent;
     border: none;
     outline: none;
-    color: var(--header-text, white);
+    color: var(--header-text, var(--app-text));
     font-size: 0.95rem;
-    &::placeholder { color: rgba(255, 255, 255, 0.65); }
+    &::placeholder { color: var(--input-placeholder); }
   }
 }
 
 // ── Light mode — buscador con texto oscuro ─────────────────────────
 :host-context(body.theme-light) {
   .bu-search {
-    background: rgba(255, 255, 255, 0.40);
-    border-color: rgba(0, 0, 0, 0.10);
+    background: var(--input-bg);
+    border-color: color-mix(in srgb, var(--app-text) 10%, transparent);
   }
   .bu-search__input {
-    color: var(--header-text, #1e293b);
-    &::placeholder { color: rgba(0, 0, 0, 0.42); }
+    color: var(--header-text, var(--app-text));
+    &::placeholder { color: color-mix(in srgb, var(--app-text) 42%, transparent); }
   }
 }
 
@@ -90,28 +90,28 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   margin: 0 0 20px auto;
   padding: 7px 14px;
   border-radius: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  background: rgba(255, 255, 255, 0.15);
-  color: var(--header-text, white);
+  border: 1px solid var(--app-border);
+  background: var(--app-tint);
+  color: var(--header-text, var(--app-text));
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: $transition;
 
-  &:hover { background: rgba(255, 255, 255, 0.25); }
+  &:hover { background: var(--app-tint); }
 
   &--activo {
-    background: rgba(239, 68, 68, 0.22);
-    border-color: rgba(239, 68, 68, 0.4);
+    background: var(--pk-danger-soft);
+    border-color: var(--pk-danger-soft);
   }
 }
 
 :host-context(body.theme-light) {
   .bu-toggle-inactivos {
-    background: rgba(255, 255, 255, 0.40);
-    border-color: rgba(0, 0, 0, 0.10);
-    color: var(--header-text, #1e293b);
-    &:hover { background: rgba(255, 255, 255, 0.6); }
-    &--activo { background: rgba(239, 68, 68, 0.14); border-color: rgba(239, 68, 68, 0.3); }
+    background: var(--app-tint);
+    border-color: color-mix(in srgb, var(--app-text) 10%, transparent);
+    color: var(--header-text, var(--app-text));
+    &:hover { background: var(--app-glass); }
+    &--activo { background: var(--pk-danger-soft); border-color: var(--pk-danger-soft); }
   }
 }

@@ -104,8 +104,13 @@ export class ProductoService {
     }
 
     // 🌐 Obtener datos
-    getDataNombreCodigoBarra(page: number, size: number, buscar: string): Observable<IProductoPaginable<IProductoDTO[]>> {
-        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/buscarNombreOrCodigoBarra?size=${size}&page=${page}&nombre=${encodeURIComponent(buscar)}`);
+    /**
+     * `todos`: Agregar artículo pide también los modelos sin stock, deshabilitados y dados de baja.
+     * El back solo lo respeta con el permiso "ver-todos-los-modelos" (o admin); si no, lo ignora.
+     */
+    getDataNombreCodigoBarra(page: number, size: number, buscar: string, todos = false): Observable<IProductoPaginable<IProductoDTO[]>> {
+        const extra = todos ? '&todos=true' : '';
+        return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/buscarNombreOrCodigoBarra?size=${size}&page=${page}&nombre=${encodeURIComponent(buscar)}${extra}`);
     }
 
     // 🌐 Obtener datos

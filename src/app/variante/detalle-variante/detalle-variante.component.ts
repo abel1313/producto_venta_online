@@ -1,7 +1,7 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { catchError, switchMap } from 'rxjs/operators';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
 import { IVarianteDto, IVarianteImagenDto, IVarianteResumen } from '../models/variante.model';
@@ -11,6 +11,7 @@ import { ProductoService } from 'src/app/productos/service/producto.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { ResenaService } from 'src/app/resenas/service/resena.service';
 import { IResena, IResenaResumen } from 'src/app/resenas/models/resena.model';
+import { SeoService } from 'src/app/shared/seo/seo.service';
 
 const PAGE_SIZE = 4;
 
@@ -19,7 +20,7 @@ const PAGE_SIZE = 4;
   templateUrl: './detalle-variante.component.html',
   styleUrls: ['./detalle-variante.component.scss']
 })
-export class DetalleVarianteComponent implements OnInit {
+export class DetalleVarianteComponent implements OnInit, OnDestroy {
 
   productoId!: number;
   variantes: IVarianteDto[] = [];
@@ -93,7 +94,12 @@ export class DetalleVarianteComponent implements OnInit {
     private readonly authService: AuthService,
     private readonly productoService: ProductoService,
     private readonly resenaService: ResenaService,
+    private readonly seo: SeoService,
   ) {}
+
+  ngOnDestroy(): void {
+    this.seo.restablecer();
+  }
 
   ngOnInit(): void {
     this.authService.userRoles$.subscribe(roles => {
@@ -119,9 +125,14 @@ export class DetalleVarianteComponent implements OnInit {
     const productoId$ = productoIdConocido
       ? of(+productoIdConocido)
       : this.varianteService.resolverProductoId(+varianteIdParam!).pipe(
-          catchError(() => this.varianteService.getOne(+varianteIdParam!).pipe(
-            switchMap(v => of(v.producto?.id!))
-          ))
+          // 404 = el artículo no existe: el respaldo de getOne (solo admin) haría que el
+          // visitante viera "no pudimos abrir este producto desde un enlace directo" en vez de
+          // "ya no está disponible".
+          catchError(err => err?.status === 404
+            ? throwError(() => err)
+            : this.varianteService.getOne(+varianteIdParam!).pipe(
+                switchMap(v => of(v.producto?.id!))
+              ))
         );
 
     productoId$.pipe(
@@ -136,9 +147,16 @@ export class DetalleVarianteComponent implements OnInit {
           ? variantes.find(v => v.id === +varianteIdParam) ?? variantes[0]
           : variantes[0];
         if (preseleccionada) this.seleccionar(preseleccionada);
-        else this.errorCarga = 'Este producto ya no está disponible.';
+        else this.marcarNoDisponible('Este producto ya no está disponible.');
       },
       error: err => {
+        // 404: el artículo no existe. Se marca noindex para que Google no guarde una página
+        // vacía como si fuera un producto (soft 404). Un 500 o un corte de red es pasajero:
+        // ahí no se toca, para no sacar de Google un producto que sí existe.
+        if (err?.status === 404) {
+          this.marcarNoDisponible('Este producto ya no está disponible.');
+          return;
+        }
         this.errorCarga = (err?.status === 401 || err?.status === 403)
           ? 'No pudimos abrir este producto desde un enlace directo. Búscalo en la tienda para verlo.'
           : (err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cargar el producto.');
@@ -146,8 +164,18 @@ export class DetalleVarianteComponent implements OnInit {
     });
   }
 
+  private marcarNoDisponible(mensaje: string): void {
+    this.errorCarga = mensaje;
+    this.seo.noIndexar();
+  }
+
   seleccionar(v: IVarianteDto): void {
     this.varianteSeleccionada = v;
+    const nombre = [v.nombreProducto, v.talla, v.color].filter(x => !!x).join(' ') || 'Artículo';
+    this.seo.producto({
+      nombre, descripcion: v.descripcion, precio: v.precio ?? 0, disponible: (v.stock ?? 0) > 0,
+      marca: v.marca, codigo: v.codigoBarras, url: window.location.href
+    });
     this.displayImages = [];
     this.paginasCargadas = new Set<number>();
     this.cargaInicialCompletada = false;
@@ -317,9 +345,7 @@ export class DetalleVarianteComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;
@@ -554,7 +580,7 @@ export class DetalleVarianteComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
+      confirmButtonColor: 'var(--pk-danger)',
     }).then(result => {
       if (!result.isConfirmed) return;
       this.resenaService.eliminar(r.id).subscribe({

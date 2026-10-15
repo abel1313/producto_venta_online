@@ -124,11 +124,15 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   // ─── Envíos ────────────────────────────────────────────────────────────────
   {
     ruta: 'lugares-entrega',
-    titulo: 'Lugares de entrega',
-    queEs: 'Catálogo de los puntos donde se entregan pedidos.',
+    titulo: 'Zonas de entrega',
+    queEs: 'Catálogo de las zonas y puntos donde se entregan pedidos (Envíos → Zonas de entrega). ' +
+      'Es la lista que sale en "📍 Lugar de entrega" del Carrito y de Ventas → Venta directa.',
     paraQue: [
       'Dar de alta un punto de encuentro nuevo con su ubicación en el mapa.',
-      'Habilitar o deshabilitar puntos según la temporada.',
+      'Editar ✏️ o eliminar 🗑️ una zona.',
+      'Anillos de cobro (solo Flores eternas): hasta dónde entregas y cuánto cobras según la distancia.',
+      'Marcar con "🏬 Recoger en tienda" la fila del local: al elegirla, el cliente pone fecha de recogida.',
+      '"Horas extra 🌹" solo cuenta para pedidos de Flores eternas (zona lejana = más anticipación).',
     ],
     diferencia: [{
       pantalla: 'Entregas por zona',
@@ -152,11 +156,17 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   {
     ruta: 'pedidos/mis-pedidos',
     titulo: 'Pedidos',
-    queEs: 'Todos los pedidos con su estado, para darles seguimiento.',
+    queEs: 'Todos los pedidos con su estado, para darles seguimiento y cobrarlos.',
     paraQue: [
-      'Ver qué pedidos están pendientes, apartados, entregados o cancelados.',
-      'Cambiar el estado de un pedido y registrar su entrega.',
+      'Encontrar pedidos con ⚙️ Filtros: forma de cobro, estado, quién debe dinero, fecha y lugar de entrega, unidos.',
+      'Cobrar desde la tarjeta: Cobrar (contado), Liquidar (Apartado), Dar abono (Ir pagando) y, si están unidos, cobrar el grupo.',
+      'En el detalle: agregar, cambiar o quitar artículos, cambiar la forma de cobro, unir pedidos y registrar abonos.',
     ],
+    diferencia: [{
+      pantalla: 'Créditos / Abonos',
+      explicacion: 'Allá están solo los pedidos Apartado e Ir pagando, ordenados por lo que deben. ' +
+        'Un abono es el mismo se registre allá o aquí.',
+    }],
   },
   {
     ruta: 'pedidos/historial-mp',
@@ -191,9 +201,10 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   {
     ruta: 'abonos',
     titulo: 'Abonos',
-    queEs: 'Pagos parciales de un cliente que va liquidando poco a poco.',
+    queEs: 'Los pedidos Apartado e Ir pagando: lo que lleva pagado cada cliente y lo que le falta.',
     paraQue: [
-      'Registrar lo que un cliente abonó a cuenta de un apartado.',
+      'Registrar un abono de un pedido Ir pagando.',
+      'Liquidar un Apartado: se paga completo al recogerlo (un Apartado no recibe abonos).',
       'Ver cuánto lleva pagado y cuánto le falta.',
     ],
   },

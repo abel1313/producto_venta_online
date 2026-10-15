@@ -4,14 +4,16 @@ $t: all 0.22s ease;
   min-height: 100vh;
   background: var(--page-bg);
   display: flex;
-  justify-content: center;
-  align-items: flex-start;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: flex-start;
+  align-items: center;
   padding: 36px 16px 60px;
 }
 
 .ac-card {
   width: 100%;
-  max-width: 640px;
+  max-width: var(--form-ancho, 820px);
   background: var(--card-bg);
   backdrop-filter: blur(18px);
   border: 1px solid var(--card-border);
@@ -33,7 +35,7 @@ $t: all 0.22s ease;
     position: absolute;
     width: 280px;
     height: 280px;
-    background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+    background: radial-gradient(circle, var(--app-tint) 0%, transparent 70%);
     top: -110px;
     right: -50px;
     pointer-events: none;
@@ -48,7 +50,7 @@ $t: all 0.22s ease;
   &__title {
     font-size: 1.5rem;
     font-weight: 800;
-    color: var(--header-text, white);
+    color: var(--header-text, var(--app-text));
     margin: 0;
     letter-spacing: -0.02em;
     z-index: 1;
@@ -56,7 +58,7 @@ $t: all 0.22s ease;
 
   &__subtitle {
     font-size: 0.8rem;
-    color: rgba(255,255,255,0.65);
+    color: var(--app-text-muted);
     margin: 4px 0 0;
     z-index: 1;
   }
@@ -133,17 +135,17 @@ $t: all 0.22s ease;
   border: none;
   border-radius: 14px;
   background: linear-gradient(135deg, var(--pk-danger-to), var(--pk-danger));
-  color: white;
+  color: var(--pk-ink);
   font-size: 1rem;
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: $t;
-  box-shadow: 0 8px 24px rgba(239,68,68,0.35);
+  box-shadow: 0 8px 24px var(--pk-danger-soft);
 
   &:hover:not(:disabled) {
     transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(239,68,68,0.5);
+    box-shadow: 0 12px 32px var(--pk-danger-soft);
   }
 
   &:active:not(:disabled) { transform: translateY(0); }
@@ -190,6 +192,123 @@ $t: all 0.22s ease;
 
 // ── Modo claro — el header usa fondo glass casi blanco, el texto debe ser oscuro ──
 :host-context(body.theme-light) {
-  .ac-card__title    { color: var(--header-text, #1e293b); }
-  .ac-card__subtitle { color: rgba(0,0,0,0.55); }
+  .ac-card__title    { color: var(--header-text, var(--app-text)); }
+  .ac-card__subtitle { color: color-mix(in srgb, var(--app-text) 55%, transparent); }
+}
+
+// ── Datos de prueba: solo acomodo; colores y bordes salen de .pk-* y de los tokens ──
+.ac-datos {
+  width: 100%;
+  max-width: var(--form-ancho, 820px);
+
+  &__titulo    { margin: 0; font-size: 1.05rem; font-weight: 700; color: inherit; }
+  &__subtitulo { margin: 2px 0 0; font-size: .8rem; color: inherit; opacity: .85; }
+
+  &__campos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin: 14px 0;
+  }
+
+  &__acciones {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  &__avance {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__preparar {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--app-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__seccion { margin: 0; font-size: .95rem; font-weight: 700; color: var(--card-text, var(--app-text)); }
+
+  &__escenario {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 12px;
+
+    .pk-btn { flex: 0 0 auto; }
+    span { min-width: 0; }
+  }
+
+  &__preparadas {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--app-border);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  &__preparadas-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px 12px;
+  }
+
+  &__listo {
+    margin-top: 6px;
+    padding: 12px 14px;
+    border-radius: 10px;
+    border: 1px solid var(--app-border);
+    background: var(--app-tint);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__listo--error { border-color: var(--pk-danger); }
+
+  &__codigo {
+    font: inherit;
+    font-family: monospace;
+    font-size: .8rem;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--app-border);
+    background: var(--card-body-bg);
+    color: var(--card-text, var(--app-text));
+    cursor: copy;
+  }
+
+  &__pedidos {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    color: var(--card-text, var(--app-text));
+
+    a { color: var(--app-accent-text, var(--app-accent)); font-weight: 600; }
+  }
+
+  &__barra {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--app-border);
+    overflow: hidden;
+
+    span {
+      display: block;
+      height: 100%;
+      background: var(--app-accent);
+      transition: width .4s ease;
+    }
+  }
 }

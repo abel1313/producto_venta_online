@@ -9,6 +9,15 @@
       <!-- TikTok (App Review) exige que Privacidad y Términos se vean en el sitio sin abrir un menú. -->
       <footer class="pie-legal">
         <span>© {{ anio }} Novedades Jade</span>
+        <!-- LFPC 76 bis III: quién vende, domicilio, teléfono y correo, visibles antes de comprar.
+             Salen de Configuración del negocio → Datos legales; lo que no esté capturado no se pinta. -->
+        <address class="pie-legal__contacto" *ngIf="datosLegales$ | async as d">
+          <span *ngIf="d.nombreResponsable">{{ d.nombreResponsable }}</span>
+          <span *ngIf="d.domicilio">{{ d.domicilio }}</span>
+          <a *ngIf="d.telefono" [href]="'tel:+52' + d.telefono">Tel. {{ telefonoLegible(d.telefono) }}</a>
+          <a *ngIf="d.correo" [href]="'mailto:' + d.correo">{{ d.correo }}</a>
+          <span *ngIf="d.horarioAtencion">Atención: {{ d.horarioAtencion }}</span>
+        </address>
         <nav aria-label="Información legal">
           <a routerLink="/privacidad">Aviso de privacidad</a>
           <a routerLink="/termConditions">Términos y condiciones</a>

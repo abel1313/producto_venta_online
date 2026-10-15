@@ -117,7 +117,7 @@ export class AllUsuariosComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, resetear',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d97706'
+      confirmButtonColor: 'var(--pk-warning-to)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.serviceUser.resetearPassword(item.id!).subscribe({

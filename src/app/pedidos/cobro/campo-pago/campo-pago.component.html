@@ -1,0 +1,20 @@
+<div class="cb-field">
+  <span class="cb-label">Método de pago</span>
+  <div class="cb-metodos">
+    <button *ngFor="let m of metodos" type="button" class="cb-metodo"
+            [class.cb-metodo--activo]="metodoPago === m.valor" (click)="elegir(m.valor)">{{ m.texto }}</button>
+  </div>
+  <small class="cb-nota">Los abonos no llevan tarjeta ni pagos a meses.</small>
+</div>
+
+<div class="cb-field" *ngIf="metodoPago === 'EFECTIVO'">
+  <label class="cb-label" for="cb-recibido">💵 Monto recibido <small>(opcional)</small></label>
+  <input id="cb-recibido" class="cb-input" type="number" min="0" step="0.01" inputmode="decimal"
+         [ngModel]="montoDado || null" (ngModelChange)="montoDadoChange.emit($event || 0)" placeholder="Ej: 500.00">
+  <div class="cb-cambio" *ngIf="montoDado > 0 && montoDado >= monto">
+    Cambio a devolver: <strong>${{ cambio | number:'1.2-2' }}</strong>
+  </div>
+  <div class="cb-cambio cb-cambio--warn" *ngIf="montoDado > 0 && montoDado < monto">
+    ⚠️ El monto recibido es menor a lo que se cobra
+  </div>
+</div>

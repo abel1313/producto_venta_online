@@ -3,6 +3,7 @@ import { DomSanitizer, SafeUrl } from '@angular/platform-browser';
 import { Observable, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
+import { Constants } from 'src/app/Constants/Constants.model';
 
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { VarianteService } from 'src/app/variante/service/variante.service';
@@ -135,7 +136,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
     this.cargarCuentaTikTok();
 
     this.input$.pipe(
-      filter(t => t.trim().length >= 2),
+      filter(t => t.trim().length >= Constants.MIN_CARACTERES_BUSQUEDA),
       debounceTime(400),
       distinctUntilChanged(),
       takeUntil(this.destroy$)
@@ -470,7 +471,7 @@ export class PublicarFacebookComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, quitar acceso',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#dc2626'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.desconectandoTikTok = true;

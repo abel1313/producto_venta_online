@@ -4,6 +4,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import { RouterModule, Routes } from '@angular/router';
 import { GestionPalabrasClave } from './gestion/gestion-palabras-clave.component';
 import { AuthGuard } from '../auth.guard';
+import { SharedModule } from '../shared/shared.module';
 
 // AdminGuardGuard se quitó de aquí -- mismo hallazgo que en producto-routing.module.ts
 // (2026-08-27). La ruta padre "palabras-clave" (app-routing.module.ts) ya tiene PantallaGuard.
@@ -16,6 +17,7 @@ const routes: Routes = [
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    SharedModule,
     RouterModule.forChild(routes)
   ]
 })

@@ -1,6 +1,6 @@
 <!-- Solo en modo "Agregar" (productos/agregar, standalone) -- en modo "Actualizar" ya lo pone
      update.component.html por fuera de este componente, para no duplicarlo. -->
-<app-boton-volver *ngIf="!esActualizar" fallback="/productos/buscar"></app-boton-volver>
+<app-boton-volver anchoContenido="820px" margen="16px" *ngIf="!esActualizar" fallback="/productos/buscar"></app-boton-volver>
 <div class="pf-page">
   <div class="pf-card">
 
@@ -31,7 +31,7 @@
           <div class="pf-field">
             <label class="pf-label">Marca <span class="pf-required">*</span></label>
             <input class="pf-input" [class.pf-input--error]="isInvalid('marca')"
-                   formControlName="marca" placeholder="Nike, Adidas…">
+                   appUppercase formControlName="marca" placeholder="NIKE, ADIDAS…">
             <small class="pf-error" *ngIf="isInvalid('marca')">Campo requerido</small>
           </div>
         </div>
@@ -106,7 +106,7 @@
         <div class="pf-grid">
           <div class="pf-field">
             <label class="pf-label">Color <span class="pf-optional">(opcional)</span></label>
-            <input class="pf-input" formControlName="color" placeholder="negro, azul, rojo…">
+            <input class="pf-input" appUppercase appSoloLetras formControlName="color" placeholder="NEGRO, AZUL, ROJO…">
           </div>
 
           <div class="pf-field">
@@ -266,3 +266,11 @@
     <button type="button" class="cam-btn cam-btn--cancel" (click)="detenerEscanerCodigo()">✖ Cerrar escáner</button>
   </div>
 </div>
+
+<!-- Al guardar o actualizar un modelo con stock libre: "¿Cuántos artículos quieres hacer?"
+     (flujo A, 2026-10-08; al actualizar desde QA 2026-10-14) -->
+<app-alta-articulos *ngIf="modeloParaArticulos"
+                    [modelo]="modeloParaArticulos"
+                    [preguntarPrimero]="true"
+                    [accion]="accionArticulos"
+                    (cerrar)="alCerrarAltaArticulos()"></app-alta-articulos>

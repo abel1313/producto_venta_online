@@ -1,0 +1,55 @@
+<div class="cb-overlay" (click)="cancelar()"></div>
+<div class="cb-modal" role="dialog" aria-modal="true" aria-labelledby="cb-titulo-da">
+  <div class="cb-modal__hdr">
+    <h5 id="cb-titulo-da">💳 Dar abono</h5>
+    <button type="button" class="cb-modal__close" (click)="cancelar()" aria-label="Cerrar">✕</button>
+  </div>
+
+  <div class="cb-modal__info" *ngIf="detalle">
+    <span>Pedido <strong>#{{ detalle.pedidoId }}</strong></span>
+    <span>{{ detalle.clienteNombre }}</span>
+    <span>Total: <strong>${{ detalle.totalPedido | number:'1.2-2' }}</strong></span>
+    <span>Pagado: <strong class="cb-modal__ok">${{ detalle.totalPagado | number:'1.2-2' }}</strong></span>
+    <span>Saldo: <strong class="cb-modal__saldo">${{ saldo | number:'1.2-2' }}</strong></span>
+  </div>
+
+  <div class="cb-modal__body">
+    <p class="cb-nota" *ngIf="cargando">Cargando el pedido…</p>
+
+    <ng-container *ngIf="!cargando && detalle">
+      <p class="cb-aviso" *ngIf="saldo <= 0.005">Este pedido ya está pagado.</p>
+
+      <div class="cb-field">
+        <label class="cb-label" for="cb-monto-da">Monto del abono *</label>
+        <input id="cb-monto-da" class="cb-input" type="number" min="0.01" step="0.01" inputmode="decimal"
+               [(ngModel)]="monto" placeholder="0.00">
+        <small class="cb-aviso" *ngIf="errorMonto">{{ errorMonto }}</small>
+        <button type="button" class="cb-link" *ngIf="saldo > 0.005" (click)="monto = saldo">Liquidar todo (${{ saldo | number:'1.2-2' }})</button>
+      </div>
+
+      <app-campo-pago [(metodoPago)]="metodoPago" [(montoDado)]="montoDado" [monto]="monto" [cambio]="cambio"></app-campo-pago>
+
+      <div class="cb-field">
+        <span class="cb-label">Fecha de pago</span>
+        <app-selector-fecha [(ngModel)]="fechaPago" placeholder="Fecha de pago"></app-selector-fecha>
+      </div>
+
+      <div class="cb-field">
+        <label class="cb-label" for="cb-nota-da">{{ metodoPago === 'TRANSFERENCIA' ? 'Número de referencia (opcional)' : 'Nota (opcional)' }}</label>
+        <input id="cb-nota-da" class="cb-input" type="text" [(ngModel)]="nota"
+               [placeholder]="metodoPago === 'TRANSFERENCIA' ? 'Ej: 123456789' : 'Ej: segundo abono'">
+      </div>
+
+      <label class="cb-check" *ngIf="correoCliente">
+        <input type="checkbox" [(ngModel)]="enviarCorreo"> 📧 Enviar el ticket a {{ correoCliente }}
+      </label>
+    </ng-container>
+  </div>
+
+  <div class="cb-modal__footer">
+    <button type="button" class="cb-btn cb-btn--cancel" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="cb-btn cb-btn--save" [disabled]="!puedeGuardar" (click)="guardar()">
+      {{ guardando ? 'Guardando…' : '💳 Registrar abono' }}
+    </button>
+  </div>
+</div>

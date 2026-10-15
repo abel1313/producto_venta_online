@@ -15,8 +15,8 @@
   <!-- ── Diseños predefinidos ─────────────────────────────────────── -->
   <section class="pz-presets">
     <div class="pz-presets__title">✨ Diseños predefinidos</div>
-    <p class="pz-presets__sub">Aplica una paleta completa (Marca, Página, Card, Tablas, Menú lateral,
-      Formularios) de un clic. El día y la noche se eligen <strong>por separado</strong>: puedes
+    <p class="pz-presets__sub">Aplica un diseño completo (colores, letra, tamaños y botones) de un
+      clic. El día y la noche se eligen <strong>por separado</strong>: puedes
       dejar un diseño para el día y otro distinto para la noche. Con el botón de abajo cambias lo
       que estás viendo ahora mismo, para revisar cómo te queda cada lado.</p>
 
@@ -58,7 +58,9 @@
           </div>
         </div>
 
-        <div class="pz-preset__nombre">{{ p.nombre }}</div>
+        <div class="pz-preset__nombre">{{ p.nombre }}
+          <span class="pz-preset__default" *ngIf="p.predeterminado">Predeterminado</span>
+        </div>
         <div class="pz-preset__desc">{{ p.descripcion }}</div>
         <!-- Un botón por lado del tema: aplicar de día NO toca la noche y viceversa. El tercero
              es el atajo de siempre (los dos lados de un jalón) para quien no quiera combinar. -->
@@ -127,7 +129,7 @@
           <label class="pz-field pz-field--col">
             <span class="pz-field__mode">Valor</span>
             <select class="pz-input" formControlName="valorClaro" (change)="previsualizar()">
-              <option *ngFor="let s of sombras" [value]="s">{{ s }}</option>
+              <option *ngFor="let s of opcionesSeleccion" [value]="s">{{ s }}</option>
             </select>
           </label>
         </ng-container>

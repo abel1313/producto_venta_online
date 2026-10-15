@@ -7,6 +7,8 @@ import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
+import { PedidosService } from 'src/app/pedidos/pedidos.service';
+import { preguntarYEntregar } from 'src/app/pedidos/entrega/entrega';
 import { IDetalleVariante } from '../models/detalle-variante.model';
 import { IPedidoVarianteDTO } from '../models/pedido-variante.model';
 import { CarritoVarianteService } from '../service/carrito-variante.service';
@@ -57,7 +59,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     private readonly clienteService: ClienteService,
     private readonly router: Router,
     private readonly usuarioService: UsuarioService,
-    private readonly lugarEntregaService: LugarEntregaService
+    private readonly lugarEntregaService: LugarEntregaService,
+    private readonly pedidosService: PedidosService
   ) {}
 
   lugares: ILugarEntrega[] = [];
@@ -128,7 +131,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.subBusqueda?.unsubscribe();
-    this.timersOtroPrecio.forEach(t => clearTimeout(t));
+    this.otroPrecioVisible.clear();
   }
 
   private recalcularTotales(): void {
@@ -147,26 +150,57 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   // ── Otro precio (admin) ────────────────────────────────────────────
-  // El descuento no se aplica solo: el admin lo elige por artículo. El monto va tapado y se
-  // destapa unos segundos, porque el cliente puede estar viendo la pantalla.
+  // El descuento no se aplica solo: el admin lo elige por artículo. El monto no llega con la
+  // lista (R9): 👁 lo pide al back para esa línea y 🙈 lo borra de la página; "Usar" lo pide al
+  // marcarse. Así solo existe en el navegador el descuento que el admin destapó.
 
-  otroPrecioVisible = new Set<number>();
-  private timersOtroPrecio = new Map<number, ReturnType<typeof setTimeout>>();
+  /** Montos destapados: varianteId → descuento (0 = no tiene). Se borra al tapar o al salir. */
+  otroPrecioVisible = new Map<number, number>();
+  consultandoOtroPrecio = new Set<number>();
 
-  usaOtroPrecio(item: IDetalleVariante): boolean {
-    return !!item.precioOtro && item.precio === item.precioOtro;
-  }
-
-  alternarOtroPrecio(item: IDetalleVariante): void {
-    this.carritoService.usarOtroPrecio(item.varianteId, !this.usaOtroPrecio(item));
+  textoOtroPrecio(item: IDetalleVariante): string {
+    if (!this.otroPrecioVisible.has(item.varianteId)) return '$ ••••';
+    const monto = this.otroPrecioVisible.get(item.varianteId)!;
+    return monto > 0 ? `$${monto.toFixed(2)}` : 'Sin descuento';
   }
 
   verOtroPrecio(item: IDetalleVariante): void {
     const id = item.varianteId;
-    clearTimeout(this.timersOtroPrecio.get(id));
     if (this.otroPrecioVisible.delete(id)) return;
-    this.otroPrecioVisible.add(id);
-    this.timersOtroPrecio.set(id, setTimeout(() => this.otroPrecioVisible.delete(id), 3000));
+    this.pedirDescuento(id, monto => this.otroPrecioVisible.set(id, monto));
+  }
+
+  alternarOtroPrecio(item: IDetalleVariante, event: Event): void {
+    const check = event.target as HTMLInputElement;
+    if (!check.checked) {
+      this.carritoService.quitarOtroPrecio(item.varianteId);
+      return;
+    }
+    // La casilla se queda marcada mientras el back contesta; se desmarca sola si no hay descuento.
+    this.pedirDescuento(item.varianteId, monto => {
+      if (monto > 0) {
+        this.carritoService.aplicarOtroPrecio(item.varianteId, monto);
+      } else {
+        check.checked = false;
+        Swal.fire({ icon: 'info', title: 'Este artículo no tiene precio con descuento', timer: 1800, showConfirmButton: false });
+      }
+    }, () => { check.checked = false; });
+  }
+
+  private pedirDescuento(varianteId: number, usar: (monto: number) => void, siFalla?: () => void): void {
+    this.consultandoOtroPrecio.add(varianteId);
+    this.varianteService.descuentoArticulo(varianteId).subscribe({
+      next: d => {
+        this.consultandoOtroPrecio.delete(varianteId);
+        usar(d.tieneDescuento ? d.precioRebaja : 0);
+      },
+      error: err => {
+        this.consultandoOtroPrecio.delete(varianteId);
+        siFalla?.();
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el descuento',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
   quitarPromo(promocionId: number): void {
@@ -176,7 +210,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   limpiar(): void {
     Swal.fire({
       title: '¿Limpiar carrito de variantes?', icon: 'warning',
-      showCancelButton: true, confirmButtonColor: '#d33',
+      showCancelButton: true, confirmButtonColor: 'var(--pk-danger)',
       cancelButtonText: 'Cancelar', confirmButtonText: 'Limpiar'
     }).then(r => { if (r.isConfirmed) this.carritoService.limpiar(); });
   }
@@ -234,7 +268,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
           showCancelButton: true,
           confirmButtonText: 'Ir a registro',
           cancelButtonText: 'Cancelar',
-          confirmButtonColor: '#3085d6',
           cancelButtonColor: '#d33'
         }).then(result => {
           if (result.isConfirmed) this.router.navigate(['/usuarios/registrar']);
@@ -265,19 +298,28 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Faltan datos del cliente para hacer el pedido. Se manda a **Mis datos**, que edita el cliente
+   * que ya tiene la cuenta (se crea solo al verificar el correo, con el correo ya verificado), y
+   * al guardar regresa al carrito. Antes mandaba a "Nuevo cliente" (`/clientes/agregar`): pedía el
+   * correo otra vez con el formulario vacío y no regresaba al carrito (2026-10-13).
+   */
   private pedirCompletarRegistro(): void {
     Swal.fire({
-      title: 'Generar pedido',
+      title: 'Completa tus datos',
       icon: 'info',
-      html: '<p>Para completar tu pedido necesitas registrarte como cliente.</p>',
+      html: '<p>Para hacer tu pedido necesitamos tu nombre, apellidos y teléfono. Tu correo ya está verificado.</p>',
       showCancelButton: true,
-      confirmButtonText: 'Registrarme como cliente',
+      confirmButtonText: 'Completar mis datos',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor: '#d33'
     }).then(result => {
-      if (result.isConfirmed) this.router.navigate(['/clientes/agregar']);
+      if (result.isConfirmed) this.irAMisDatos();
     });
+  }
+
+  private irAMisDatos(): void {
+    this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: '/tienda/carrito' } });
   }
 
   private armarYConfirmar(clienteId: number): void {
@@ -328,7 +370,6 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Confirmar',
       cancelButtonText:  'Cancelar',
-      confirmButtonColor: '#3085d6',
       cancelButtonColor:  '#d33'
     }).then(result => {
       if (!result.isConfirmed) return;
@@ -339,7 +380,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
             this.varianteService.invalidarCache();
             if (esCreditoPedido) {
               const label = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
-              Swal.fire({
+              const mostrarRegistrado = () => Swal.fire({
                 icon: 'success',
                 title: 'Pedido registrado',
                 html: `
@@ -348,12 +389,16 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
                 `,
                 confirmButtonText: '💳 Ir a Créditos / Abonos',
                 showCancelButton: true,
-                cancelButtonText: 'Cerrar',
-                confirmButtonColor: '#6366f1'
-              }).then(r => {
+                cancelButtonText: 'Cerrar',}).then(r => {
                 if (r.isConfirmed) this.router.navigate(['/abonos']);
                 else this.router.navigate(['/tienda/buscar']);
               });
+              // E3: un Ir pagando casi siempre se lo lleva al hacerlo. Un Apartado nunca.
+              if (this.tipoPedido === 'FIADO' && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar')) {
+                preguntarYEntregar(() => this.pedidosService.entregar(res.data.id), () => mostrarRegistrado());
+              } else {
+                mostrarRegistrado();
+              }
             } else {
               Swal.fire({
                 icon: 'success',
@@ -378,7 +423,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               showCancelButton: true,
               cancelButtonText: 'Cancelar'
             }).then(result => {
-              if (result.isConfirmed) this.router.navigate(['/mis-datos']);
+              // Antes iba a '/mis-datos', que no existe: caía en la página 404.
+              if (result.isConfirmed) this.irAMisDatos();
             });
           } else if (msg.toLowerCase().includes('no es valido') || msg.toLowerCase().includes('no es válido')) {
             Swal.fire({
@@ -509,4 +555,22 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
   }
 
   get carritoVacio(): boolean { return this.carrito.length === 0 && this.promos.length === 0; }
+
+  // ── Columnas dinámicas del carrito ─────────────────────────────────
+
+  get mostrarTalla(): boolean {
+    return this.carrito.some(i => i.talla);
+  }
+
+  get mostrarColor(): boolean {
+    return this.carrito.some(i => i.color);
+  }
+
+  get mostrarMarca(): boolean {
+    return this.carrito.some(i => i.marca);
+  }
+
+  get mostrarPresentacion(): boolean {
+    return this.carrito.some(i => i.presentacion);
+  }
 }

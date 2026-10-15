@@ -196,6 +196,15 @@ const routes: Routes = [
   },
 
   {
+    // URL fija de "no existe": nginx la sirve con status 404 de verdad (default.conf). Cualquier
+    // ruta que no exista y se abra directo (Google, un link roto) se redirige aqui, para que el
+    // servidor no conteste 200 a una pagina inexistente (soft 404).
+    path: 'no-encontrada',
+    component: PaginaNoDisponibleComponent,
+    canActivate: [CarritoGuard]
+  },
+
+  {
     path: '**',
     component: PaginaNoDisponibleComponent,
     canActivate: [CarritoGuard]

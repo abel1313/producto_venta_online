@@ -22,20 +22,20 @@
 
   &__title {
     flex: 1;
-    h4    { margin: 0; font-size: 1.05rem; font-weight: 700; color: #fff; }
-    small { color: rgba(255, 255, 255, 0.65); font-size: 0.78rem; }
+    h4    { margin: 0; font-size: 1.05rem; font-weight: 700; color: var(--app-text); }
+    small { color: var(--app-text-muted); font-size: 0.78rem; }
   }
 }
 
 :host-context(body.theme-light) .ga-header {
-  background: rgba(255, 255, 255, 0.72);
+  background: var(--app-glass);
   backdrop-filter: blur(18px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid color-mix(in srgb, var(--app-text) 8%, transparent);
 
   .ga-header__title {
-    h4    { color: var(--app-text, #1e293b); }
-    small { color: var(--app-text-muted, #64748b); }
+    h4    { color: var(--app-text); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -62,7 +62,7 @@
   &--active {
     background: var(--card-bg);
     color: var(--app-accent);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.18);
+    box-shadow: 0 2px 8px var(--pk-info-soft);
   }
 }
 
@@ -109,7 +109,7 @@
     border-radius: 6px;
     line-height: 1;
 
-    &:hover { color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+    &:hover { color: var(--pk-danger); background: var(--pk-danger-soft); }
   }
 }
 
@@ -297,11 +297,11 @@
   white-space: nowrap;
 
   &--inventario       { background: rgba(var(--app-accent-rgb), 0.15);  color: var(--app-accent); }
-  &--operativo        { background: rgba(245, 158, 11, 0.15);  color: #b45309; }
-  &--servicios        { background: rgba(16, 185, 129, 0.15);  color: #059669; }
-  &--otros            { background: rgba(100, 116, 139, 0.15); color: #475569; }
+  &--operativo        { background: var(--pk-warning-soft);  color: var(--pk-warning-to); }
+  &--servicios        { background: var(--pk-success-soft);  color: var(--app-accent-text); }
+  &--otros            { background: color-mix(in srgb, var(--app-text) 15%, transparent); color: var(--app-text-muted); }
   &--estado-entregado { background: var(--pk-success-soft);  color: var(--pk-success-to); }
-  &--estado           { background: rgba(100, 116, 139, 0.15); color: #475569; }
+  &--estado           { background: color-mix(in srgb, var(--app-text) 15%, transparent); color: var(--app-text-muted); }
   &--sm               { font-size: 0.68rem; padding: 1px 6px; }
 }
 
@@ -352,8 +352,9 @@
   transition: all 0.18s;
 
   &--primary {
-    background: var(--app-accent);
-    color: var(--app-accent-ink) !important;
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text) !important;
 
     &:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.08); }
     &:disabled             { opacity: 0.45; cursor: not-allowed; transform: none !important; }
@@ -368,10 +369,10 @@
 
   &--add {
     background: linear-gradient(135deg, var(--pk-success-to), var(--pk-success));
-    color: #fff !important;
+    color: var(--pk-ink) !important;
     font-size: 0.85rem;
     padding: 8px 16px;
-    &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+    &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px var(--pk-success-soft); }
   }
 }
 
@@ -472,18 +473,18 @@
 :host-context(body.theme-dark) {
   .ga-input, .ga-select {
     color-scheme: dark;
-    color: var(--input-text, #f1f5f9);
-    background: var(--input-bg, rgba(255, 255, 255, 0.07));
-    border-color: var(--input-border, rgba(255, 255, 255, 0.22));
-    &::placeholder { color: var(--input-placeholder, #64748b); }
+    color: var(--input-text, var(--app-text));
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    &::placeholder { color: var(--input-placeholder); }
   }
 
   // Badges categóricos (inventario/operativo/servicios/otros): paleta propia, no semántica --
   // se quedan igual en los dos modos a propósito, no se tocan.
-  .ga-badge--inventario       { background: rgba(99, 102, 241, 0.25);  color: #a5b4fc; }
-  .ga-badge--operativo { background: rgba(245, 158, 11, 0.25);  color: var(--pk-warning-to, #fbbf24); }
-  .ga-badge--servicios        { background: rgba(16, 185, 129, 0.25);  color: #34d399; }
-  .ga-badge--otros { background: rgba(100, 116, 139, 0.25); color: var(--app-text-muted, #94a3b8); }
+  .ga-badge--inventario       { background: var(--pk-info-soft);  color: var(--pk-info); }
+  .ga-badge--operativo { background: var(--pk-warning-soft);  color: var(--pk-warning-to, var(--pk-warning)); }
+  .ga-badge--servicios        { background: var(--pk-success-soft);  color: var(--pk-success); }
+  .ga-badge--otros { background: color-mix(in srgb, var(--app-text) 25%, transparent); color: var(--app-text-muted); }
 
   // .ga-badge--estado-entregado / .ga-tabla__ganancia / .ga-reporte__valor--pos/--neg /
   // .ga-reporte__neta-valor ya no se sobreescriben acá -- ahora usan var(--pk-success/-danger),
@@ -494,9 +495,9 @@
 :host-context(body.theme-light) {
   .ga-input, .ga-select {
     color-scheme: light;
-    color: var(--app-text, #1e293b);
-    background: var(--card-bg, #ffffff);
-    border-color: var(--card-border, #cbd5e1);
-    &::placeholder { color: #9ca3af; }
+    color: var(--app-text);
+    background: var(--card-bg, var(--card-body-bg));
+    border-color: var(--card-border, var(--app-border));
+    &::placeholder { color: var(--app-text-faint); }
   }
 }

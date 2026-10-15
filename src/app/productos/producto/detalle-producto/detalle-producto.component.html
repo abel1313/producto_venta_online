@@ -3,7 +3,7 @@
 <div *ngIf="producto" class="dp-wrapper">
 
   <!-- ── Botón volver ──────────────────────────────────────────── -->
-  <app-boton-volver etiqueta="Volver a productos" fallback="/productos/buscar"></app-boton-volver>
+  <app-boton-volver fallback="/productos/buscar"></app-boton-volver>
 
   <!-- ── Header con nombre, precio y stock ─────────────────────── -->
   <div class="dp-header">
@@ -96,20 +96,8 @@
     </button>
   </div>
 
-  <!-- ── Acciones carrito ───────────────────────────────────────── -->
+  <!-- ── Acciones (el carrito es solo de artículos; aquí ya no hay agregar/quitar) ── -->
   <div class="dp-actions">
-    <button class="dp-btn dp-btn--add"
-            [disabled]="stockAgotado"
-            (click)="addCarrito()">
-      <i class="pi pi-shopping-cart"></i>
-      {{ stockAgotado ? 'Sin stock' : (cantidadEnCarrito > 0 ? 'Agregar uno más (' + cantidadEnCarrito + ')' : 'Agregar al carrito') }}
-    </button>
-    <button class="dp-btn dp-btn--remove"
-            [disabled]="!isProductoEnCarrito()"
-            (click)="removeCarrito()">
-      <i class="pi pi-minus"></i>
-      Quitar del carrito
-    </button >
     <button *ngIf="isAdminUser && existeImagenes" class="dp-btn dp-btn--remove" (click)="compartirImagnesVariante(productoDtoImagen)"> Compartir imagenes </button>
   </div>
 

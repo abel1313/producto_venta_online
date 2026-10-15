@@ -9,17 +9,17 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   padding: 2rem 1rem 3rem;
   min-height: 100%;
-  background: var(--page-bg, #f1f5f9);
+  background: var(--page-bg, var(--form-section-bg));
 }
 
 // ── Card ─────────────────────────────────────────────────────────────────────
 .mp-card {
   width: 100%;
-  max-width: 560px;
+  max-width: var(--form-ancho, 820px);
   border-radius: var(--form-card-radius, 28px);
   overflow: hidden;
   box-shadow: var(--card-shadow);
-  background: var(--card-bg, #fff);
+  background: var(--card-bg, var(--card-body-bg));
 }
 
 // ── Header ───────────────────────────────────────────────────────────────────
@@ -28,7 +28,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: center;
   gap: 1rem;
   padding: 1.4rem 1.75rem;
-  background: linear-gradient(135deg, var(--brand-3) 0%, var(--brand-2) 55%, var(--brand-1) 100%);
+  background: var(--card-header-bg);
 }
 
 .mp-header-icon {
@@ -39,22 +39,22 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   height: 50px;
   min-width: 50px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.18);
+  background: color-mix(in srgb, var(--card-header-text) 18%, transparent);
   backdrop-filter: blur(8px);
-  .pi { font-size: 1.4rem; color: #fff; }
+  .pi { font-size: 1.4rem; color: var(--card-header-text); }
 }
 
 .mp-title {
   font-size: 1.22rem;
   font-weight: 800;
-  color: #fff;
+  color: var(--card-header-text);
   margin: 0 0 2px;
   letter-spacing: -0.02em;
 }
 
 .mp-subtitle {
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.72);
+  color: color-mix(in srgb, var(--card-header-text) 72%, transparent);
   margin: 0;
 }
 
@@ -77,13 +77,13 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .mp-section-desc {
   font-size: 0.78rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   margin: -0.4rem 0 1rem;
 }
 
 .mp-divider {
   border: none;
-  border-top: 1px solid var(--card-border, #f0f0f5);
+  border-top: 1px solid var(--card-border, var(--app-border));
   margin: 1.5rem 0;
 }
 
@@ -98,7 +98,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-label {
   font-size: 0.73rem;
   font-weight: 600;
-  color: var(--app-text, #374151);
+  color: var(--app-text);
   letter-spacing: 0.02em;
 }
 
@@ -111,7 +111,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   left: 12px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   font-size: 0.85rem;
   pointer-events: none;
   transition: color 0.2s;
@@ -120,21 +120,21 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-input {
   width: 100%;
   padding: 0.62rem 1rem 0.62rem 2.35rem;
-  border: 2px solid var(--card-border, #e5e7eb);
+  border: 2px solid var(--card-border, var(--app-border));
   border-radius: $radius-sm;
   font-size: 0.875rem;
-  color: var(--app-text, #111827);
-  background: var(--form-section-bg, #f9fafb);
+  color: var(--app-text);
+  background: var(--form-section-bg, var(--card-body-bg));
   outline: none;
   transition: $trans;
   box-sizing: border-box;
   font-family: inherit;
 
-  &::placeholder { color: #c4c9d4; }
+  &::placeholder { color: var(--app-text-faint); }
 
   &:focus {
     border-color: var(--app-accent, var(--brand-1));
-    background: var(--card-bg, #fff);
+    background: var(--card-bg, var(--card-body-bg));
     box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
     ~ .mp-input-icon { color: var(--app-accent, var(--brand-1)); }
   }
@@ -149,7 +149,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--app-text-muted, #9ca3af);
+  color: var(--app-text-muted, var(--app-text-faint));
   cursor: pointer;
   padding: 4px;
   line-height: 1;
@@ -184,7 +184,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .mp-hint {
   font-size: 0.74rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
   margin: 0;
 }
 
@@ -195,8 +195,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   margin-bottom: 0.9rem;
   font-size: 0.78rem;
 
-  .pi-check-circle { color: var(--pk-success-to, #059669); }
-  .pi-times-circle { color: var(--pk-danger-to, #dc2626); }
+  .pi-check-circle { color: var(--pk-success-to, var(--app-accent-text)); }
+  .pi-times-circle { color: var(--pk-danger-to, var(--pk-danger)); }
 
   a { color: var(--app-accent, var(--brand-1)); font-weight: 600; text-decoration: none; }
   a:hover { text-decoration: underline; }
@@ -225,8 +225,9 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .pi { font-size: 0.9rem; }
 
   &--save {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     box-shadow: 0 4px 14px rgba(var(--app-accent-rgb), 0.38);
     &:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(var(--app-accent-rgb), 0.48); }
     &:active:not(:disabled) { transform: translateY(0); }
@@ -246,8 +247,8 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .pwd-requirements {
   margin-top: 0.6rem;
   padding: 0.9rem 1rem;
-  background: var(--form-section-bg, #f8fafc);
-  border: 1px solid var(--card-border, #e8ecf0);
+  background: var(--form-section-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border, var(--app-border));
   border-radius: 10px;
 }
 
@@ -276,7 +277,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   transition: color 0.2s;
   i { font-size: 0.8rem; color: var(--pk-danger-to); transition: color 0.2s; flex-shrink: 0; }
   .req-example { opacity: 0.65; font-size: 0.73rem; }
-  &.met { color: var(--app-text, #374151); i { color: var(--pk-success); } }
+  &.met { color: var(--app-text); i { color: var(--pk-success); } }
 }
 
 .pwd-strength-bar {
@@ -313,7 +314,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   align-items: flex-start;
   gap: 0.6rem;
   font-size: 0.82rem;
-  color: var(--app-text, #374151);
+  color: var(--app-text);
   .pi { color: var(--app-accent, var(--brand-1)); font-size: 0.9rem; margin-top: 2px; flex-shrink: 0; }
 }
 
@@ -325,13 +326,13 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
 .mp-btn--codigo {
   padding: 0.45rem 1rem;
-  background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   border-radius: $radius-sm;
   font-size: 0.82rem;
   font-weight: 700;
   cursor: pointer;
-  border: none;
+  border: 1px solid var(--btn-primary-border);
   font-family: inherit;
   display: inline-flex;
   align-items: center;
@@ -379,47 +380,47 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .mp-btn--cancelar-codigo {
   padding: 0.45rem 1rem;
   background: transparent;
-  color: var(--app-text-muted, #64748b);
-  border: 1.5px solid var(--card-border, #e5e7eb);
+  color: var(--app-text-muted);
+  border: 1.5px solid var(--card-border, var(--app-border));
   border-radius: $radius-sm;
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: $trans;
-  &:hover { border-color: var(--card-border, #94a3b8); color: var(--app-text, #374151); }
+  &:hover { border-color: var(--card-border, var(--app-border)); color: var(--app-text); }
 }
 
 // ── DARK MODE ────────────────────────────────────────────────────────────────
 // box-shadow ya no se sobreescribe acá -- var(--card-shadow) trae su propia variante oscura.
 :host-context(body.theme-dark) {
-  .mp-card { background: var(--card-bg, #1e1e2e); }
+  .mp-card { background: var(--card-bg); }
 
   .mp-section-label { color: var(--app-accent); }
-  .mp-section-desc  { color: var(--app-text-muted, #64748b); }
-  .mp-label         { color: var(--app-text-muted, #94a3b8); }
-  .mp-hint          { color: var(--app-text-muted, #475569); }
+  .mp-section-desc  { color: var(--app-text-muted, var(--app-text-faint)); }
+  .mp-label         { color: var(--app-text-muted); }
+  .mp-hint          { color: var(--app-text-muted, var(--app-text-faint)); }
 
   .mp-input {
-    background: var(--input-bg, rgba(255, 255, 255, 0.06));
-    border-color: var(--input-border, rgba(255, 255, 255, 0.1));
-    color: var(--app-text, #f1f5f9);
-    &::placeholder { color: var(--input-placeholder, #475569); }
+    background: var(--input-bg);
+    border-color: var(--input-border);
+    color: var(--app-text);
+    &::placeholder { color: var(--input-placeholder); }
     &:focus {
-      background: var(--input-bg, rgba(255, 255, 255, 0.09));
+      background: var(--input-bg);
       border-color: var(--app-accent);
       box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.18);
     }
   }
 
-  .mp-input-icon  { color: var(--app-text-muted, #475569); }
-  .mp-toggle-pass { color: var(--app-text-muted, #475569); }
+  .mp-input-icon  { color: var(--app-text-muted, var(--app-text-faint)); }
+  .mp-toggle-pass { color: var(--app-text-muted, var(--app-text-faint)); }
 
-  .mp-divider { border-top-color: var(--app-border, rgba(255, 255, 255, 0.07)); }
+  .mp-divider { border-top-color: var(--app-border); }
 
   .pwd-requirements {
-    background: var(--form-section-bg, rgba(255, 255, 255, 0.04));
-    border-color: var(--app-border, rgba(255, 255, 255, 0.08));
+    background: var(--form-section-bg);
+    border-color: var(--app-border);
   }
 
   .pwd-req-title { color: var(--app-accent); }
@@ -427,7 +428,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   // .mp-error-msg y .req-item ya no se sobreescriben acá -- los tokens --pk-danger/--pk-success
   // traen su propia variante oscura.
 
-  .pwd-strength-bar { background: var(--form-section-bg, rgba(255, 255, 255, 0.1)); }
+  .pwd-strength-bar { background: var(--form-section-bg); }
 
   .mp-btn--secondary {
     color: var(--app-accent);
@@ -440,7 +441,7 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     border-color: rgba(var(--app-accent-rgb), 0.22);
   }
 
-  .mp-codigo-info { color: var(--app-text, #cbd5e1); }
+  .mp-codigo-info { color: var(--app-text); }
 
   .mp-btn--reenviar {
     color: var(--brand-1);
@@ -449,14 +450,14 @@ $trans:     all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   .mp-btn--cancelar-codigo {
-    color: var(--app-text-muted, #94a3b8);
-    border-color: var(--app-border, rgba(255, 255, 255, 0.1));
-    &:hover { border-color: var(--card-border, #475569); color: var(--app-text, #e2e8f0); }
+    color: var(--app-text-muted);
+    border-color: var(--app-border);
+    &:hover { border-color: var(--card-border, var(--app-border)); color: var(--app-text); }
   }
 }
 
 // ── LIGHT MODE ────────────────────────────────────────────────────────────────
 :host-context(body.theme-light) {
-  .mp-card  { background: var(--card-bg, #fff); }
-  .mp-input { background: var(--form-section-bg, #f9fafb); border-color: var(--card-border, #e5e7eb); color: var(--app-text, #111827); }
+  .mp-card  { background: var(--card-bg, var(--card-body-bg)); }
+  .mp-input { background: var(--form-section-bg, var(--card-body-bg)); border-color: var(--card-border, var(--app-border)); color: var(--app-text); }
 }

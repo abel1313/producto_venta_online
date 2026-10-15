@@ -13,6 +13,7 @@ import { IPreciosArticulo, VarianteService } from '../service/variante.service';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { FavoritoService } from 'src/app/favoritos/service/favorito.service';
+import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
 
 @Component({
   selector: 'app-buscar',
@@ -84,6 +85,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
   dandoDeBajaId: number | null = null;
 
   private busquedaSubject = new Subject<string>();
+  /** $ mín / $ máx: buscan cuando terminas de escribir, no con cada tecla (con "100" salían 1, 10 y 100). */
+  private precioSubject = new Subject<void>();
   private destroy$        = new Subject<void>();
 
   hayPromos = false;
@@ -104,8 +107,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
     readonly router: Router,
     private readonly compartirSvc: CompartirService,
     private readonly promoService: PromocionService,
-    private readonly favoritoService: FavoritoService
+    private readonly favoritoService: FavoritoService,
+    private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {}
+
+  /** Artículos cuya imagen no cargó: no se ofrece "Compartir imagen" (no hay nada que compartir). */
+  private readonly imagenesFallidas = new Set<number>();
+  marcarImagenFallida(v: { id: number }): void { this.imagenesFallidas.add(v.id); }
+  imagenFallo(v: { id: number }): boolean { return this.imagenesFallidas.has(v.id); }
 
   compartirImagen(v: IVarianteResumen): void {
     if (!v.imagenUrl) return;
@@ -147,17 +156,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
     });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
-      .subscribe((termino: string) => {
-        if (this.hayFiltrosAdminActivos) {
-          this.aplicarFiltrosAdmin(1);
-        } else if (this.hayFiltrosPublicosActivos) {
-          this.aplicarFiltrosPublicos(1);
-        } else {
-          // terminoParaBackend y no el termino crudo: si los filtros se apagaron mientras corria
-          // el debounce, un termino de 1-2 letras llegaria aca sin pasar por el minimo.
-          this.buscarPagina(this.terminoParaBackend, 1);
-        }
-      });
+      .subscribe(() => this.aplicarFiltros(1));
+
+    this.precioSubject.pipe(debounceTime(600), takeUntil(this.destroy$))
+      .subscribe(() => { this.seleccionados.clear(); this.aplicarFiltros(1); });
 
     this.route.queryParams.pipe(takeUntil(this.destroy$)).subscribe(params => {
       this.productoId = Number(params['productoId']) || 0;
@@ -173,27 +175,44 @@ export class BuscarComponent implements OnInit, OnDestroy {
           // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "si
           // selecciono filtro y me voy a otros lados... quiero que se mantenga").
           const f = this.varianteService.filtrosCache as Record<string, any> | null;
-          if (f) {
-            this.mostrarConStock      = !!f['mostrarConStock'];
-            this.mostrarSinStock      = !!f['mostrarSinStock'];
-            this.mostrarConImagenes   = !!f['mostrarConImagenes'];
-            this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
-            this.mostrarHabilitados   = !!f['mostrarHabilitados'];
-            this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
-            this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
-            this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
-            this.fechaDesde = f['fechaDesde'] ?? '';
-            this.fechaHasta = f['fechaHasta'] ?? '';
-            this.filtroTalla = f['filtroTalla'] ?? '';
-            this.filtroColor = f['filtroColor'] ?? '';
-            this.filtroMarca = f['filtroMarca'] ?? '';
-            this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
-            this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
-          }
+          if (f) this.restaurarFiltros(f);
         } else {
-          this.buscarPagina('', 1);
+          this.arrancarConFiltrosGuardados();
         }
       }
+    });
+  }
+
+  private restaurarFiltros(f: Record<string, any>): void {
+    this.mostrarConStock      = !!f['mostrarConStock'];
+    this.mostrarSinStock      = !!f['mostrarSinStock'];
+    this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+    this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+    this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+    this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+    this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+    this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+    this.fechaDesde = f['fechaDesde'] ?? '';
+    this.fechaHasta = f['fechaHasta'] ?? '';
+    this.filtroTalla = f['filtroTalla'] ?? '';
+    this.filtroColor = f['filtroColor'] ?? '';
+    this.filtroMarca = f['filtroMarca'] ?? '';
+    this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
+    this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
+  }
+
+  /**
+   * Sin memoria (recién recargado o en otra sesión): el personal arranca con los filtros que dejó
+   * guardados. Para un cliente o un visitante `obtener` responde null al instante y todo sigue
+   * como antes. Los filtros de admin solo se aplican si todavía tiene permiso de verlos.
+   */
+  private arrancarConFiltrosGuardados(): void {
+    this.preferenciaFiltro.obtener('tienda-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+      if (f) {
+        this.restaurarFiltros(f);
+        if (!this.puedeVerAlgunFiltro) this.apagarFiltrosAdmin();
+      }
+      this.aplicarFiltros(1);
     });
   }
 
@@ -217,14 +236,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   private buscarPagina(termino: string, pagina: number): void {
+    // Antes del return de la caché: así una búsqueda con filtros que llegue tarde ya no pisa la lista.
+    const id = ++this.reqId;
     if (
       this.varianteService.initialized &&
       this.varianteService.terminoCache === termino &&
       this.varianteService.paginaCache  === pagina
-    ) return;
+    ) { this.buscando = false; return; }
 
     this.buscando = true;
-    const id = ++this.reqId;
     const params = { termino, pagina, size: 10 };
 
     this.varianteService.buscar(params).pipe(takeUntil(this.destroy$)).subscribe({
@@ -248,6 +268,31 @@ export class BuscarComponent implements OnInit, OnDestroy {
         }
       }
     });
+  }
+
+  /** Los filtros ocupan media pantalla en celular: arrancan cerrados y cada navegador recuerda si los dejó abiertos. */
+  filtrosAbiertos = BuscarComponent.leerFiltrosAbiertos();
+
+  private static leerFiltrosAbiertos(): boolean {
+    try { return localStorage.getItem('tienda-buscar:filtros-abiertos') === '1'; } catch { return false; }
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos = !this.filtrosAbiertos;
+    try { localStorage.setItem('tienda-buscar:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  get hayFiltrosQueMostrar(): boolean {
+    return this.puedeVerAlgunFiltro || (!this.modoPorProducto && !!this.filtrosDisponibles);
+  }
+
+  /** Cuántos filtros están aplicados, para verlo aunque el panel esté cerrado. */
+  get filtrosActivos(): number {
+    return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
+            this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
+            !!this.fechaDesde, !!this.fechaHasta,
+            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca,
+            this.filtroPrecioMin !== null, this.filtroPrecioMax !== null].filter(Boolean).length;
   }
 
   get hayFiltrosAdminActivos(): boolean {
@@ -416,7 +461,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     if (!this.puedeVerAlgunFiltro) return;
     this[campo] = !this[campo];
     this.seleccionados.clear();
-    this.aplicarFiltrosAdmin(1);
+    this.aplicarFiltros(1);
   }
 
   // Rango de fecha — se dispara con (change) del <input type="date">, no con toggleFiltroAdmin
@@ -424,10 +469,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
   onFechaFiltroChange(): void {
     if (!this.puedeVerAlgunFiltro) return;
     this.seleccionados.clear();
-    this.aplicarFiltrosAdmin(1);
+    this.aplicarFiltros(1);
   }
 
-  limpiarFiltrosAdmin(): void {
+  private apagarFiltrosAdmin(): void {
     this.mostrarConStock = false;
     this.mostrarSinStock = false;
     this.mostrarConImagenes = false;
@@ -438,15 +483,67 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.mostrarCodigoReal = false;
     this.fechaDesde = '';
     this.fechaHasta = '';
+  }
+
+  /** Quita los de admin; si quedan talla/color/marca/precio, se vuelve a buscar con esos. */
+  limpiarFiltrosAdmin(): void {
+    this.apagarFiltrosAdmin();
     this.seleccionados.clear();
-    this.varianteService.invalidarCache();
-    this.varianteService.setFiltrosCache(null);
-    this.buscarPagina(this.terminoBusqueda, 1);
+    this.aplicarFiltros(1);
+  }
+
+  /**
+   * Una sola búsqueda con TODOS los filtros activos (QA 2026-10-08). Antes los de admin (stock,
+   * habilitadas, imágenes, código, fechas) y los del catálogo (talla, color, marca, precio) iban por
+   * dos búsquedas y cada una ignoraba a la otra; al quitar un filtro se volvía a buscar con la de
+   * admin aunque solo quedaran filtros del catálogo. Ahora:
+   * - quien puede ver los filtros de admin → todo junto en admin/filtrar (ve también sin stock,
+   *   deshabilitados y sin foto, igual que su lista sin filtros);
+   * - un cliente (solo talla/color/marca/precio) → buscar-filtrado (catálogo público);
+   * - sin filtros → la lista normal.
+   */
+  private aplicarFiltros(pagina: number): void {
+    if (this.hayFiltrosAdminActivos || (this.puedeVerAlgunFiltro && this.hayFiltrosPublicosActivos)) {
+      this.aplicarFiltrosAdmin(pagina);
+    } else if (this.hayFiltrosPublicosActivos) {
+      this.aplicarFiltrosPublicos(pagina);
+    } else {
+      // Sin filtros: la caché de la lista puede tener el resultado filtrado de antes con el mismo
+      // término y página, y buscarPagina la reusaría tal cual.
+      this.varianteService.invalidarCache();
+      this.varianteService.setFiltrosCache(null);
+      this.preferenciaFiltro.borrar('tienda-buscar');
+      // terminoParaBackend y no el termino crudo: un termino de 1-2 letras no sale a buscar.
+      this.buscarPagina(this.terminoParaBackend, pagina);
+    }
+  }
+
+  /** Todos los filtros juntos, para recordarlos al volver a la pantalla y entre sesiones. */
+  private get filtrosActuales(): Record<string, unknown> {
+    return {
+      mostrarConStock: this.mostrarConStock,
+      mostrarSinStock: this.mostrarSinStock,
+      mostrarConImagenes: this.mostrarConImagenes,
+      mostrarSinImagenes: this.mostrarSinImagenes,
+      mostrarHabilitados: this.mostrarHabilitados,
+      mostrarNoHabilitados: this.mostrarNoHabilitados,
+      mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+      mostrarCodigoReal: this.mostrarCodigoReal,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+      filtroTalla: this.filtroTalla,
+      filtroColor: this.filtroColor,
+      filtroMarca: this.filtroMarca,
+      filtroPrecioMin: this.filtroPrecioMin,
+      filtroPrecioMax: this.filtroPrecioMax
+    };
   }
 
   private aplicarFiltrosAdmin(pagina: number): void {
     this.buscando = true;
     this.varianteService.invalidarCache();
+    // Solo cuenta la última respuesta: si una búsqueda vieja llega después, se ignora.
+    const id = ++this.reqId;
     this.varianteService.adminFiltrar({
       nombreOCodigo: this.terminoParaBackend || undefined,
       conStock: this.paramConStock,
@@ -454,29 +551,27 @@ export class BuscarComponent implements OnInit, OnDestroy {
       habilitado: this.paramHabilitado,
       codigoGenerado: this.paramCodigoGenerado,
       fechaDesde: this.fechaDesde || undefined,
-      fechaHasta: this.fechaHasta || undefined
+      fechaHasta: this.fechaHasta || undefined,
+      talla: this.filtroTalla || undefined,
+      color: this.filtroColor || undefined,
+      marca: this.filtroMarca || undefined,
+      precioMin: this.filtroPrecioMin ?? undefined,
+      precioMax: this.filtroPrecioMax ?? undefined
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
-        this.sinResultados = false;
+        if (this.reqId !== id) return;
+        this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        this.varianteService.setFiltrosCache({
-          mostrarConStock: this.mostrarConStock,
-          mostrarSinStock: this.mostrarSinStock,
-          mostrarConImagenes: this.mostrarConImagenes,
-          mostrarSinImagenes: this.mostrarSinImagenes,
-          mostrarHabilitados: this.mostrarHabilitados,
-          mostrarNoHabilitados: this.mostrarNoHabilitados,
-          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
-          mostrarCodigoReal: this.mostrarCodigoReal,
-          fechaDesde: this.fechaDesde,
-          fechaHasta: this.fechaHasta
-        });
+        const filtros = this.filtrosActuales;
+        this.varianteService.setFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
+        if (this.reqId !== id) return;
         this.buscando = false;
         if (err.status === 404) { this.variantes = []; this.totalPaginas = 0; this.sinResultados = true; }
         else Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
@@ -493,23 +588,29 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   onFiltroPublicoChange(): void {
     this.seleccionados.clear();
-    this.aplicarFiltrosPublicos(1);
+    this.aplicarFiltros(1);
   }
 
+  /** $ mín / $ máx: espera a que termines de escribir. */
+  onPrecioChange(): void {
+    this.precioSubject.next();
+  }
+
+  /** Quita talla/color/marca/precio; si quedan filtros de admin, se vuelve a buscar con esos. */
   limpiarFiltrosPublicos(): void {
     this.filtroTalla = '';
     this.filtroColor = '';
     this.filtroMarca = '';
     this.filtroPrecioMin = null;
     this.filtroPrecioMax = null;
-    this.varianteService.invalidarCache();
-    this.varianteService.setFiltrosCache(null);
-    this.buscarPagina(this.terminoBusqueda, 1);
+    this.seleccionados.clear();
+    this.aplicarFiltros(1);
   }
 
   private aplicarFiltrosPublicos(pagina: number): void {
     this.buscando = true;
     this.varianteService.invalidarCache();
+    const id = ++this.reqId;
     this.varianteService.buscarFiltrado({
       termino: this.terminoParaBackend || undefined,
       precioMin: this.filtroPrecioMin ?? undefined,
@@ -519,21 +620,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
       marca: this.filtroMarca || undefined,
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
+        if (this.reqId !== id) return;
         this.sinResultados = (res.t ?? []).length === 0;
         this.variantes    = res.t ?? [];
         this.totalPaginas = res.totalPaginas;
         this.paginaActual = pagina;
         this.buscando = false;
         this.varianteService.setCache(res.t ?? [], pagina, res.totalPaginas, this.terminoBusqueda);
-        this.varianteService.setFiltrosCache({
-          filtroTalla: this.filtroTalla,
-          filtroColor: this.filtroColor,
-          filtroMarca: this.filtroMarca,
-          filtroPrecioMin: this.filtroPrecioMin,
-          filtroPrecioMax: this.filtroPrecioMax
-        });
+        const filtros = this.filtrosActuales;
+        this.varianteService.setFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('tienda-buscar', filtros);
       },
       error: (err) => {
+        if (this.reqId !== id) return;
         this.buscando = false;
         Swal.fire({ icon: 'error', title: 'Error al filtrar', text: err?.error?.mensaje ?? 'No se pudo aplicar el filtro.' });
       }
@@ -561,9 +660,13 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual - 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
-    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
-    else this.buscarPagina(this.terminoBusqueda, p);
+    else this.aplicarFiltros(p);
+  }
+
+  private recargarPagina(): void {
+    const p = this.paginaActual || 1;
+    if (this.productoId > 0) this.cargarResumen(p);
+    else this.aplicarFiltros(p);
   }
 
   siguientePagina(): void {
@@ -571,9 +674,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const p = this.paginaActual + 1;
     this.seleccionados.clear();
     if (this.productoId > 0) this.cargarResumen(p);
-    else if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(p);
-    else if (this.hayFiltrosPublicosActivos) this.aplicarFiltrosPublicos(p);
-    else this.buscarPagina(this.terminoBusqueda, p);
+    else this.aplicarFiltros(p);
   }
 
   // ── Carrito variante ───────────────────────────────────────────────
@@ -583,8 +684,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     if (!ok) {
       Swal.fire({
         icon: 'warning', title: 'Sin stock',
-        text: `No hay más unidades disponibles.`,
-        confirmButtonColor: '#3085d6', timer: 2000, showConfirmButton: false
+        text: `No hay más unidades disponibles.`, timer: 2000, showConfirmButton: false
       });
     }
   }
@@ -623,7 +723,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
             showCancelButton: true,
             confirmButtonText: 'Completar mis datos',
             cancelButtonText: 'Ahora no'
-          }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/agregar']); });
+          }).then(r => { if (r.isConfirmed) this.router.navigate(['/clientes/mis-datos'], { queryParams: { volver: this.router.url } }); });
           return;
         }
         Swal.fire({ icon: 'error', title: 'Error', text: msg || 'No se pudo actualizar favoritos.' });
@@ -723,13 +823,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
           if (result) {
             const codigo = result.getText();
             this.terminoBusqueda = codigo;
-            if (this.hayFiltrosAdminActivos) {
-              this.aplicarFiltrosAdmin(1);
-            } else if (this.hayFiltrosPublicosActivos) {
-              this.aplicarFiltrosPublicos(1);
-            } else {
-              this.buscarPagina(codigo, 1);
-            }
+            this.aplicarFiltros(1);
             controls.stop();
             this.escaneando = false;
           }
@@ -791,6 +885,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
         if (!habilitar) v.stock = 0;
         this.varianteService.invalidarCache();
         Swal.fire({ icon: 'success', title: habilitar ? 'Artículo habilitado' : 'Artículo deshabilitado', timer: 1500, showConfirmButton: false });
+        if (habilitar) this.recargarPagina();
       },
       error: (err) => Swal.fire({ icon: 'error', title: 'Error', text: err?.error?.mensaje ?? err?.error?.message ?? 'No se pudo cambiar el estado.' })
     });
@@ -807,7 +902,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Habilitar de todas formas',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#f59e0b'
+      confirmButtonColor: 'var(--pk-warning-to)'
     }).then(r => r.isConfirmed);
   }
 
@@ -825,7 +920,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       showCancelButton: true,
       confirmButtonText: 'Sí, dar de baja',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.dandoDeBajaId = v.id;
@@ -848,24 +943,45 @@ export class BuscarComponent implements OnInit, OnDestroy {
   cambiandoPrecioId: number | null = null;
 
   /**
-   * Precio de UN artículo (hotfix 2026-09-29): los demás del mismo producto no cambian. Los dos
-   * precios se pueden subir o bajar. El descuento es el precio final (no lo que se resta) y solo
-   * se cobra si el admin lo elige en el carrito con "Otro precio".
+   * Precio de UN artículo: los demás del mismo producto no cambian. El precio normal se ve pero
+   * no se toca (se cambia al editar el producto).
+   *
+   * Dos checks que se excluyen, "Precio venta" y "Precio descuento": con descuento el artículo se
+   * vende a ese precio para todos hasta que se vuelva a elegir "Precio venta" (R8 del back). En
+   * el carrito, desmarcar "Usar" cobra el normal solo en esa venta, sin cambiar el artículo.
    *
    * Si el artículo ya tiene precio propio, "Usar el del producto" se lo quita.
    */
   cambiarPrecio(v: IVarianteResumen): void {
     if (this.cambiandoPrecioId) return;
-    const normal = v.precio ?? 0;
-    const descuento = v.precioRebaja ?? 0;
+    // El descuento no viene en la lista (R9): se pide al abrir y se suelta al cerrar.
+    this.cambiandoPrecioId = v.id;
+    this.varianteService.descuentoArticulo(v.id).pipe(takeUntil(this.destroy$)).subscribe({
+      next: d => {
+        this.cambiandoPrecioId = null;
+        this.abrirModalPrecio(v, d.tieneDescuento ? d.precioRebaja : 0);
+      },
+      error: err => {
+        this.cambiandoPrecioId = null;
+        Swal.fire({ icon: 'error', title: 'No se pudo consultar el precio',
+          text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private abrirModalPrecio(v: IVarianteResumen, descuentoActual: number): void {
+    const normal = v.precioNormal ?? v.precio ?? 0;
+    const teniaDescuentoActivo = !!v.usarDescuento;
     const pesos = (n: number) => `$${n.toFixed(2)}`;
     const nombre = [v.nombreProducto || 'este artículo', v.talla, v.color].filter(Boolean).join(' · ');
+    const valorCaja = descuentoActual > 0 && descuentoActual < normal ? descuentoActual : '';
 
-    const resumen = (norm: number, desc: number): string => {
-      if (!(norm > 0)) return 'El precio normal tiene que ser mayor a 0';
-      if (!(desc > 0)) return `Sin precio con descuento: siempre se cobra <b>${pesos(norm)}</b>`;
-      if (desc > norm) return `El descuento no puede ser mayor al precio normal (${pesos(norm)})`;
-      return `Se cobra <b>${pesos(norm)}</b>. En el carrito puedes elegir <b>${pesos(desc)}</b> (descuento de ${pesos(norm - desc)})`;
+    const resumen = (conDescuento: boolean, desc: number): string => {
+      if (!(normal > 0)) return 'Este artículo no tiene precio normal. Pónselo al editar el producto';
+      if (!conDescuento) return `Se vende a <b>${pesos(normal)}</b>`;
+      if (!(desc > 0)) return 'Escribe el precio con descuento, o elige "Precio venta"';
+      if (desc >= normal) return `El precio con descuento tiene que ser menor al normal (${pesos(normal)})`;
+      return `Se vende a <b>${pesos(desc)}</b> (descuento de ${pesos(normal - desc)}). En el carrito puedes cobrar el normal en una venta quitando "Usar".`;
     };
 
     Swal.fire({
@@ -873,11 +989,19 @@ export class BuscarComponent implements OnInit, OnDestroy {
       html: `
         <p style="font-size:.85rem;margin:0 0 .8rem">Cambia el precio <b>solo de este artículo</b>. Los demás del
           producto se quedan igual, y los pedidos y ventas ya hechos conservan su precio.</p>
-        <label for="sw-precio-normal" style="display:block;text-align:left;font-size:.85rem">Precio normal</label>
-        <input id="sw-precio-normal" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .8rem;width:100%" value="${normal}">
-        <label for="sw-precio-desc" style="display:block;text-align:left;font-size:.85rem">Precio con descuento: solo si lo eliges en el carrito <small>(0 = sin descuento)</small></label>
-        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" style="margin:.3rem 0 .4rem;width:100%" value="${descuento}">
-        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(normal, descuento)}</p>
+        <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
+          <input id="sw-usar-venta" type="checkbox" ${teniaDescuentoActivo ? '' : 'checked'}> Precio venta
+        </label>
+        <input id="sw-precio-normal" type="number" class="swal2-input" aria-label="Precio venta"
+               style="margin:.3rem 0 .2rem;width:100%;opacity:.6;cursor:not-allowed" value="${normal}" disabled>
+        <small style="display:block;text-align:left;font-size:.75rem;opacity:.75;margin-bottom:.8rem">El precio venta se cambia al editar el producto.</small>
+        <label style="display:flex;align-items:center;gap:.5rem;text-align:left;font-size:.85rem;cursor:pointer">
+          <input id="sw-usar-desc" type="checkbox" ${teniaDescuentoActivo ? 'checked' : ''}> Precio descuento
+        </label>
+        <input id="sw-precio-desc" type="number" min="0" step="0.01" class="swal2-input" aria-label="Precio descuento"
+               style="margin:.3rem 0 .4rem;width:100%" value="${valorCaja}" placeholder="Precio con descuento"
+               ${teniaDescuentoActivo ? '' : 'disabled'}>
+        <p id="sw-precio-resumen" aria-live="polite" style="font-size:.85rem;margin:0;text-align:left">${resumen(teniaDescuentoActivo, Number(valorCaja || 0))}</p>
         ${v.precioPropio ? '<p style="font-size:.78rem;margin:.6rem 0 0;text-align:left;opacity:.8">Este artículo ya tiene precio propio.</p>' : ''}`,
       showCancelButton: true,
       showDenyButton: !!v.precioPropio,
@@ -886,31 +1010,44 @@ export class BuscarComponent implements OnInit, OnDestroy {
       cancelButtonText: 'Cancelar',
       focusConfirm: false,
       didOpen: () => {
-        const inNormal = document.getElementById('sw-precio-normal') as HTMLInputElement;
+        const usarVenta = document.getElementById('sw-usar-venta') as HTMLInputElement;
+        const usarDesc = document.getElementById('sw-usar-desc') as HTMLInputElement;
         const inDesc = document.getElementById('sw-precio-desc') as HTMLInputElement;
         const salida = document.getElementById('sw-precio-resumen') as HTMLElement;
-        const refrescar = () => { salida.innerHTML = resumen(Number(inNormal.value || 0), Number(inDesc.value || 0)); };
-        inNormal.addEventListener('input', refrescar);
+        // Siempre queda exactamente uno marcado: marcar uno apaga el otro, y desmarcar uno prende el otro.
+        const elegir = (conDescuento: boolean) => {
+          usarDesc.checked = conDescuento;
+          usarVenta.checked = !conDescuento;
+          inDesc.disabled = !conDescuento;
+          if (conDescuento) { inDesc.focus(); inDesc.select(); }
+          refrescar();
+        };
+        const refrescar = () => {
+          Swal.resetValidationMessage();
+          salida.innerHTML = resumen(usarDesc.checked, Number(inDesc.value || 0));
+        };
+        usarVenta.addEventListener('change', () => elegir(!usarVenta.checked));
+        usarDesc.addEventListener('change', () => elegir(usarDesc.checked));
         inDesc.addEventListener('input', refrescar);
-        inNormal.focus();
-        inNormal.select();
+        if (usarDesc.checked) { inDesc.focus(); inDesc.select(); }
       },
       preConfirm: () => {
-        const nuevoNormal = Number((document.getElementById('sw-precio-normal') as HTMLInputElement).value || 0);
-        const nuevoDesc = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
-        if (!(nuevoNormal > 0)) {
-          Swal.showValidationMessage('El precio normal tiene que ser mayor a 0');
+        const conDescuento = (document.getElementById('sw-usar-desc') as HTMLInputElement).checked;
+        const caja = Number((document.getElementById('sw-precio-desc') as HTMLInputElement).value || 0);
+        if (!(normal > 0)) {
+          Swal.showValidationMessage('Este artículo no tiene precio normal. Pónselo al editar el producto');
           return false;
         }
-        if (nuevoDesc < 0) {
-          Swal.showValidationMessage('El descuento no puede ser negativo');
+        if (!conDescuento) return { conDescuento, descuento: descuentoActual };
+        if (!(caja > 0)) {
+          Swal.showValidationMessage('Escribe el precio con descuento, o elige "Precio venta"');
           return false;
         }
-        if (nuevoDesc > nuevoNormal) {
-          Swal.showValidationMessage(`El precio con descuento no puede ser mayor al precio normal (${pesos(nuevoNormal)})`);
+        if (caja >= normal) {
+          Swal.showValidationMessage(`El precio con descuento tiene que ser menor al normal (${pesos(normal)})`);
           return false;
         }
-        return { nuevoNormal, nuevoDesc };
+        return { conDescuento, descuento: caja };
       }
     }).then(r => {
       if (r.isDenied) {
@@ -918,8 +1055,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
         return;
       }
       if (!r.isConfirmed || !r.value) return;
-      const { nuevoNormal, nuevoDesc } = r.value;
-      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, nuevoNormal, nuevoDesc));
+      const { conDescuento, descuento } = r.value;
+      // Con "Precio venta" y sin haber tenido descuento activo no cambia nada: no se guarda, para
+      // no dejarle al artículo un precio propio que nadie pidió.
+      if (!conDescuento && !teniaDescuentoActivo) return;
+      // Con "Precio venta" el descuento se conserva: sigue disponible para elegirlo en una venta.
+      this.guardarPrecioArticulo(v, this.varianteService.cambiarPrecioArticulo(v.id, normal, descuento, conDescuento));
     });
   }
 
@@ -928,20 +1069,21 @@ export class BuscarComponent implements OnInit, OnDestroy {
     peticion.pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         this.cambiandoPrecioId = null;
-        v.precio = res.precioVenta;
-        v.precioRebaja = res.precioRebaja;
+        v.precio = res.precioACobrar;
+        v.precioNormal = res.precioVenta;
+        v.usarDescuento = res.usarDescuento;
         v.precioPropio = res.propio;
         // Si ya estaba en el carrito, se cobra al precio nuevo (si no, el back lo rechazaría al cobrar).
-        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioRebaja);
+        this.carritoVariante.actualizarPrecios(v.id, res.precioVenta, res.precioACobrar, res.usarDescuento);
         this.varianteService.invalidarCache();
         Swal.fire({
           icon: res.vendeBajoCosto ? 'warning' : 'success',
           title: res.propio ? 'Precio del artículo guardado' : 'Vuelve al precio del producto',
           text: res.vendeBajoCosto
             ? `Ojo: el precio con descuento ($${res.precioRebaja.toFixed(2)}) queda por debajo de lo que costó.`
-            : (res.precioRebaja > 0
-                ? `Se cobra $${res.precioVenta.toFixed(2)}. El descuento ($${res.precioRebaja.toFixed(2)}) solo si lo eliges en el carrito.`
-                : `Se cobra $${res.precioVenta.toFixed(2)}, sin descuento.`),
+            : (res.usarDescuento
+                ? `Se vende a $${res.precioACobrar.toFixed(2)} con descuento. El normal es $${res.precioVenta.toFixed(2)}.`
+                : `Se vende a $${res.precioVenta.toFixed(2)}.`),
           timer: res.vendeBajoCosto ? undefined : 2200,
           showConfirmButton: res.vendeBajoCosto
         });
@@ -970,7 +1112,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     const ids = Array.from(this.seleccionados);
     this.procesandoLote = true;
     this.varianteService.habilitarLote(ids, habilitar).pipe(takeUntil(this.destroy$)).subscribe({
-      next: () => {
+      next: (res: any) => {
         this.variantes.forEach(v => {
           if (!this.seleccionados.has(v.id)) return;
           v.habilitado = habilitar ? '1' : '0';
@@ -979,7 +1121,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
         this.seleccionados.clear();
         this.procesandoLote = false;
         this.varianteService.invalidarCache();
-        Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
+        // Al habilitar, el back puede recortar el stock a lo libre del modelo y lo dice en el
+        // mensaje; se recarga la página para que la card muestre el stock que quedó.
+        const mensaje: string = typeof res?.data === 'string' ? res.data : '';
+        if (habilitar && mensaje.includes('Se ajustó')) {
+          Swal.fire({ icon: 'info', title: 'Artículos habilitados', text: mensaje });
+        } else {
+          Swal.fire({ icon: 'success', title: habilitar ? 'Artículos habilitados' : 'Artículos deshabilitados', timer: 1800, showConfirmButton: false });
+        }
+        if (habilitar) this.recargarPagina();
       },
       error: (err) => {
         this.procesandoLote = false;

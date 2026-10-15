@@ -13,9 +13,11 @@ import { IDetalleProducto } from 'src/app/models';
 import { CarritoService } from 'src/app/services/carrito/carrito.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import Swal from 'sweetalert2';
+import { ModeloParaArticulos } from 'src/app/shared/alta-articulos/alta-articulos.component';
 import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { CompartirService } from 'src/app/shared/compartir.service';
+import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -82,7 +84,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly varianteService: VarianteService,
     private readonly serviceCarrito: CarritoService,
     private readonly authService: AuthService,
-    private readonly compartirSvc: CompartirService
+    private readonly compartirSvc: CompartirService,
+    private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {
 
       this.keyUpSubject
@@ -228,7 +231,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         showCancelButton: true,
         confirmButtonText: 'Sí, dar de baja',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#ef4444'
+        confirmButtonColor: 'var(--pk-danger)'
       }).then(result => {
         if (!result.isConfirmed) return;
             this.srvice.deleteProductoPorId(item.idProducto).subscribe({
@@ -322,6 +325,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
+
   addCarrito(producto: IProductoDTO) {
     const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = producto;
     const prod = {
@@ -341,11 +347,11 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       Swal.fire({
         icon: 'warning',
         title: 'Sin stock disponible',
-        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,
-        confirmButtonColor: '#4f46e5'
-      });
+        text: `Solo hay ${stock} unidad${stock === 1 ? '' : 'es'} disponibles de "${nombre}".`,});
     }
   }
+
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 
   cantidadEnCarrito(producto: IProductoDTO): number {
     return this.detalle.find(p => p.codigoBarras === producto.codigoBarras)?.cantidad ?? 0;
@@ -357,9 +363,14 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return Math.max(0, producto.stock - this.cantidadEnCarrito(producto));
   }
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
   stockAgotadoEnCarrito(producto: IProductoDTO): boolean {
     return this.cantidadEnCarrito(producto) >= producto.stock;
   }
+
+
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 
 
   removeCarrito(producto: IProductoDTO) {
@@ -369,6 +380,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
     this.serviceCarrito.eliminarProducto(this.detalle[index]);
   }
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   isProductoEnCarrito(producto: IProductoDTO): boolean {
     return this.detalle.some(item =>
       item.codigoBarras === producto.codigoBarras && item.nombre === producto.nombre
@@ -447,21 +459,29 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       // volvía filtrada pero los checkboxes se veían todos apagados (2026-09-02: "para tienda
       // y producto en buscar... quería que se guardara su estado").
       const f = this.srvice.prodFiltrosCache as Record<string, any> | null;
-      if (f) {
-        this.mostrarConStock      = !!f['mostrarConStock'];
-        this.mostrarSinStock      = !!f['mostrarSinStock'];
-        this.mostrarConImagenes   = !!f['mostrarConImagenes'];
-        this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
-        this.mostrarHabilitados   = !!f['mostrarHabilitados'];
-        this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
-        this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
-        this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
-        this.fechaDesde = f['fechaDesde'] ?? '';
-        this.fechaHasta = f['fechaHasta'] ?? '';
-      }
+      if (f) this.restaurarFiltros(f);
     } else {
-      this.getData(1);
+      // Sin memoria (recién recargado u otra sesión): el personal arranca con sus filtros
+      // guardados; para cualquier otro `obtener` responde null al instante.
+      this.preferenciaFiltro.obtener('productos-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+        if (f) this.restaurarFiltros(f);
+        if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
+        else this.getData(1);
+      });
     }
+  }
+
+  private restaurarFiltros(f: Record<string, any>): void {
+    this.mostrarConStock      = !!f['mostrarConStock'];
+    this.mostrarSinStock      = !!f['mostrarSinStock'];
+    this.mostrarConImagenes   = !!f['mostrarConImagenes'];
+    this.mostrarSinImagenes   = !!f['mostrarSinImagenes'];
+    this.mostrarHabilitados   = !!f['mostrarHabilitados'];
+    this.mostrarNoHabilitados = !!f['mostrarNoHabilitados'];
+    this.mostrarCodigoGenerado = !!f['mostrarCodigoGenerado'];
+    this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
+    this.fechaDesde = f['fechaDesde'] ?? '';
+    this.fechaHasta = f['fechaHasta'] ?? '';
   }
 
   getData(pagina: number) {
@@ -484,6 +504,25 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         }
       }
     });
+  }
+
+  /** Los filtros ocupan media pantalla en celular: arrancan cerrados y cada navegador recuerda si los dejó abiertos. */
+  filtrosAbiertos = AllComponent.leerFiltrosAbiertos();
+
+  private static leerFiltrosAbiertos(): boolean {
+    try { return localStorage.getItem('productos-buscar:filtros-abiertos') === '1'; } catch { return false; }
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos = !this.filtrosAbiertos;
+    try { localStorage.setItem('productos-buscar:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  /** Cuántos filtros están aplicados, para verlo aunque el panel esté cerrado. */
+  get filtrosActivos(): number {
+    return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
+            this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
+            !!this.fechaDesde, !!this.fechaHasta].filter(Boolean).length;
   }
 
   get hayFiltrosAdminActivos(): boolean {
@@ -536,6 +575,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
     this.srvice.setProdFiltrosCache(null);
+    this.preferenciaFiltro.borrar('productos-buscar');
     this.paginaPrimera = 1;
     this.getData(1);
   }
@@ -557,7 +597,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.totalPaginas = res.totalPaginas;
         this.paginaPrimera = pagina;
         this.srvice.setProdCache(res.t, pagina, res.totalPaginas, this.buscarProd);
-        this.srvice.setProdFiltrosCache({
+        const filtros = {
           mostrarConStock: this.mostrarConStock,
           mostrarSinStock: this.mostrarSinStock,
           mostrarConImagenes: this.mostrarConImagenes,
@@ -568,7 +608,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           mostrarCodigoReal: this.mostrarCodigoReal,
           fechaDesde: this.fechaDesde,
           fechaHasta: this.fechaHasta
-        });
+        };
+        this.srvice.setProdFiltrosCache(filtros);
+        this.preferenciaFiltro.guardar('productos-buscar', filtros);
       },
       error: (err) => {
         if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }
@@ -670,63 +712,28 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       return;
     }
 
-    const { value: formValues } = await Swal.fire({
-      title: `Inicializar variantes`,
-      html: `
-        <p style="margin:0 0 12px;font-size:0.9rem;color:#666;">Producto: <b>${producto.nombre}</b><br>
-          Stock del modelo: <b>${producto.stock}</b> · En sus artículos: <b>${enArticulos}</b> · Puedes crear: <b>${disponible}</b></p>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Cantidad de variantes:</label>
-        <input id="swal-cantidad" type="number" min="1" max="${disponible}" value="1"
-          class="swal2-input" style="margin:0 0 12px;" />
-        <label style="display:flex;align-items:center;gap:8px;text-align:left;font-size:0.85rem;margin-bottom:12px;cursor:pointer;">
-          <input id="swal-para-todas" type="checkbox" style="width:16px;height:16px;" />
-          Misma imagen para todas las variantes
-        </label>
-        <label style="display:block;text-align:left;font-size:0.85rem;margin-bottom:4px;">Imágenes (opcional):</label>
-        <input id="swal-imagenes" type="file" multiple accept="image/*" class="swal2-file" style="margin:0;" />
-        <p style="margin:8px 0 0;font-size:0.8rem;color:#666;text-align:left;">Un artículo sin foto no sale en la tienda.</p>
-      `,
-      confirmButtonText: 'Crear variantes',
-      cancelButtonText: 'Cancelar',
-      showCancelButton: true,
-      confirmButtonColor: '#4f46e5',
-      preConfirm: () => {
-        const cantidad = parseInt((document.getElementById('swal-cantidad') as HTMLInputElement).value, 10);
-        if (!cantidad || cantidad < 1) { Swal.showValidationMessage('Ingresa al menos 1 variante'); return false; }
-        if (cantidad > disponible) { Swal.showValidationMessage(`Puedes crear hasta ${disponible}`); return false; }
-        const paraTodas = (document.getElementById('swal-para-todas') as HTMLInputElement).checked;
-        const files = (document.getElementById('swal-imagenes') as HTMLInputElement).files;
-        // El back solo usa las fotos con esta casilla marcada; sin ella las descartaba sin avisar.
-        if (!paraTodas && files && files.length > 0) {
-          Swal.showValidationMessage('Para usar las fotos marca "Misma imagen para todas las variantes"');
-          return false;
-        }
-        return { cantidadVariantes: cantidad, imagenParaTodas: paraTodas, files };
-      }
-    });
+    // Misma ventana que Agregar modelo (flujo A, decidido 2026-10-08): reemplaza a "Inicializar
+    // variantes", que creaba N artículos iguales con stock 1 y sin talla.
+    this.modeloParaArticulos = {
+      id: producto.idProducto,
+      nombre: producto.nombre,
+      stock: producto.stock ?? 0,
+      enArticulos,
+      color: producto.color,
+      marca: producto.marca,
+      descripcion: producto.descripcion,
+      contenido: producto.contenido,
+      categoria: producto.palabraClave ?? null,
+      tieneImagen: !!producto.imagen
+    };
+  }
 
-    if (!formValues) return;
+  /** Modelo al que se le están agregando artículos desde 🧩 Productos. */
+  modeloParaArticulos: ModeloParaArticulos | null = null;
 
-    const form = new FormData();
-  form.append(
-    'request',
-    new Blob([JSON.stringify({
-      productoId: producto.idProducto,
-      cantidadVariantes: formValues.cantidadVariantes,
-      imagenParaTodas: formValues.imagenParaTodas
-    })], { type: 'application/json' })
-  );
-    if (formValues.files) {
-      Array.from(formValues.files as FileList).forEach(f => form.append('files[]', f));
-    }
-
-    this.varianteService.inicializarDesdeProducto(form).pipe(takeUntil(this.destroy$)).subscribe({
-      next: (res) => {
-        Swal.fire({ icon: 'success', title: `${formValues.cantidadVariantes} variante(s) creada(s)`, timer: 2000, showConfirmButton: false});
-        this.getData(this.paginaPrimera);
-      },
-      error: (err) => Swal.fire({ icon: 'error', title: 'Error al crear variantes', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo' })
-    });
+  alCerrarAltaArticulos(guardo: boolean): void {
+    this.modeloParaArticulos = null;
+    if (guardo) this.getData(this.paginaPrimera);
   }
 
   primeraPagina(): void {
@@ -876,9 +883,16 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.router.navigate(['/productos/detalle-producto', id]);
   }
 
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
+
   verCarrito(): void {
     this.router.navigate(['/productos/detalle-productos']);
   }
+
+  /** Modelos cuya imagen no cargó: no se ofrece "Compartir imagen" (no hay nada que compartir). */
+  private readonly imagenesFallidas = new Set<number>();
+  marcarImagenFallida(item: { idProducto: number }): void { this.imagenesFallidas.add(item.idProducto); }
+  imagenFallo(item: { idProducto: number }): boolean { return this.imagenesFallidas.has(item.idProducto); }
 
   compartirImagen(item: IProductoDTO): void {
     if (!item.imagen?.urlImagen) return;

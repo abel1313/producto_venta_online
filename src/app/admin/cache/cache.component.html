@@ -51,4 +51,148 @@
 
     </div>
   </div>
+
+  <!-- ── Datos de prueba (solo QA, solo administrador) ── -->
+  <section class="pk-card ac-datos" *ngIf="esAdmin">
+    <div class="pk-card__header">
+      <!-- Sin .pk-title: esa clase pinta con el color del texto de la página y sobre el verde
+           del encabezado no se leía de día. Así hereda --card-header-text del encabezado. -->
+      <div>
+        <h3 class="ac-datos__titulo">🧪 Datos de prueba</h3>
+        <p class="ac-datos__subtitulo">Solo en QA · solo administradores</p>
+      </div>
+    </div>
+    <div class="pk-card__body">
+      <p class="pk-text pk-text--muted">
+        Crea modelos, artículos y pedidos de prueba para no darlos de alta a mano. Todo queda con la marca
+        <strong>"Prueba QA"</strong> y código de barras <strong>2098…</strong>, y los pedidos a nombre de
+        "Cliente Prueba QA". Corre en segundo plano: puedes salir de esta pantalla. En producción el servidor se niega.
+      </p>
+
+      <div class="ac-datos__campos">
+        <label class="pk-field">
+          <span class="pk-label">Modelos</span>
+          <input class="pk-input" type="number" min="1" max="20000" [(ngModel)]="plan.modelos" [disabled]="corriendo" />
+          <span class="pk-hint">De 1 a 20 000</span>
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Artículos por modelo (mín.)</span>
+          <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMin" [disabled]="corriendo" />
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Artículos por modelo (máx.)</span>
+          <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMax" [disabled]="corriendo" />
+          <span class="pk-hint">De 1 a 4</span>
+        </label>
+        <label class="pk-field">
+          <span class="pk-label">Pedidos</span>
+          <input class="pk-input" type="number" min="0" max="3000" [(ngModel)]="plan.pedidos" [disabled]="corriendo" />
+          <span class="pk-hint">De 0 a 3 000 · contado, Apartado e Ir pagando</span>
+        </label>
+      </div>
+
+      <div class="ac-datos__acciones">
+        <button class="pk-btn pk-btn--primary" type="button" [disabled]="corriendo" (click)="generarDatosPrueba()">
+          {{ corriendo ? 'Generando…' : '🧪 Generar datos de prueba' }}
+        </button>
+        <button class="pk-btn pk-btn--danger" type="button" [disabled]="corriendo" (click)="darDeBajaDatosPrueba()">
+          Dar de baja los datos de prueba
+        </button>
+      </div>
+
+      <div class="ac-datos__avance" *ngIf="avance && avance.estado !== 'SIN_CORRER'">
+        <div class="ac-datos__barra" role="progressbar" [attr.aria-valuenow]="porcentaje" aria-valuemin="0" aria-valuemax="100">
+          <span [style.width.%]="porcentaje"></span>
+        </div>
+        <p class="pk-text pk-text--bold">{{ avance.fase }} · {{ porcentaje }}%</p>
+        <p class="pk-text pk-text--sm">
+          Modelos: {{ avance.modelosCreados }} de {{ avance.modelosPedidos }} ·
+          Artículos: {{ avance.articulosCreados }} ·
+          Pedidos: {{ avance.pedidosCreados }} de {{ avance.pedidosPedidos }}
+          <span *ngIf="avance.pedidosConError"> · con error: {{ avance.pedidosConError }}</span>
+        </p>
+        <p class="pk-text pk-text--sm pk-text--muted" *ngIf="avance.ultimoError">Último error: {{ avance.ultimoError }}</p>
+        <p class="pk-hint" *ngIf="avance.aviso">⚠️ {{ avance.aviso }}</p>
+      </div>
+
+      <!-- Preparar prueba N: da de alta lo que pide cada prueba del documento de pruebas (modelos,
+           artículos y pedidos). Cada clic crea datos nuevos con la marca "Prueba QA", así una prueba
+           no depende de lo que otra ya canceló, pagó o unió. -->
+      <div class="ac-datos__preparar" *ngIf="escenarios.length">
+        <h4 class="ac-datos__seccion">Preparar una prueba</h4>
+        <p class="pk-text pk-text--sm pk-text--muted">
+          <b>Toca el botón con el número de la prueba que vas a hacer</b> (la Prueba 24 del documento es el botón
+          del 24). Da de alta lo que necesita esa prueba (modelos, artículos y pedidos), listo para empezar. Si ya estaba preparada, primero quita lo de antes (sus pedidos se cancelan y sus
+          modelos se dan de baja) y la vuelve a crear: tocarlo otra vez <b>reinicia</b> la prueba. «Quitar» solo
+          quita, sin volver a crear. Nada se borra de la base.
+        </p>
+        <div class="ac-datos__acciones">
+          <button class="pk-btn pk-btn--primary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="prepararTodas()">
+            {{ preparando === 'todas' ? 'Preparando todas…' : '🧪 Preparar todas las pruebas' }}
+          </button>
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="quitarTodas()">
+            {{ quitando === 'todas' ? 'Quitando…' : '🗑 Quitar todas' }}
+          </button>
+        </div>
+        <div class="ac-datos__escenario" *ngFor="let e of escenarios">
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="prepararPrueba(e)">
+            {{ preparando === e.prueba ? 'Preparando…' : '🧪 Preparar prueba ' + e.prueba }}
+          </button>
+          <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button" title="Quita lo de esta prueba sin volver a crearlo"
+                  [disabled]="corriendo || preparando !== null || quitando !== null" (click)="quitarPrueba(e)">
+            {{ quitando === e.prueba ? 'Quitando…' : '🗑 Quitar' }}
+          </button>
+          <span class="pk-text pk-text--sm">{{ e.titulo }}</span>
+        </div>
+
+        <div class="ac-datos__preparadas" *ngIf="preparados.length">
+          <div class="ac-datos__preparadas-cabecera">
+            <h4 class="ac-datos__seccion">Pruebas preparadas</h4>
+            <button class="pk-btn pk-btn--secondary pk-btn--sm" type="button" (click)="limpiarLista()">
+              🧹 Quitar la lista
+            </button>
+          </div>
+          <p class="pk-text pk-text--sm pk-text--muted">
+            Cada pedido se ve en pantalla con el nombre de su clave: <b>K4</b> es el cliente «Prueba 24 K4». Para
+            encontrarlo escribe ese nombre en el buscador de Mis pedidos o de Unir (mínimo 3 letras: «Prueba 24»
+            trae los de esa prueba), o pega su <b>número</b> (tócalo para abrirlo o cópialo). Los modelos y artículos
+            se buscan por su nombre («QA Prueba 17 Art-A») o por su código de barras. Esta lista se queda guardada en
+            este navegador aunque cambies de pantalla; «Quitar la lista» solo la quita de aquí, no borra nada.
+          </p>
+        </div>
+
+        <div class="ac-datos__listo" *ngFor="let preparado of preparados"
+             [class.ac-datos__listo--error]="preparado.error">
+          <p class="pk-text pk-text--bold" *ngIf="!preparado.error">
+            ✅ Prueba {{ preparado.prueba }} lista · {{ preparado.titulo }}
+            <span class="pk-text--muted"> · preparada {{ preparado.preparadoEn | date:'dd/MM HH:mm' }}</span>
+          </p>
+          <p class="pk-text pk-text--bold" *ngIf="preparado.error">⚠️ Prueba {{ preparado.prueba }}: no se pudo · {{ preparado.error }}</p>
+          <p class="pk-hint" *ngIf="preparado.queSeQuito">♻️ {{ preparado.queSeQuito }}</p>
+          <ul class="ac-datos__pedidos" *ngIf="preparado.catalogo?.length">
+            <li *ngFor="let c of preparado.catalogo">
+              <strong>{{ c.clave }}</strong> = {{ etiquetaDato(c) }} «{{ c.nombre }}»
+              <button *ngIf="c.codigoBarras" type="button" class="ac-datos__codigo" [title]="tituloCopiar(c)"
+                      (click)="copiar(c.codigoBarras)">{{ c.codigoBarras }}</button>
+              · {{ c.queEs }}
+            </li>
+          </ul>
+          <ul class="ac-datos__pedidos" *ngIf="preparado.pedidos?.length">
+            <li *ngFor="let p of preparado.pedidos">
+              <strong>{{ p.clave }}</strong> =
+              <a [routerLink]="['/pedidos/mis-pedidos']" [queryParams]="{ pedidoId: p.pedidoId }">pedido #{{ p.pedidoId }}</a>
+              <span *ngIf="p.cliente"> «{{ p.cliente }}»</span>
+              <button type="button" class="ac-datos__codigo" title="Copiar el número del pedido"
+                      (click)="copiar(p.pedidoId)">copiar número</button>
+              · {{ p.queEs }}
+            </li>
+          </ul>
+          <p class="pk-hint" *ngIf="preparado.siguientePaso">👉 {{ preparado.siguientePaso }}</p>
+        </div>
+      </div>
+    </div>
+  </section>
 </div>

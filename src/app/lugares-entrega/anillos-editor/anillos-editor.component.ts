@@ -178,7 +178,7 @@ export class AnillosEditorComponent implements AfterViewInit, OnChanges, OnDestr
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.svc.eliminarAnillo(a.id).subscribe({

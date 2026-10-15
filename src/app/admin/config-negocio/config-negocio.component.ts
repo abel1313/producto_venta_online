@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { NegocioService, INegocioEstado } from 'src/app/negocio/negocio.service';
 import { CENTRO_MAPA_GENERICO } from 'src/app/shared/selector-ubicacion/selector-ubicacion.component';
 import { horaLegible } from 'src/app/shared/hora.util';
+import { DatosLegalesService } from 'src/app/legal/datos-legales.service';
 
 @Component({
   selector: 'app-config-negocio',
@@ -35,10 +36,16 @@ export class ConfigNegocioComponent implements OnInit {
   horarioForm!:   FormGroup;
   contactosForm!: FormGroup;
   alertaStockForm!: FormGroup;
+  /** Datos legales del negocio (LFPC 76 bis III): pie de página, Términos, Aviso de privacidad y ticket. */
+  datosLegalesForm!: FormGroup;
+  faltanDatosLegales: string[] = [];
+  guardandoDatosLegales = false;
+  datosLegalesCargados = false;
 
   constructor(
     private readonly negocioService: NegocioService,
-    private readonly fb: FormBuilder
+    private readonly fb: FormBuilder,
+    private readonly datosLegalesService: DatosLegalesService
   ) {}
 
   ngOnInit(): void {
@@ -55,7 +62,56 @@ export class ConfigNegocioComponent implements OnInit {
     this.alertaStockForm = this.fb.group({
       umbralStockBajo: [5, [Validators.required, Validators.min(1)]]
     });
+    this.datosLegalesForm = this.fb.group({
+      nombreResponsable: ['', Validators.maxLength(150)],
+      rfc:               ['', [Validators.maxLength(13), Validators.pattern(/^\s*([A-Za-zÑñ&]{3,4}\d{6}[A-Za-z0-9]{3})?\s*$/)]],
+      domicilio:         ['', Validators.maxLength(300)],
+      telefono:          ['', Validators.pattern(/^[\s()+\-\d]*$/)],
+      correo:            ['', [Validators.email, Validators.maxLength(150)]],
+      horarioAtencion:   ['', Validators.maxLength(150)]
+    });
     this.cargarConfig();
+    this.cargarDatosLegales();
+  }
+
+  private cargarDatosLegales(): void {
+    this.datosLegalesService.obtener().subscribe(d => {
+      this.datosLegalesForm.patchValue({
+        nombreResponsable: d.nombreResponsable ?? '', rfc: d.rfc ?? '', domicilio: d.domicilio ?? '',
+        telefono: d.telefono ?? '', correo: d.correo ?? '', horarioAtencion: d.horarioAtencion ?? ''
+      });
+      this.faltanDatosLegales = d.faltan ?? [];
+      this.datosLegalesCargados = true;
+    });
+  }
+
+  guardarDatosLegales(): void {
+    if (this.datosLegalesForm.invalid) {
+      this.datosLegalesForm.markAllAsTouched();
+      return;
+    }
+    const v = this.datosLegalesForm.value;
+    const limpio = (x: string) => (x ?? '').trim() || null;
+    this.guardandoDatosLegales = true;
+    this.datosLegalesService.guardar({
+      nombreResponsable: limpio(v.nombreResponsable), rfc: limpio(v.rfc), domicilio: limpio(v.domicilio),
+      telefono: limpio(v.telefono), correo: limpio(v.correo), horarioAtencion: limpio(v.horarioAtencion)
+    }).subscribe({
+      next: d => {
+        this.guardandoDatosLegales = false;
+        this.faltanDatosLegales = d.faltan ?? [];
+        Swal.fire({
+          icon: 'success', title: '¡Datos legales guardados!',
+          text: d.completos ? 'Ya se ven en el pie de página, Términos y Aviso de privacidad.'
+                            : `Todavía falta: ${(d.faltan ?? []).join(', ')}.`
+        });
+      },
+      error: err => {
+        this.guardandoDatosLegales = false;
+        Swal.fire({ icon: 'error', title: 'No se guardaron los datos legales',
+                    text: (err?.error?.mensaje ?? err?.error?.message) ?? 'Revisa los datos e inténtalo de nuevo.' });
+      }
+    });
   }
 
   /**

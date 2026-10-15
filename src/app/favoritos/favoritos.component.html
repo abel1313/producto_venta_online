@@ -38,7 +38,7 @@
 
       <div class="fv-card__img-wrap" (click)="irDetalle(v)">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
-          <img [src]="src" class="fv-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+          <img [src]="src" class="fv-card__img" [alt]="v.nombreProducto || 'Artículo'" (error)="$any($event.target).style.display='none'" />
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="fv-card__img-placeholder">📦</div>
         <button class="fv-card__heart" (click)="quitarFavorito(v); $event.stopPropagation()" title="Quitar de favoritos">❤️</button>

@@ -20,8 +20,8 @@
   transition: background .18s ease, transform .18s ease;
 
   &:hover {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-hover-bg);
+    color: var(--btn-primary-hover-text);
     transform: scale(1.08);
   }
 
@@ -82,7 +82,7 @@
     gap: 12px;
     padding: 18px 20px 16px;
     background: var(--card-header-bg);
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text);
   }
 
   &__eyebrow {
@@ -108,14 +108,14 @@
     height: 30px;
     border: 0;
     border-radius: 50%;
-    background: rgba(255, 255, 255, .16);
+    background: color-mix(in srgb, var(--card-header-text) 16%, transparent);
     color: inherit;
     font-size: 1.3rem;
     line-height: 1;
     cursor: pointer;
     transition: background .18s ease;
 
-    &:hover { background: rgba(255, 255, 255, .3); }
+    &:hover { background: color-mix(in srgb, var(--card-header-text) 30%, transparent); }
     &:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
   }
 
@@ -214,16 +214,16 @@
 
 .ap-btn-ok {
   padding: 9px 22px;
-  border: 0;
+  border: 1px solid var(--btn-primary-border);
   border-radius: 10px;
-  background: var(--app-accent);
-  color: var(--app-accent-ink);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
   font-size: .88rem;
   font-weight: 700;
   cursor: pointer;
   transition: background .18s ease;
 
-  &:hover { background: var(--app-accent-hover, var(--app-accent)); }
+  &:hover { background: var(--btn-primary-hover-bg); }
   &:focus-visible { outline: 2px solid var(--app-text); outline-offset: 2px; }
 }
 

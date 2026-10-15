@@ -1,4 +1,5 @@
 import { Component } from '@angular/core';
+import { DatosLegalesService, telefonoLegible } from '../datos-legales.service';
 
 /**
  * Términos y Condiciones — página PÚBLICA (sin `AuthGuard`), ruta `/termConditions`.
@@ -16,8 +17,15 @@ import { Component } from '@angular/core';
 })
 export class TerminosComponent {
 
-  readonly correoContacto = 'contacto@novedades-jade.com.mx';
+  /** Quién vende, domicilio, teléfono y correo (LFPC 76 bis III): Configuración del negocio → Datos legales. */
+  readonly datos$ = this.datosLegales.obtener();
+  readonly telefonoLegible = telefonoLegible;
 
-  /** Se muestra al pie. Actualizar cuando cambie el contenido de los términos. */
-  readonly ultimaActualizacion = '25 de agosto de 2026';
+  /**
+   * Se muestra al pie. Actualizar cuando cambie el contenido de los términos (el registro guarda
+   * la fecha en que cada cliente los aceptó, así se sabe qué versión aceptó).
+   */
+  readonly ultimaActualizacion = '7 de octubre de 2026';
+
+  constructor(private readonly datosLegales: DatosLegalesService) {}
 }

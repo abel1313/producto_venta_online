@@ -91,16 +91,21 @@
   &__swatches { display: flex; gap: 6px; }
   &__swatch {
     width: 26px; height: 26px; border-radius: 8px;
-    border: 1px solid rgba(0,0,0,0.08);
+    border: 1px solid color-mix(in srgb, var(--app-text) 8%, transparent);
     flex-shrink: 0;
 
     // El 3er swatch muestra el fondo de página en oscuro (casi negro) -- con el borde tenue de
     // arriba se pierde contra fondos claros de la tarjeta, así que lleva uno más visible.
-    &--dark { border-color: rgba(128,128,128,0.35); }
+    &--dark { border-color: color-mix(in srgb, var(--app-text) 35%, transparent); }
   }
 
   &__nombre { font-size: .88rem; font-weight: 700; color: var(--app-text); margin-top: 4px; }
   &__desc   { font-size: .76rem; color: var(--app-text-muted); line-height: 1.4; flex: 1; }
+  &__default {
+    display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 999px;
+    font-size: .68rem; font-weight: 600; vertical-align: middle;
+    background: var(--badge-bg, var(--app-accent-soft)); color: var(--badge-text, var(--app-accent));
+  }
 
   // Cada lado del tema se marca aparte: como dia y noche ya no van juntos, la tarjeta puede
   // estar "en uso" solo de dia, solo de noche, o de los dos.
@@ -325,8 +330,9 @@
   transition: opacity .2s ease, transform .15s ease;
 
   &--save {
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
 
     &:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
     &:disabled { opacity: .5; cursor: not-allowed; transform: none; }
@@ -529,13 +535,13 @@
   &__btn {
     align-self: flex-start;
     padding: 10px 18px;
-    border: none;
+    border: 1px solid var(--btn-primary-border);
     border-radius: 10px;
     font-weight: 700;
     font-size: .88rem;
     cursor: default;
-    background: linear-gradient(135deg, var(--brand-1), var(--brand-2));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
   }
 }
 
@@ -571,7 +577,7 @@
     background: var(--card-header-bg);
     padding: 10px 14px;
     font-weight: 700;
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text);
   }
 
   &__body {

@@ -47,6 +47,29 @@ Este es el **frontend/UI** del sistema. Consume endpoints del backend `proyecto_
 
 ---
 
+## Regla — no escribir tests automáticos: se anotan en `TESTS_PENDIENTES.md` (2026-10-06)
+
+Decisión del dueño: *"ya no sigas haciendo tests, ni Angular ni Spring, porque a cada rato cambian;
+lo que sí necesito es un doc con las pruebas que faltan: se hace algo nuevo y se apunta 'esto
+necesita un test que compruebe esto y esto'"*.
+
+- **No se escriben ni se actualizan tests automáticos**: ni JUnit/Mockito/Spring en el back, ni
+  Jasmine/Karma ni Playwright (`e2e/`) en el front. El código cambia tan seguido que se reescribían
+  a cada rato.
+- **Cada cambio nuevo deja su entrada en `TESTS_PENDIENTES.md`** (raíz del repo), en el mismo
+  cambio que el código: fecha, qué se hizo, dónde vive (clase y método, o componente) y la lista
+  **"Debe comprobar"** con casos concretos — qué entra y qué tiene que salir, incluidos los casos
+  de error (ej. *"cambiar 4 piezas de una línea de 3 → 400 'Solo hay 3'"*). Así, el día que se
+  escriban, ya está todo dicho.
+- **Sí se sigue comprobando que compile** antes de entregar: `mvn -q compile` en el back,
+  `ng build --configuration development` en el front.
+- **Los tests que ya existen no se borran.** Si un cambio rompe uno, no se arregla: se anota en
+  `TESTS_PENDIENTES.md`, sección "Tests existentes que quedaron viejos". Los deploys no corren
+  tests (`-DskipTests` en el Dockerfile del back; el front solo hace `ng build`), así que no bloquean.
+- **Esto no quita** la guía de pruebas manuales para QA (skill `pruebas-de-impacto`) ni la regla de
+  correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
+- Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
+
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:
 - Si es un fix de color/estilo → anotarlo en "FIXES PENDIENTES / REALIZADOS"
@@ -5693,6 +5716,10 @@ if (this.detalle) {
 ```
 
 ### 2. Feat — botón "📍 Entrega" en la card de `mis-pedidos` (no en el detalle)
+
+> **2026-10-13: ahora dice "📍 Dirección"** (pedido del dueño: junto está "📦 Entregar" y se
+> confundían). Mismo botón, mismo permiso `editar-entrega`; su texto en Gestión de roles lo cambia
+> `migration_accion_editar_entrega_direccion.sql` (back).
 
 Decisión del usuario: el punto de entrada para capturar/editar `nombreReceptor`,
 `direccionEntrega`, `fechaEntrega` y `observaciones` va en la **card de la lista** (`mis-pedidos`),
@@ -12164,6 +12191,18 @@ ambientes, y confirmado por el dueño en prod (`shop.novedades-jade.com.mx`) tra
 
 ## BUG RECURRENTE — `<select>` NATIVO ILEGIBLE EN MODO OSCURO (2026-09-08)
 
+> **⚠️ REEMPLAZADO el 2026-10-13 — no volver a aplicar el parche de abajo.** El parche (select blanco con
+> letra oscura y `color-scheme: light !important`) volvió a fallar: la regla global de `<option>` les
+> ponía la letra del tema (clara de noche) y el fondo del campo (casi transparente en los 4 diseños de
+> estilo Clásico) → **menú blanco con letra blanca** (reporte del dueño: *"cuando salían todas las
+> opciones aparecía en blanco y no se veían"*; contraste medido 1.1–1.2).
+> **Arreglo vigente:** el menú usa el trío `--menu-bg` / `--menu-text` / `--menu-scheme` (fondo sólido,
+> letra que contrasta, `color-scheme` del mismo lado), calculado por `TemaService.derivarColoresMenu()`
+> con los colores de Personalización; reglas en `styles.scss` ("Menú de opciones"); se quitaron los
+> parches de `venta-directa`, `venta-variante`, `gestion-lugares` y `entregas-zona`. Login y Registro
+> (`body.sin-diseno`) conservan el parche a propósito. Cómo medirlo: skill `revision-colores` (back,
+> `.claude/skills/revision-colores`). Detalle: `CAMBIOS_FRONT.md`, BUG-KEY-38.
+
 > Reporte del dueño: "esto ha estado pasando" — el select de "Lugar de entrega" en
 > `venta-directa` se veía con fondo blanco y letras invisibles en modo oscuro, y no era la
 > primera vez que se arreglaba este mismo bug en una pantalla distinta.
@@ -12333,6 +12372,29 @@ tablas hasta que se decida cuál gana.
 
 ---
 
+## GRUPO DE PEDIDOS — "SEPARAR PEDIDOS": MONTOS SOLO SI HAY ABONO + CAMPO DE DINERO (2026-09-24)
+
+Componente: `src/app/pedidos/grupo-pedido/` (sección "✂️ Separar pedidos").
+
+**Antes:** en un grupo a crédito siempre salían las columnas "Tiene hoy" / "Se queda con", los
+inputs de monto y el cuadro de totales, **aunque el cliente no hubiera dado ni un peso**. El admin
+veía campos para repartir $0. Además el input era el `<input type="number">` pelón del navegador
+(`.gp__monto`).
+
+**Ahora:**
+- Getter nuevo `hayQueRepartir` = `esCredito && abonadoGrupo > 0`. Controla el texto explicativo,
+  las dos columnas, los inputs y el `dl.gp__totales`. Sin abonos solo se marcan casillas.
+  No cambia el request: con `abonadoGrupo = 0` los montos ya valen 0 (`abrirFormSeparar` los
+  inicializa con `p.pagado`), así que el reparto en ceros sigue siendo válido para el back.
+- El texto dice cuánto ha dado el cliente: "El cliente ha dado **$X**: escribe cuánto se queda...".
+- Campo de dinero `.gp-dinero` (reemplaza a `.gp__monto`): `$` dentro del campo, monto alineado a
+  la derecha con `tabular-nums`, sin flechas de spin, anillo de foco con
+  `rgba(var(--app-accent-rgb), .18)` y borde `var(--pk-danger)` cuando el monto pasa del total.
+- Casilla `.gp-check` con `accent-color: var(--app-accent)`; la fila que sale se resalta con
+  `.gp__fila--sale` (`var(--app-accent-soft)`).
+
+---
+
 ## Regla de precios — el descuento NUNCA se aplica solo (hotfix 2026-09-29)
 
 **Decisión del dueño:** el producto tiene precio costo, precio venta y precio descuento
@@ -12343,19 +12405,38 @@ Esto **revierte** el hotfix del 2026-09-24 (`83bf7f6f`), que hacía que el carri
 rebaja en automático porque la card la mostraba como precio final. No volver a ese criterio.
 
 - **Card de `tienda/buscar`:** solo `v.precio`. Sin tachado ni rebaja.
-- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio`. Guarda `precioNormal` y
-  `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **Carrito (`CarritoVarianteService.agregar`)**: entra `v.precio` (al que se vende). Guarda
+  `precioNormal` y `precioOtro` (la rebaja, solo si es > 0 y menor al normal) para poder cambiar después.
+- **El descuento no viaja en las listas (R9, 2026-09-30):** `IVarianteResumen` ya no trae
+  `precioRebaja`, ni para el admin. Se pide uno por uno con
+  `VarianteService.descuentoArticulo(id)` (`GET /v1/precios/articulo/{id}/descuento`): 👁 del
+  carrito (🙈 lo borra de la página), "Usar" del carrito, "Otro precio" del detalle del pedido y el
+  💲 al abrirse. La línea del carrito guarda solo `usaOtroPrecio` y el `precio` que se cobra, nunca
+  un descuento sin aplicar. **Cualquier pantalla nueva que necesite el descuento lo pide así; no
+  volver a meterlo en la lista.**
+- **La lista de `tienda/buscar` en memoria (`VarianteService`) se tira al cambiar el rol** (entrar o
+  salir como admin). Antes el admin reusaba la que cargó como visitante, sin `precioRebaja`, y el
+  carrito mostraba "—" aunque el artículo tuviera descuento.
 - **`tienda/carrito`, columna "Otro precio" (solo admin):** el monto va tapado (`$ ••••`), 👁 lo
   destapa 3 segundos, y el check **Usar** (desmarcado por default) cobra toda la fila al precio
   descuento (`usarOtroPrecio`). Tapado porque el cliente puede estar viendo la pantalla.
 - **Botón 💲 de la card:** cambia el precio **de ese artículo solamente**
-  (`PUT /v1/precios/articulo/{varianteId}`); normal y descuento editables. Con precio propio
-  (`precioPropio`), "Usar el del producto" lo quita (`DELETE`). Ya **no** cambia el del producto.
-- **Detalle del pedido → agregar/cambiar artículo:** en `qa`/`dev` "Elegir" cobra el normal y
-  "Otro precio" cobra la rebaja sin mostrar el monto. **En `master` no subió** (decisión del
-  dueño: a prod solo la tabla del carrito y el precio); ahí sigue cobrando la rebaja sola.
+  (`PUT /v1/precios/articulo/{varianteId}`, body `{ precioVenta, precioRebaja, usarDescuento }`).
+  Dos checks que se excluyen: **"Precio venta"** (el input no se edita nunca; se cambia al editar el
+  producto) y **"Precio descuento"** (con su caja editable). Con "Precio descuento" el artículo se
+  **vende al descuento para todos** (R8 del back: tienda, carrito, chatbot, pedidos de clientes)
+  hasta que se vuelva a elegir "Precio venta". Con "Precio venta" el descuento se conserva para
+  elegirlo en una venta. Abre con el check de lo que el artículo tiene hoy; si se deja en "Precio
+  venta" sin haber tenido descuento activo, no se guarda nada. Con precio propio (`precioPropio`),
+  "Usar el del producto" lo quita (`DELETE`) y apaga el descuento. (En `master` todavía es la
+  versión anterior, que deja editar el normal.)
+- **`v.precio` es al que se vende** (el descuento si `usarDescuento`); el admin recibe además
+  `precioNormal` y `usarDescuento`. El carrito toma `precioNormal ?? precio` como normal: un
+  artículo con descuento activo entra con **"Usar" ya marcado**, y quitarlo cobra el normal **solo
+  en esa venta**.
+- **Detalle del pedido → agregar/cambiar artículo:** "Elegir" cobra el normal; "Otro precio"
+  cobra la rebaja sin mostrar el monto.
 - **Venta Directa** toma el precio de cada línea del carrito: respeta lo elegido ahí.
-- En `qa`/`dev` el back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN` (en prod
-  todavía no). "Usar el del producto" del 💲 solo aparece en `qa`/`dev` (depende de `precioPropio`).
+- El back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN`.
 - Cualquier pantalla nueva que agregue artículos: precio normal por default, la rebaja solo con
   una acción explícita del admin y sin enseñar el monto.

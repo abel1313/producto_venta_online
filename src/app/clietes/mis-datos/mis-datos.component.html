@@ -1,4 +1,4 @@
-<app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
+<app-boton-volver anchoContenido="820px" margen="1rem" fallback="/tienda/buscar"></app-boton-volver>
 <div class="md-page">
   <div class="md-card">
 
@@ -12,6 +12,13 @@
         <p class="md-subtitle">Actualiza tu información personal y direcciones de entrega</p>
       </div>
     </div>
+
+    <!-- Viene del carrito: le faltan datos para hacer el pedido -->
+    <p class="pk-aviso md-aviso-pedido" *ngIf="volver">
+      <span aria-hidden="true">🛒</span>
+      <span>Para terminar tu pedido llena los campos con <strong>*</strong> y guarda. Tu correo ya está
+        verificado: no hace falta escribirlo otra vez. Al guardar regresas a tu carrito.</span>
+    </p>
 
     <!-- Formulario -->
     <form class="md-form" [formGroup]="formDatosCliente" (ngSubmit)="guardarCliente()">
@@ -30,8 +37,10 @@
                      formControlName="nombrePersona" placeholder="Tu nombre">
             </div>
             <span class="md-error"
-                  *ngIf="formDatosCliente.get('nombrePersona')?.invalid && formDatosCliente.get('nombrePersona')?.touched">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
+                  *ngIf="formDatosCliente.get('nombrePersona')?.invalid && (formDatosCliente.get('nombrePersona')?.touched || formDatosCliente.get('nombrePersona')?.dirty)">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('nombrePersona')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('nombrePersona')?.errors?.['pattern']">{{ mensajeNombre }}</ng-container>
             </span>
           </div>
 
@@ -43,6 +52,12 @@
               <input id="md-segundo" class="md-input" type="text"
                      formControlName="segundoNombre" placeholder="Opcional">
             </div>
+            <span class="md-error"
+                  *ngIf="formDatosCliente.get('segundoNombre')?.invalid && (formDatosCliente.get('segundoNombre')?.touched || formDatosCliente.get('segundoNombre')?.dirty)">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('segundoNombre')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('segundoNombre')?.errors?.['pattern']">{{ mensajeNombre }}</ng-container>
+            </span>
           </div>
         </div>
 
@@ -56,8 +71,10 @@
                      formControlName="apeidoPaterno" placeholder="Apellido paterno">
             </div>
             <span class="md-error"
-                  *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && formDatosCliente.get('apeidoPaterno')?.touched">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
+                  *ngIf="formDatosCliente.get('apeidoPaterno')?.invalid && (formDatosCliente.get('apeidoPaterno')?.touched || formDatosCliente.get('apeidoPaterno')?.dirty)">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('apeidoPaterno')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('apeidoPaterno')?.errors?.['pattern']">{{ mensajeNombre }}</ng-container>
             </span>
           </div>
 
@@ -70,8 +87,10 @@
                      formControlName="apeidoMaterno" placeholder="Apellido materno">
             </div>
             <span class="md-error"
-                  *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && formDatosCliente.get('apeidoMaterno')?.touched">
-              <i class="pi pi-exclamation-circle"></i> Campo requerido
+                  *ngIf="formDatosCliente.get('apeidoMaterno')?.invalid && (formDatosCliente.get('apeidoMaterno')?.touched || formDatosCliente.get('apeidoMaterno')?.dirty)">
+              <i class="pi pi-exclamation-circle"></i>
+              <ng-container *ngIf="formDatosCliente.get('apeidoMaterno')?.errors?.['required']">Campo requerido</ng-container>
+              <ng-container *ngIf="formDatosCliente.get('apeidoMaterno')?.errors?.['pattern']">{{ mensajeNombre }}</ng-container>
             </span>
           </div>
         </div>
@@ -82,7 +101,7 @@
             <label class="md-label" for="md-fecha">Fecha de nacimiento <span class="md-req">*</span></label>
             <div class="md-input-wrap">
               <i class="pi pi-calendar md-input-icon"></i>
-              <app-selector-fecha formControlName="fechaNacimiento"
+              <app-selector-fecha modo="nacimiento" formControlName="fechaNacimiento"
                                   placeholder="Fecha de nacimiento"></app-selector-fecha>
             </div>
             <span class="md-error"
@@ -144,9 +163,15 @@
             <label class="md-label" for="md-tel">Número de contacto <span class="md-req">*</span></label>
             <div class="md-input-wrap">
               <i class="pi pi-phone md-input-icon"></i>
-              <input id="md-tel" class="md-input" type="tel"
-                     formControlName="numeroTelefonico" placeholder="10 dígitos">
+              <!-- Solo dígitos y máximo 10 mientras se escribe (QA 2026-10-14: dejaba escribir de más).
+                   Sin maxlength a propósito: cortaba "55 1234 5678" pegado antes de quitarle los espacios. -->
+              <input id="md-tel" class="md-input" type="tel" inputmode="numeric"
+                     autocomplete="tel-national" formControlName="numeroTelefonico" placeholder="10 dígitos"
+                     (input)="alEscribirTelefono($event)">
             </div>
+            <span class="md-hint" *ngIf="digitosTelefono > 0 && digitosTelefono < 10">
+              Llevas {{ digitosTelefono }} de 10 dígitos
+            </span>
             <span class="md-error"
                   *ngIf="formDatosCliente.get('numeroTelefonico')?.invalid && formDatosCliente.get('numeroTelefonico')?.touched">
               <i class="pi pi-exclamation-circle"></i>
@@ -224,7 +249,10 @@
               <div class="md-input-wrap">
                 <i class="pi pi-building md-input-icon"></i>
                 <input class="md-input" type="text" formControlName="colonia"
-                       placeholder="Tu colonia">
+                       placeholder="Tu colonia" [attr.list]="'md-colonias-' + i">
+                <datalist [id]="'md-colonias-' + i">
+                  <option *ngFor="let c of (cpColonias[i] || [])" [value]="c"></option>
+                </datalist>
               </div>
               <span class="md-error" *ngIf="dir.get('colonia')?.invalid && dir.get('colonia')?.touched">
                 <i class="pi pi-exclamation-circle"></i> Campo requerido
@@ -238,9 +266,17 @@
               <label class="md-label">Código postal <span class="md-req">*</span></label>
               <div class="md-input-wrap">
                 <i class="pi pi-hashtag md-input-icon"></i>
-                <input class="md-input" type="text" formControlName="codigoPostal"
-                       maxlength="5" placeholder="00000" (blur)="getCodigoPostal($event, i)">
+                <input class="md-input" type="text" inputmode="numeric" formControlName="codigoPostal"
+                       placeholder="00000" autocomplete="postal-code"
+                       (input)="alEscribirCodigoPostal($event, i)" (blur)="getCodigoPostal($event, i)">
               </div>
+              <span class="md-hint" *ngIf="cpBuscando[i]">Buscando el municipio…</span>
+              <span class="md-hint md-hint--aviso" *ngIf="cpMensaje[i]">
+                <i class="pi pi-info-circle"></i> {{ cpMensaje[i] }}
+              </span>
+              <span class="md-hint" *ngIf="!cpBuscando[i] && !cpMensaje[i] && (cpColonias[i]?.length ?? 0) > 1">
+                Encontramos {{ cpColonias[i].length }} colonias: elígela en el campo Colonia.
+              </span>
               <span class="md-error"
                     *ngIf="dir.get('codigoPostal')?.errors?.['required'] && dir.get('codigoPostal')?.touched">
                 <i class="pi pi-exclamation-circle"></i> Campo requerido
@@ -257,7 +293,7 @@
               <div class="md-input-wrap">
                 <i class="pi pi-map md-input-icon"></i>
                 <input class="md-input" type="text" formControlName="municipio"
-                       placeholder="Se llena automáticamente">
+                       placeholder="Se llena con el código postal">
               </div>
               <span class="md-error"
                     *ngIf="dir.get('municipio')?.invalid && dir.get('municipio')?.touched">
@@ -269,7 +305,7 @@
           <!-- Referencias -->
           <div class="md-row md-row--single">
             <div class="md-field">
-              <label class="md-label">Referencias</label>
+              <label class="md-label">Referencias <span class="md-opcional">(opcional)</span></label>
               <div class="md-input-wrap">
                 <i class="pi pi-info-circle md-input-icon md-input-icon--top"></i>
                 <textarea class="md-input md-textarea" formControlName="referencias" rows="2"
@@ -292,7 +328,10 @@
 
       <!-- ── Footer ────────────────────────────────────────────────── -->
       <div class="md-footer">
-        <button type="submit" class="md-btn md-btn--save">
+        <!-- mousedown sin efecto: si el cursor estaba en un campo vacío, al salir de él aparecía su
+             "Campo requerido", todo bajaba ~25 px y el clic caía fuera del botón (QA 2026-10-14:
+             "le doy guardar y no pasa nada"). Así el campo no pierde el foco antes del clic. -->
+        <button type="submit" class="md-btn md-btn--save" (mousedown)="$event.preventDefault()">
           <i class="pi pi-save"></i> Guardar cambios
         </button>
       </div>

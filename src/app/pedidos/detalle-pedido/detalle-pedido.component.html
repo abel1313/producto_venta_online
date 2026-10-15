@@ -3,7 +3,7 @@
   <!-- HEADER -->
   <div class="detalle-header">
     <button class="btn-regresar" (click)="irPedido()">
-      ← Regresar
+      ← Volver
     </button>
     <div class="detalle-header__info">
       <span class="detalle-header__titulo">Pedido #{{ pedido.pedido.id }}</span>
@@ -17,12 +17,31 @@
         [class.estado--cancelado]="estaCancelado">
         {{ estadoPedidoLabel }}
       </span>
+      <!-- La entrega va aparte del pago (back 2026-10-06) -->
+      <span class="detalle-header__estado" *ngIf="!estaCancelado && entregadoDetalle !== null"
+        [class.estado--entregado]="entregadoDetalle"
+        [class.estado--cancelado]="!entregadoDetalle">
+        {{ entregadoDetalle ? 'Entregado' : 'Falta entregar' }}
+      </span>
       <span class="detalle-header__fecha" *ngIf="fechaCompra">
-        🕒 {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
+        🕒 Pedido hecho el {{ fechaCompra | date:'dd/MM/yyyy HH:mm' }} hrs
       </span>
     </div>
-    <span class="detalle-header__total">Total: {{ totalGeneral | currency:'$' }}</span>
+    <span class="detalle-header__total" *ngIf="!grupo && debeCredito === null">Total: {{ totalGeneral | currency:'$' }}</span>
+    <!-- A crédito con abonos lo que importa es lo que falta; el total va abajo, chico. -->
+    <span class="detalle-header__total detalle-header__total--grupo" *ngIf="!grupo && debeCredito !== null">
+      Debe: {{ debeCredito | currency:'$' }}
+      <small>Total {{ totalGeneral | currency:'$' }} · pagado {{ (detalle?.totalPagado ?? 0) | currency:'$' }}</small>
+    </span>
+    <span class="detalle-header__total detalle-header__total--grupo" *ngIf="grupo">
+      Total de los {{ grupo.pedidos.length }} pedidos: {{ grupo.totalGrupo | currency:'$' }}
+      <small *ngIf="grupo.pagadoGrupo > 0">Pagado {{ grupo.pagadoGrupo | currency:'$' }} · falta {{ grupo.saldoGrupo | currency:'$' }}</small>
+    </span>
     <div class="detalle-header__acciones" *ngIf="isAdmin">
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeEntregarDetalle" (click)="entregarDetalle()"
+              title="El cliente ya se lo llevó">📦 Entregar</button>
+      <button class="dp-btn-imprimir" type="button" *ngIf="puedeRegresarEntregaDetalle" (click)="regresarEntregaDetalle()"
+              title='Regresar a "Falta entregar" (si se marcó por error)'>↩️ Falta entregar</button>
       <!-- Única vía correcta para cambiar un ramo: reabre el configurador y recotiza.
            Ver `puedeEditarRamo`. -->
       <button class="dp-btn-editar-ramo" type="button" *ngIf="puedeEditarRamo"
@@ -54,7 +73,7 @@
       </button>
       <button class="dp-btn-agregar-art" type="button"
               *ngIf="puedeAgregarArticulo"
-              [disabled]="pedidoEstaCerrado" (click)="abrirBuscadorArticulo()"
+              [disabled]="sinDondeAgregar" (click)="agregarArticulo()"
               [title]="pedidoEstaCerrado ? 'Un pedido entregado o cancelado ya no se puede editar' : 'Agregar un artículo a este pedido'">
         ➕ Agregar artículo
       </button>
@@ -68,8 +87,13 @@
   <div class="dp-tipo-form" *ngIf="mostrarFormTipo">
     <h4 class="dp-tipo-form__titulo">🔁 Cambiar la forma de cobro</h4>
     <p class="dp-tipo-form__actual">
-      Ahora está como <b>{{ etiquetaTipo(tipoActual) }}</b>
-      <span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>
+      Ahora está como <b>{{ esPedidoEnLinea ? '🕓 Pendiente (lo pidió el cliente desde su cuenta, sin cobrar)' : etiquetaTipo(tipoVigente) }}</b><span *ngIf="saldoPendiente > 0"> · saldo pendiente {{ saldoPendiente | currency:'$' }}</span>.
+      Elige a cuál lo quieres pasar:
+    </p>
+    <p class="dp-tipo-aviso" *ngIf="grupo">
+      🔗 Este pedido está unido con otros: el cambio se hace en <b>todo el grupo</b>
+      (pedidos {{ pedidosDelGrupoTexto }}). El grupo debe {{ grupo.saldoGrupo | currency:'$' }}<span
+      *ngIf="grupo.pagadoGrupo > 0"> y ya dio {{ grupo.pagadoGrupo | currency:'$' }}</span>.
     </p>
     <p class="dp-tipo-aviso" *ngIf="esContadoEntregado">
       ⚠️ Este pedido se registró como pagado completo de contado. Al cambiarlo se anula ese cobro y
@@ -78,50 +102,93 @@
     </p>
 
     <div class="dp-tipo-opciones">
+      <!-- 🕓 Pendiente se ve siempre (QA 2026-10-08: "no veo la opción de Pendiente"). Solo lo tiene
+           el pedido que hace el cliente desde su cuenta; a Pendiente no se regresa. -->
+      <button type="button" class="dp-tipo-btn" disabled
+              [class.dp-tipo-btn--bloqueado]="!esPedidoEnLinea">
+        <span class="dp-tipo-btn__nombre">
+          🕓 Pendiente
+          <span class="dp-tipo-btn__marca" *ngIf="esPedidoEnLinea">Así está ahora</span>
+        </span>
+        <span class="dp-tipo-btn__ayuda">Lo pidió el cliente desde su cuenta y nadie lo ha cobrado ni apartado</span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="!esPedidoEnLinea">🔒 Solo los pedidos que hace el cliente desde su cuenta quedan así; no se puede regresar a Pendiente</span>
+      </button>
       <button type="button" class="dp-tipo-btn"
               *ngFor="let t of tiposPedido"
               [class.dp-tipo-btn--active]="tipoForm.tipoPedido === t.valor"
-              [disabled]="t.valor === tipoActual"
+              [class.dp-tipo-btn--bloqueado]="t.valor === 'APARTADO' && tieneDinero"
+              [attr.aria-pressed]="tipoForm.tipoPedido === t.valor"
+              [disabled]="(t.valor === tipoVigente && !esPedidoEnLinea) || (esPedidoEnLinea && t.valor === 'NORMAL') || (t.valor === 'APARTADO' && tieneDinero) || (grupo && t.valor === 'NORMAL' && !esPedidoEnLinea)"
               (click)="seleccionarTipo(t.valor)">
-        <span class="dp-tipo-btn__nombre">{{ t.etiqueta }}</span>
+        <span class="dp-tipo-btn__nombre">
+          {{ t.etiqueta }}
+          <span class="dp-tipo-btn__marca" *ngIf="t.valor === tipoVigente && !esPedidoEnLinea">Así está ahora</span>
+        </span>
         <span class="dp-tipo-btn__ayuda">{{ t.ayuda }}</span>
+        <!-- El motivo va escrito, no solo al pasar el mouse: en el celular no hay mouse (QA 2026-10-08). -->
+        <span class="dp-tipo-btn__bloqueo" *ngIf="t.valor === 'APARTADO' && tieneDinero">
+          🔒 No se puede: ya dio {{ dineroDelCambio | currency:'$' }}{{ grupo ? ' entre los pedidos del grupo' : '' }}. Un Apartado es sin dinero; por eso queda como Ir pagando.
+        </span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="esPedidoEnLinea && t.valor === 'NORMAL'">
+          Para cobrarlo completo usa el botón Cobrar de la card.
+        </span>
+        <span class="dp-tipo-btn__bloqueo" *ngIf="grupo && !esPedidoEnLinea && t.valor === 'NORMAL' && t.valor !== tipoVigente">
+          🔒 Un grupo no se pasa a contado: para que quede pagado, cóbralo completo con 💵 Pagar el grupo completo.
+        </span>
       </button>
     </div>
 
-    <div class="dp-tipo-campo">
-      <label for="montoCobrado">¿Cobra algo ahora?</label>
-      <input id="montoCobrado" type="number" min="0" step="0.01"
-             [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
-      <small *ngIf="tipoForm.tipoPedido === 'NORMAL' && saldoPendiente > 0">
-        Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
-      </small>
-      <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
-        Podés dejarlo en 0 si no cobra nada en este momento.
-      </small>
-    </div>
+    <ng-container *ngIf="tipoForm.tipoPedido">
+      <p class="dp-tipo-aviso" *ngIf="tipoForm.tipoPedido === 'APARTADO'">
+        Un Apartado es sin dinero: el cliente lo paga completo cuando lo recoge. Si te deja algo
+        ahora, elige <b>Ir pagando</b>.
+      </p>
+      <div class="dp-tipo-campo" *ngIf="tipoForm.tipoPedido !== 'APARTADO'">
+        <label for="montoCobrado">¿Cobra algo ahora?</label>
+        <input id="montoCobrado" type="number" min="0" step="0.01"
+               [(ngModel)]="tipoForm.montoCobrado" placeholder="0.00" />
+        <small *ngIf="tipoForm.tipoPedido === 'NORMAL' && saldoPendiente > 0">
+          Para dejarlo en contado hay que cobrar los {{ saldoPendiente | currency:'$' }} que quedan.
+        </small>
+        <small *ngIf="tipoForm.tipoPedido !== 'NORMAL'">
+          Puedes dejarlo en 0 si no cobra nada en este momento.<span *ngIf="grupo"> Lo que cobres entra
+          como abono del grupo (se reparte del pedido más viejo al más nuevo).</span>
+        </small>
+      </div>
 
-    <!-- El pedido explícito: la descripción del abono es texto libre, no una lista fija -->
-    <div class="dp-tipo-campo">
-      <label for="descripcionTipo">¿Por qué cambia? (queda como nota del abono)</label>
-      <input id="descripcionTipo" type="text" maxlength="200"
-             [(ngModel)]="tipoForm.descripcion"
-             placeholder="Ej: vino a recogerlo y lo pagó completo" />
-    </div>
+      <!-- El pedido explícito: la descripción del abono es texto libre, no una lista fija -->
+      <div class="dp-tipo-campo">
+        <label for="descripcionTipo">¿Por qué cambia? (queda como nota del abono)</label>
+        <input id="descripcionTipo" type="text" maxlength="200"
+               [(ngModel)]="tipoForm.descripcion"
+               placeholder="Ej: vino a recogerlo y lo pagó completo" />
+      </div>
 
-    <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
-      ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}
-      para poder dejarlo en contado.
-    </p>
+      <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
+        ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}
+        para poder dejarlo en contado.
+      </p>
+    </ng-container>
 
     <div class="dp-tipo-acciones">
       <button class="dp-btn-cancelar" type="button" (click)="cancelarFormTipo()">Cancelar</button>
       <button class="dp-btn-guardar" type="button"
-              [disabled]="cambiandoTipo || cambioDejaSaldoSinCobrar"
+              [disabled]="cambiandoTipo || !tipoForm.tipoPedido || cambioDejaSaldoSinCobrar"
               (click)="cambiarTipoPedido()">
         {{ cambiandoTipo ? 'Guardando…' : 'Guardar cambio' }}
       </button>
     </div>
   </div>
+
+  <!-- ── UNIR PEDIDOS (2026-09-23) ─────────────────────────────────────────────────
+       Cobrar y recoger varios pedidos juntos. El componente decide solo qué mostrar según los
+       permisos 'unir-pedidos' / 'abonar' y si este pedido ya está en un grupo. -->
+  <app-grupo-pedido *ngIf="isAdmin && detalle"
+                    [pedidoId]="pedido.pedido.id"
+                    [pedidoAbierto]="pedidoAbiertoParaUnir"
+                    [refrescarCon]="detalle"
+                    (cambio)="alCambiarGrupo()"
+                    (grupoCargado)="alCargarGrupo($event)"></app-grupo-pedido>
 
   <!-- ── BUSCADOR DE ARTÍCULOS (agregar / cambiar) ───────────────────────────────── -->
   <div class="dp-art-buscador" *ngIf="mostrarBuscadorArticulo">
@@ -129,12 +196,12 @@
 
     <input class="dp-art-buscador__input" type="text"
            [(ngModel)]="terminoArticulo" (input)="buscarArticulo()"
-           placeholder="Buscar por nombre o código de barras (mínimo 3 letras)" />
+           placeholder="Buscar por nombre o código de barras (mínimo 3 letras)" appUppercase />
 
     <p class="dp-art-buscador__estado" *ngIf="buscandoArticulo">Buscando…</p>
     <p class="dp-art-buscador__estado"
        *ngIf="!buscandoArticulo && terminoArticulo.length >= 3 && resultadosArticulo.length === 0">
-      No se encontró ningún artículo con eso.
+      No hay ningún artículo con existencias que coincida. Los que no tienen stock o están dados de baja no salen aquí.
     </p>
 
     <ul class="dp-art-lista">
@@ -142,17 +209,22 @@
         <div class="dp-art-item__datos">
           <span class="dp-art-item__nombre">{{ v.nombreProducto }}</span>
           <span class="dp-art-item__variante" *ngIf="v.talla || v.color">
-            <span *ngIf="v.talla">Talla: {{ v.talla }}</span>
-            <span *ngIf="v.color"> · Color: {{ v.color }}</span>
+            <span *ngIf="v.talla">Talla: {{ v.talla | uppercase }}</span>
+            <span *ngIf="v.color"> · Color: {{ v.color | uppercase }}</span>
           </span>
           <span class="dp-art-item__stock">Stock: {{ v.stock ?? 0 }}</span>
         </div>
         <div class="dp-art-item__precio">
-          <!-- Si hay rebaja se cobra la rebaja, y se muestra el normal tachado para que se vea
-               que no es un error de precio. -->
-          <span class="dp-art-item__tachado" *ngIf="tieneRebaja(v)">{{ v.precio | currency:'$' }}</span>
-          <span class="dp-art-item__final">{{ precioACobrar(v) | currency:'$' }}</span>
+          <span class="dp-art-item__final">{{ (v.precio ?? 0) | currency:'$' }}</span>
         </div>
+        <!-- "Otro precio" cobra el descuento sin enseñar el monto: el cliente puede estar viendo.
+             El monto no viene en la lista (R9): se le pide al back al dar clic. -->
+        <button class="dp-art-item__btn dp-art-item__btn--otro" type="button"
+                *ngIf="(v.stock ?? 0) >= 1"
+                [disabled]="guardandoArticulo"
+                (click)="elegirConOtroPrecio(v)">
+          Otro precio
+        </button>
         <button class="dp-art-item__btn" type="button"
                 [disabled]="guardandoArticulo || (v.stock ?? 0) < 1"
                 (click)="elegirArticulo(v)">
@@ -167,8 +239,11 @@
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->
-  <div class="dp-entrega" *ngIf="detalle && (detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.fechaHoraEntregaRamo || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
+  <div class="dp-entrega" *ngIf="detalle && (detalle.recogeEnLocal || detalle.nombreReceptor || detalle.direccionEntrega || detalle.fechaRecogida || detalle.fechaHoraEntregaRamo || detalle.lugarEntregaNombre || detalle.urlFacebook || detalle.referencias)">
     <p class="dp-entrega__title">📍 Datos de entrega</p>
+    <p class="dp-entrega__item" *ngIf="detalle.recogeEnLocal">
+      <strong>Recoge en el local</strong>
+    </p>
     <p class="dp-entrega__item" *ngIf="detalle.nombreReceptor">
       <strong>Recibe:</strong> {{ detalle.nombreReceptor }}
     </p>
@@ -185,12 +260,12 @@
          encuentro solo si ya se programó el viaje (2026-09-08 -- antes se perdían, solo iban
          en el correo de aviso). -->
     <p class="dp-entrega__item" *ngIf="detalle.fechaRecogida">
-      <strong>Llega el:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}<ng-container *ngIf="detalle.horaRecogida"> a las {{ detalle.horaRecogida }}</ng-container><ng-container *ngIf="detalle.puntoEncuentro">, en {{ detalle.puntoEncuentro }}</ng-container>
+      <strong>Se entrega el:</strong> {{ detalle.fechaRecogida | date:'dd/MM/yyyy' }}<ng-container *ngIf="detalle.horaRecogida"> a las {{ detalle.horaRecogida }}</ng-container><ng-container *ngIf="detalle.puntoEncuentro">, en {{ detalle.puntoEncuentro }}</ng-container>
     </p>
     <!-- Ramo de flores eternas: fecha+hora exacta elegida al armar el ramo (2026-09-08 -- antes
          se guardaba pero nunca se le mostraba al cliente en su propio pedido). -->
     <p class="dp-entrega__item" *ngIf="detalle.fechaHoraEntregaRamo">
-      <strong>Llega el:</strong> {{ detalle.fechaHoraEntregaRamo | date:'dd/MM/yyyy' }} a las {{ detalle.fechaHoraEntregaRamo | date:'HH:mm' }}
+      <strong>Se entrega el:</strong> {{ detalle.fechaHoraEntregaRamo | date:'dd/MM/yyyy' }} a las {{ detalle.fechaHoraEntregaRamo | date:'HH:mm' }}
     </p>
     <p class="dp-entrega__item" *ngIf="detalle.urlFacebook">
       <strong>Facebook:</strong>
@@ -205,17 +280,25 @@
        [href]="link" target="_blank" rel="noopener">
       🧭 Cómo llegar
     </a>
-    <small class="dp-entrega__nota" *ngIf="linkComoLlegar">
-      {{ vaAlPuntoDeEncuentro
-          ? 'Se abre en tu app de mapas con la ruta al punto donde te entregamos.'
-          : (tieneUbicacionExacta
-              ? 'Se abre en tu app de mapas con la ruta trazada al punto exacto.'
-              : 'Se abre en tu app de mapas con la dirección escrita.') }}
-    </small>
+    <small class="dp-entrega__nota" *ngIf="linkComoLlegar">{{ notaComoLlegar }}</small>
+    <ng-container *ngIf="faltaUbicacionLocal">
+      <button type="button" class="dp-btn-mapa" disabled
+              title="Falta la ubicación del local">🧭 Cómo llegar</button>
+      <small class="dp-entrega__nota">
+        Falta configurar la ubicación del local en <b>Administración → Negocio</b>.
+      </small>
+    </ng-container>
   </div>
 
-  <!-- FORM DE ABONO (solo crédito) -->
-  <div class="dp-abono-wrap" *ngIf="esCredito">
+  <!-- Unido: el dinero es del grupo y se abona solo con "💵 Abonar al grupo" (regla del dueño
+       2026-10-01). Aquí ya no sale el abono de este pedido solo, que daba dos botones de abonar. -->
+  <p class="dp-abono-grupo-nota" *ngIf="esCredito && grupo">
+    Este pedido está unido: los pagos se registran para todo el grupo con
+    <strong>{{ grupo.tipoPedido === 'APARTADO' ? '💵 Pagar el grupo completo' : '💵 Abonar al grupo' }}</strong>, en el bloque de arriba.
+  </p>
+
+  <!-- FORM DE ABONO (solo crédito, pedido suelto) -->
+  <div class="dp-abono-wrap" *ngIf="esCredito && !grupo">
 
     <!-- Historial de pagos ya registrados — viene en la misma respuesta del detalle -->
     <div class="dp-abono-historial" *ngIf="(detalle?.abonos?.length ?? 0) > 0">
@@ -240,11 +323,37 @@
 
     <div class="dp-abono-form" *ngIf="mostrarFormAbono">
       <p class="dp-abono-form__title">💳 Registrar abono — Pedido #{{ pedido.pedido.id }}</p>
+      <p class="dp-abono-form__nota" *ngIf="esApartado">
+        Es un Apartado: se paga completo ({{ saldoPendiente | currency:'$' }}). Para dejar un adelanto, cámbialo a Ir pagando.
+      </p>
 
       <div class="dp-abono-form__row">
         <label class="dp-abono-form__label">Monto <span style="color:#ef4444">*</span></label>
-        <input class="dp-abono-form__input" type="number" min="0.01" step="0.01"
-               [(ngModel)]="abonoForm.monto" placeholder="0.00">
+        <!-- Apartado: un solo pago por el total, así que el monto no se mueve (QA 2026-10-08). -->
+        <div class="pk-monto-fijo" *ngIf="esApartado">
+          <input class="dp-abono-form__input pk-monto-fijo__input" type="number"
+                 [(ngModel)]="abonoForm.monto" readonly tabindex="-1" aria-describedby="porqueMontoFijo">
+          <button type="button" class="pk-monto-fijo__porque" (click)="verPorqueMontoFijo = !verPorqueMontoFijo"
+                  [attr.aria-expanded]="verPorqueMontoFijo">
+            🔒 ¿Por qué no puedo cambiar el monto?
+          </button>
+        </div>
+        <div class="pk-monto-fijo__explica" id="porqueMontoFijo" *ngIf="esApartado && verPorqueMontoFijo">
+          <p>Un <b>Apartado</b> es un pedido sin dinero: el cliente lo paga <b>completo, en un solo pago</b>,
+            cuando lo recoge. Por eso el monto es el total que debe ({{ saldoPendiente | currency:'$' }}).</p>
+          <p>Si el cliente quiere dejar solo una parte, el pedido ya no es Apartado: primero cámbialo a
+            <b>Ir pagando</b> y ahí registra lo que dio.</p>
+          <button type="button" class="pk-monto-fijo__accion" *ngIf="puedeCambiarTipo && puedeAbrirFormTipo"
+                  (click)="pasarApartadoAIrPagando()">🔁 Cambiar a Ir pagando</button>
+        </div>
+        <input class="dp-abono-form__input" type="number" min="0.01" step="0.01" *ngIf="!esApartado"
+               [(ngModel)]="abonoForm.monto" placeholder="0.00"
+               [class.dp-abono-form__input--error]="!!errorMontoAbono">
+        <!-- Se avisa al escribir, antes de llenar lo demás (comentario del dueño en QA 2026-10-01). -->
+        <small class="dp-abono-form__error" *ngIf="errorMontoAbono">{{ errorMontoAbono }}</small>
+        <small class="dp-abono-form__ayuda" *ngIf="!errorMontoAbono && abonoForm.monto > 0">
+          Quedaría debiendo {{ (saldoPendiente - abonoForm.monto) | currency:'$' }}
+        </small>
       </div>
 
       <div class="dp-abono-form__row">
@@ -296,7 +405,7 @@
           Cancelar
         </button>
         <button class="dp-btn-guardar" type="button"
-                [disabled]="registrandoAbono || !abonoForm.monto || abonoForm.monto <= 0"
+                [disabled]="registrandoAbono || !abonoForm.monto || abonoForm.monto <= 0 || !!errorMontoAbono"
                 (click)="registrarAbono()">
           {{ registrandoAbono ? 'Guardando…' : '💾 Guardar abono' }}
         </button>
@@ -306,7 +415,7 @@
 
   <!-- GRID DE PRODUCTOS -->
   <div class="detalle-cargando" *ngIf="cargandoDetalle">
-    <i class="pi pi-spin pi-spinner"></i> Cargando detalle…
+    Cargando detalle…
   </div>
 
   <div class="detalle-grid" *ngIf="!cargandoDetalle">
@@ -332,8 +441,8 @@
         </button>
         <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
         <p class="prod-card__variante" *ngIf="item.talla || item.color">
-          <span *ngIf="item.talla">Talla: {{ item.talla }}</span>
-          <span *ngIf="item.color"> · Color: {{ item.color }}</span>
+          <span *ngIf="item.talla">Talla: {{ item.talla | uppercase }}</span>
+          <span *ngIf="item.color"> · Color: {{ item.color | uppercase }}</span>
         </p>
 
         <div class="prod-card__fila" *ngIf="item.codigoBarras">
@@ -390,5 +499,112 @@
       <p>No hay productos en este pedido.</p>
     </div>
   </div>
+
+  <!-- ── ARTÍCULOS DE LOS OTROS PEDIDOS DEL GRUPO ─────────────────────────────────────
+       Se cambian o quitan desde aquí, pero el cambio se guarda en su propio pedido: al separar,
+       cada uno se lleva lo suyo. Para sus datos de entrega se abre ese pedido. -->
+  <section class="dp-otros" *ngIf="grupo && otrosPedidos.length > 0">
+    <div class="dp-otros__encabezado">
+      <h3 class="dp-otros__titulo">🔗 {{ grupo.pedidos.length }} pedidos unidos</h3>
+      <span class="dp-otros__resumen">
+        Este y {{ otrosPedidos.length }} más · total {{ grupo.totalGrupo | currency:'$' }}
+      </span>
+    </div>
+
+    <!-- El pedido abierto con la misma cabecera que los demás; sus artículos son los de arriba. -->
+    <div class="dp-otros__pedido" *ngIf="esteEnGrupo as e">
+      <div class="dp-otros__cabecera">
+        <span class="dp-otros__alternar dp-otros__alternar--este">
+          <span class="dp-otros__flecha" aria-hidden="true">•</span>
+          <span class="dp-otros__quien">
+            <span class="dp-otros__numero">Pedido #{{ e.pedidoId }}</span>
+            <span class="dp-otros__titular" *ngIf="e.esTitular">paga y recoge</span>
+            <span class="dp-otros__cliente">{{ e.cliente }}</span>
+            <span class="dp-otros__cuantos">· {{ piezasEste }} {{ piezasEste === 1 ? 'artículo' : 'artículos' }}</span>
+          </span>
+          <span class="dp-otros__total">{{ e.total | currency:'$' }}</span>
+        </span>
+        <span class="dp-otros__este">Es el que tienes abierto (sus artículos están arriba)</span>
+      </div>
+    </div>
+
+    <div class="dp-otros__pedido" *ngFor="let o of otrosPedidos" [class.dp-otros__pedido--abierto]="otroAbierto(o)">
+      <div class="dp-otros__cabecera">
+        <button type="button" class="dp-otros__alternar" (click)="alternarOtro(o)"
+                [attr.aria-expanded]="otroAbierto(o)" [attr.aria-controls]="'dp-otro-' + o.pedidoId">
+          <span class="dp-otros__flecha" aria-hidden="true">▸</span>
+          <span class="dp-otros__quien">
+            <span class="dp-otros__numero">Pedido #{{ o.pedidoId }}</span>
+            <span class="dp-otros__titular" *ngIf="o.esTitular">paga y recoge</span>
+            <span class="dp-otros__cliente">{{ o.cliente }}</span>
+            <span class="dp-otros__cuantos" *ngIf="!o.cargando && !o.error">
+              · {{ piezasDe(o) }} {{ piezasDe(o) === 1 ? 'artículo' : 'artículos' }}
+            </span>
+          </span>
+          <span class="dp-otros__total">{{ o.total | currency:'$' }}</span>
+        </button>
+        <button type="button" class="dp-otros__abrir" (click)="abrirPedido.emit(o.pedidoId)"
+                title="Para ver o cambiar sus datos de entrega">
+          Abrir pedido #{{ o.pedidoId }}
+        </button>
+      </div>
+
+      <div class="dp-otros__contenido" [id]="'dp-otro-' + o.pedidoId" *ngIf="otroAbierto(o)">
+      <div class="detalle-cargando" *ngIf="o.cargando">
+        Cargando artículos…
+      </div>
+      <p class="dp-otros__error" *ngIf="o.error">No se pudieron cargar los artículos de este pedido.</p>
+
+      <div class="detalle-grid" *ngIf="!o.cargando && !o.error">
+        <div class="prod-card" *ngFor="let item of o.lineas">
+          <img class="prod-card__img" [src]="env + item.productoId" [alt]="item.productoNombre"
+               (error)="onImgError($event)" />
+          <div class="prod-card__body">
+            <span class="prod-card__promo-badge" *ngIf="item.promocionId">
+              🏷️ {{ item.promocionDescripcion || 'Promoción' }}
+            </span>
+            <p class="prod-card__nombre">{{ nombreVisible(item.productoNombre) }}</p>
+            <p class="prod-card__variante" *ngIf="item.talla || item.color">
+              <span *ngIf="item.talla">Talla: {{ item.talla | uppercase }}</span>
+              <span *ngIf="item.color"> · Color: {{ item.color | uppercase }}</span>
+            </p>
+            <div class="prod-card__fila" *ngIf="item.codigoBarras">
+              <span class="prod-card__label">Código de barras</span>
+              <span class="prod-card__valor">{{ item.codigoBarras | uppercase }}</span>
+            </div>
+            <div class="prod-card__fila">
+              <span class="prod-card__label">Precio unitario</span>
+              <span class="prod-card__valor">{{ item.precioUnitario | currency:'$' }}</span>
+            </div>
+            <div class="prod-card__fila">
+              <span class="prod-card__label">Cantidad</span>
+              <div class="cantidad-control">
+                <button class="cantidad-btn cantidad-btn--menos" type="button"
+                  *ngIf="puedeQuitarDeOtro(o)"
+                  (click)="reducirCantidad(item, o.pedidoId)"
+                  [disabled]="eliminando.has(item)"
+                  [title]="'Quitar uno del pedido #' + o.pedidoId">
+                  {{ eliminando.has(item) ? '…' : '−' }}
+                </button>
+                <span class="cantidad-valor">{{ item.cantidad }}</span>
+                <button class="cantidad-btn cantidad-btn--cambiar" type="button"
+                  *ngIf="puedeCambiarDeOtro(o)"
+                  (click)="abrirBuscadorArticulo(item, o.pedidoId)"
+                  [disabled]="guardandoArticulo"
+                  [title]="'Cambiar este artículo del pedido #' + o.pedidoId + ' por otro'">
+                  ⇄
+                </button>
+              </div>
+            </div>
+            <div class="prod-card__fila prod-card__fila--subtotal">
+              <span class="prod-card__label">Subtotal</span>
+              <span class="prod-card__subtotal">{{ item.subTotal | currency:'$' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </section>
 
 </div>

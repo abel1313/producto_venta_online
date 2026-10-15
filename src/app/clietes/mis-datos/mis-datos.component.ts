@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { FormArray, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { AuthService } from 'src/app/auth/auth.service';
-import { ClienteService } from '../cliente.service';
+import { ClienteService, ICodigoPostalInfo } from '../cliente.service';
+import { limpiarNombre, MENSAJE_NOMBRE, PATRON_NOMBRE, soloDigitos, soloTelefono } from '../validaciones-cliente';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { MensajesGenericos } from './../../swife/swal.model';
 import { ICliente, InitCliente } from './models/index.model';
@@ -38,26 +40,58 @@ export class MisDatosComponent implements OnInit {
   constructor(private readonly fb: FormBuilder,
     private readonly clienteServoce: ClienteService,
     private readonly authService: AuthService,
-    private readonly usuarioService: UsuarioService
+    private readonly usuarioService: UsuarioService,
+    private readonly route: ActivatedRoute,
+    private readonly router: Router
   ) {
     // Valores por default vacios a proposito (2026-09-03): antes tenian datos de prueba quemados
     // ("abel"/"tibu"/"abel@gmail.com"/telefono) que se quedaban visibles en pantalla cuando la
     // carga real fallaba (cargarCliente() no limpia el form en su rama error) -- parecia que
     // habian cargado datos de una cuenta ajena, cuando en realidad eran restos de prueba.
     this.formDatosCliente = this.fb.group({
-      nombrePersona: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      segundoNombre: ['', [Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      apeidoPaterno: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
-      apeidoMaterno: ['', [Validators.required, Validators.pattern(/^[A-Za-zÁÉÍÓÚáéíóúÑñ]+$/)]],
+      // Con espacios (QA 2026-10-14): antes el patrón era solo letras pegadas y "María José" o
+      // "De la Cruz" salían en rojo con "Campo requerido" aunque estuvieran llenos.
+      nombrePersona: ['', [Validators.required, Validators.pattern(PATRON_NOMBRE)]],
+      segundoNombre: ['', [Validators.pattern(PATRON_NOMBRE)]],
+      apeidoPaterno: ['', [Validators.required, Validators.pattern(PATRON_NOMBRE)]],
+      apeidoMaterno: ['', [Validators.required, Validators.pattern(PATRON_NOMBRE)]],
       fechaNacimiento: [null, [Validators.required]],
       sexo: [''],
       correoElectronico: ['', [Validators.required, Validators.email]],
-      numeroTelefonico: ['', Validators.pattern(/^[0-9]{10}$/)],
+      // required: el back no deja comprar sin teléfono (Cliente.datosCompletos). La etiqueta ya
+      // tenía el *, pero sin el validador se podía guardar vacío y el carrito volvía a pedirlo.
+      numeroTelefonico: ['', [Validators.required, Validators.pattern(/^[0-9]{10}$/)]],
       listDirecciones: this.fb.array([])
 
     });
   }
   formDatosCliente: FormGroup;
+
+  readonly mensajeNombre = MENSAJE_NOMBRE;
+
+  /** Por dirección: buscando el código postal, el aviso si no se encontró y las colonias sugeridas. */
+  cpBuscando: Record<number, boolean> = {};
+  cpMensaje: Record<number, string> = {};
+  cpColonias: Record<number, string[]> = {};
+  private cpBuscado: Record<number, string> = {};
+
+  /** Nombre de cada campo tal como se ve en pantalla, para decir cuál falta al guardar. */
+  private static readonly ETIQUETAS: Record<string, string> = {
+    nombrePersona: 'Nombre', segundoNombre: 'Segundo nombre', apeidoPaterno: 'Apellido paterno',
+    apeidoMaterno: 'Apellido materno', fechaNacimiento: 'Fecha de nacimiento',
+    correoElectronico: 'Correo electrónico', numeroTelefonico: 'Número de contacto',
+    calle: 'Calle', colonia: 'Colonia', codigoPostal: 'Código postal', municipio: 'Municipio'
+  };
+
+  /**
+   * A dónde regresar al guardar (el carrito manda `?volver=/tienda/carrito` cuando faltan datos
+   * para hacer el pedido). Solo rutas de la propia app: algo como `//otro-sitio.com` o
+   * `https://...` se ignora para que el enlace no sirva para mandar a la gente a otra página.
+   */
+  get volver(): string | null {
+    const v = this.route.snapshot.queryParamMap.get('volver');
+    return v && v.startsWith('/') && !v.startsWith('//') ? v : null;
+  }
 
   ngOnInit(): void {
     this.authService.userId$.subscribe(idUser => {
@@ -129,7 +163,7 @@ export class MisDatosComponent implements OnInit {
               colonia: [dir.colonia, Validators.required],
               codigoPostal: [dir.codigoPostal, [Validators.required, Validators.pattern(/^\d{5}$/)]],
               municipio: [dir.municipio, Validators.required],
-              referencias: [dir.referencias, Validators.required],
+              referencias: [dir.referencias],
               predefinida: [dir.predefinida]
             });
 
@@ -163,7 +197,56 @@ export class MisDatosComponent implements OnInit {
   }
 
 
+  /** Antes de validar: quita espacios de más en nombre y apellidos. */
+  private limpiarNombres(): void {
+    for (const campo of ['nombrePersona', 'segundoNombre', 'apeidoPaterno', 'apeidoMaterno']) {
+      const ctrl = this.formDatosCliente.get(campo);
+      const limpio = limpiarNombre(ctrl?.value);
+      if (ctrl && ctrl.value !== limpio && !(ctrl.value == null && limpio === '')) ctrl.setValue(limpio);
+    }
+  }
+
+  /** "Nombre", "Calle (dirección 2)"… de los campos que no pasan. */
+  private camposConError(): string[] {
+    const nombres: string[] = [];
+    for (const [campo, ctrl] of Object.entries(this.formDatosCliente.controls)) {
+      if (campo !== 'listDirecciones' && ctrl.invalid) nombres.push(MisDatosComponent.ETIQUETAS[campo] ?? campo);
+    }
+    this.listDirecciones.controls.forEach((dir, i) => {
+      for (const [campo, ctrl] of Object.entries((dir as FormGroup).controls)) {
+        if (ctrl.invalid) {
+          const etiqueta = MisDatosComponent.ETIQUETAS[campo] ?? campo;
+          nombres.push(this.listDirecciones.length > 1 ? `${etiqueta} (dirección ${i + 1})` : etiqueta);
+        }
+      }
+    });
+    return nombres;
+  }
+
+  /** Lleva la pantalla al primer campo en rojo. */
+  private irAlPrimerError(): void {
+    setTimeout(() => {
+      const primero = document.querySelector<HTMLElement>(
+        '.md-form .md-input.ng-invalid, .md-form app-selector-fecha.ng-invalid');
+      primero?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      if (primero instanceof HTMLInputElement) primero.focus({ preventScroll: true });
+    });
+  }
+
+  /** Teléfono: solo dígitos y máximo 10 mientras se escribe. */
+  alEscribirTelefono(evento: Event): void {
+    const input = evento.target as HTMLInputElement;
+    const limpio = soloTelefono(input.value);
+    if (input.value !== limpio) input.value = limpio;
+    this.formDatosCliente.get('numeroTelefonico')?.setValue(limpio, { emitEvent: false });
+  }
+
+  get digitosTelefono(): number {
+    return String(this.formDatosCliente.get('numeroTelefonico')?.value ?? '').length;
+  }
+
   guardarCliente() {
+    this.limpiarNombres();
     // El boton antes se deshabilitaba solo con [disabled]="!formDatosCliente.valid" en el html
     // -- si CUALQUIER campo del formulario era invalido (no solo el que se estaba editando), el
     // boton se veia inactivo sin explicar por que, y daba la sensacion de "no me deja guardar"
@@ -172,11 +255,16 @@ export class MisDatosComponent implements OnInit {
     // ya existentes) y se explica.
     if (this.formDatosCliente.invalid) {
       this.formDatosCliente.markAllAsTouched();
+      // Se dice cuáles: antes solo decía "Revisa los campos marcados en rojo" y había casos sin
+      // ningún campo en rojo (Referencias), así que no había forma de saber qué faltaba.
+      const faltan = this.camposConError();
       Swal.fire({
         icon: 'warning',
         title: 'Faltan datos obligatorios',
-        text: 'Revisa los campos marcados en rojo antes de guardar.'
-      });
+        html: `<p>Revisa ${faltan.length === 1 ? 'este campo (está' : 'estos campos (están'} en rojo):</p>`
+          + `<p><b>${faltan.map(f => f.replace(/&/g, '&amp;').replace(/</g, '&lt;')).join(' · ')}</b></p>`,
+        confirmButtonText: 'Entendido'
+      }).then(() => this.irAlPrimerError());
       return;
     }
 
@@ -210,6 +298,18 @@ export class MisDatosComponent implements OnInit {
 
     this.clienteServoce.saveData(this.datosCliente).subscribe(save => {
 
+      const volver = this.volver;
+      // saveData() tipa la respuesta con el modelo viejo de cliente, que no trae datosCompletos.
+      const completos = (save?.data as { datosCompletos?: boolean } | undefined)?.datosCompletos;
+      if (volver && completos) {
+        Swal.fire({
+          icon: 'success',
+          title: 'Datos guardados',
+          text: 'Ya puedes terminar tu pedido.',
+          confirmButtonText: '🛒 Regresar al carrito'
+        }).then(() => this.router.navigateByUrl(volver));
+        return;
+      }
       MensajesGenericos.mostrarMensajeSuccess(save.mensaje, save.code);
       // Refresca correoVerificado/correoPendiente -- si el guardado acaba de dejar un correo
       // nuevo como pendiente de verificar, "Verificar mi correo" necesita saberlo para dejar de
@@ -219,7 +319,7 @@ export class MisDatosComponent implements OnInit {
       }
 
     }, error => {
-      MensajesGenericos.mostrarMensajeSuccess("Ocurrio un error, intente de nuevo", 500);
+      MensajesGenericos.mostrarMensajeSuccess(error?.error?.mensaje ?? "Ocurrio un error, intente de nuevo", 500);
     });
   }
 
@@ -243,20 +343,50 @@ export class MisDatosComponent implements OnInit {
     return !!(this.correoPendiente || this.correoElectronicoGuardado);
   }
 
-  getCodigoPostal(codigoPostal: any, iteracion: number) {
-    const codigo = codigoPostal.target.value;
-    this.clienteServoce.getCodigoPostal(codigo).subscribe(res => {
-      const direcciones = this.formDatosCliente.get('listDirecciones') as FormArray;
-      const direccion = direcciones.at(iteracion) as FormGroup;
-      const calle = direccion.get('calle')?.value;
- 
-      direccion.patchValue({
-        municipio: res.codigo_postal.municipio
-      });
-
-    });
-
+  /** Código postal: solo dígitos; al llegar a 5 busca el municipio solo (sin esperar a salir del campo). */
+  alEscribirCodigoPostal(evento: Event, indice: number): void {
+    const input = evento.target as HTMLInputElement;
+    const limpio = soloDigitos(input.value, 5);
+    if (input.value !== limpio) input.value = limpio;
+    const ctrl = (this.listDirecciones.at(indice) as FormGroup).get('codigoPostal');
+    ctrl?.setValue(limpio, { emitEvent: false });
+    this.cpMensaje[indice] = '';
+    if (limpio.length === 5) this.buscarCodigoPostal(limpio, indice);
   }
+
+  getCodigoPostal(evento: any, iteracion: number) {
+    const codigo = soloDigitos(evento?.target?.value, 5);
+    if (codigo.length === 5) this.buscarCodigoPostal(codigo, iteracion);
+  }
+
+  /**
+   * Llena el municipio con el código postal y sugiere las colonias. Si no lo encuentra o el
+   * servicio no contesta, lo dice debajo del campo y deja escribir el municipio a mano
+   * (QA 2026-10-14: antes no pasaba nada y no decía por qué).
+   */
+  private buscarCodigoPostal(codigo: string, indice: number): void {
+    if (this.cpBuscado[indice] === codigo || this.cpBuscando[indice]) return;
+    this.cpBuscado[indice] = codigo;
+    this.cpBuscando[indice] = true;
+    this.clienteServoce.buscarCodigoPostal(codigo).subscribe((info: ICodigoPostalInfo) => {
+      this.cpBuscando[indice] = false;
+      const direccion = this.listDirecciones.at(indice) as FormGroup;
+      if (!direccion) return;
+      if (!info.encontrado) {
+        this.cpMensaje[indice] = info.mensaje;
+        this.cpColonias[indice] = [];
+        this.cpBuscado[indice] = '';   // se puede volver a intentar con el mismo código
+        return;
+      }
+      this.cpMensaje[indice] = '';
+      this.cpColonias[indice] = info.colonias;
+      direccion.patchValue({ municipio: info.municipio });
+      if (!direccion.get('colonia')?.value && info.colonias.length === 1) {
+        direccion.patchValue({ colonia: info.colonias[0] });
+      }
+    });
+  }
+
   get listDirecciones(): FormArray {
     return this.formDatosCliente?.get('listDirecciones') as FormArray;
   }
@@ -279,7 +409,9 @@ export class MisDatosComponent implements OnInit {
       colonia: ['', Validators.required],
       codigoPostal: ['', [Validators.required, Validators.pattern(/^\d{5}$/)]],
       municipio: ['', Validators.required],
-      referencias: ['', Validators.required],
+      // Opcional (QA 2026-10-14): era obligatorio sin asterisco ni mensaje, y con todo lleno salía
+      // "Faltan datos obligatorios" sin ningún campo en rojo. El back tampoco lo pide.
+      referencias: [''],
       predefinida: [predefinida]
     });
   }

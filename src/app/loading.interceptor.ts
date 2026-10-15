@@ -26,8 +26,12 @@ export class LoadingInterceptor implements HttpInterceptor {
   // "Cargando el detalle..." dentro de la caja: el overlay global encima solo servia para
   // tapar la pagina, y si esa peticion se atoraba el visitante cerraba el modal y se
   // quedaba con la pantalla bloqueada sin nada que le explicara por que.
+  // `/v1/preferencias-filtro/` guarda los filtros en segundo plano cada vez que se cambia uno:
+  // con overlay, cada clic en un filtro haría parpadear la pantalla.
+  // `/v1/datos-legales` lo pide el pie de página en cada carga (contacto del negocio): igual que
+  // la cinta, no tiene por qué tapar la pantalla.
   private readonly skipUrls = ['/chatbot/', '/v1/cinta/activos', '/redes-sociales/',
-                               '/publico/premio/'];
+                               '/publico/premio/', '/v1/preferencias-filtro/', '/v1/datos-legales'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     if (this.skipUrls.some(url => req.url.includes(url))) {

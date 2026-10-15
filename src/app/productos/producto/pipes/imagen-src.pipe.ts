@@ -17,6 +17,13 @@ export class ImagenSrcPipe implements PipeTransform {
     if (!url) return of(null);
     if (url.startsWith('data:')) return of(url);
 
+    // Las miniaturas (/v1/imagenes/thumbnail/{id}) son públicas y responden bytes de imagen: el
+    // <img> las carga directo (con su caché del navegador). Pedirlas con HttpClient mandaba
+    // `Accept: application/json` y el `Authorization` del usuario, y el micro de imágenes
+    // contestaba 400, así que la tarjeta se quedaba en blanco aunque la URL sí abre en el navegador
+    // (2026-10-14).
+    if (/\/imagenes\/thumbnail\/[^/?#]+/.test(url)) return of(url);
+
     return this.http.get(this.normalizeUrl(url), {
       responseType: 'blob',
       observe: 'response'

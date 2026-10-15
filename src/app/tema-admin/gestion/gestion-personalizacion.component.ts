@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { forkJoin } from 'rxjs';
 import Swal from 'sweetalert2';
-import { ITemaVariable } from '../models/tema.model';
+import { ITemaVariable, OPCIONES_SELECCION } from '../models/tema.model';
 import { PresetDiseno, PRESETS_DISENO } from '../models/presets-diseno';
 
 /** A qué lado del tema se aplica/previsualiza un diseño predefinido. */
@@ -33,8 +33,7 @@ export class GestionPersonalizacionComponent implements OnInit {
   editandoId: number | null = null;
   form!: FormGroup;
 
-  readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion'];
-  readonly sombras = ['suave', 'media', 'fuerte'];
+  readonly tipos: Array<ITemaVariable['tipo']> = ['color', 'numero', 'seleccion', 'texto'];
   readonly presets: PresetDiseno[] = PRESETS_DISENO;
   // Identifica el boton en curso: hay uno por modo en cada tarjeta, asi que no alcanza el id
   // del preset solo (si no, al aplicar 'dia' se veria 'Aplicando...' tambien en el de noche).
@@ -102,6 +101,11 @@ export class GestionPersonalizacionComponent implements OnInit {
     });
   }
 
+  /** Opciones de una variable tipo "seleccion" según su clave (sombra de la card, estilo...). */
+  get opcionesSeleccion(): string[] {
+    return OPCIONES_SELECCION[(this.form.value.clave ?? '').trim()] ?? OPCIONES_SELECCION['card-shadow'];
+  }
+
   porGrupo(g: string): ITemaVariable[] {
     return this.variables.filter(v => (v.grupo || 'Otros') === g);
   }
@@ -110,6 +114,8 @@ export class GestionPersonalizacionComponent implements OnInit {
     if (this.gruposAbiertos.has(g)) {
       this.gruposAbiertos.delete(g);
     } else {
+      // Acordeón: al abrir una sección se cierran las demás, para no tener que subir una lista enorme.
+      this.gruposAbiertos.clear();
       this.gruposAbiertos.add(g);
       this.grupoActivo = g; // el preview sigue a la sección que se acaba de abrir
     }
@@ -173,7 +179,7 @@ export class GestionPersonalizacionComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#d33'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(r => {
       if (!r.isConfirmed) return;
       this.svc.eliminar(v.id!).subscribe({

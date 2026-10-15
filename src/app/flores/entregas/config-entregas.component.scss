@@ -142,7 +142,7 @@
   cursor: pointer;
 
   &:disabled { opacity: .5; cursor: not-allowed; }
-  &--primary { background: var(--app-accent); color: var(--app-accent-ink); }
+  &--primary { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); }
   &--ghost   { background: transparent; border: 1.5px solid var(--card-border); color: var(--app-text); }
   &--sm      { padding: 6px 12px; font-size: .8rem; }
 }

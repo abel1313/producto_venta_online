@@ -49,6 +49,8 @@ export interface PedidoDetalleResponse {
   totalPedido:       number;
   totalPagado:       number;
   saldoPendiente:    number;
+  /** Ya se lo llevó (aparte del pago, dominio entrega del back 2026-10-06). */
+  entregado?:        boolean;
   fechaPedido:       string;
   // Fecha+hora completa de la compra (ISO). En pedidos anteriores a 2026-07-07 no hay hora
   // real registrada y el back rellena con medianoche.
@@ -85,6 +87,8 @@ export interface PedidoDetalleResponse {
   // asignados (el back usa @JsonInclude(NON_NULL) en este DTO).
   lugarEntregaId?:     number | null;
   lugarEntregaNombre?: string | null;
+  /** Sin lugar de entrega o con un lugar "recoger en tienda": "Cómo llegar" lleva al local. */
+  recogeEnLocal?: boolean | null;
   urlFacebook?:        string | null;
   // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega, que es
   // la zona/pueblo. Ausentes (no `null`) si nunca se capturó — el back usa @JsonInclude(NON_NULL).

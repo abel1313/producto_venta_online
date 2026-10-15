@@ -24,8 +24,7 @@
         <input class="br-input" type="month" [(ngModel)]="mesFiltro" (change)="buscar()" />
       </div>
       <button class="br-btn--filtro" (click)="buscar()" [disabled]="cargando">
-        <span *ngIf="!cargando">🔍 Buscar</span>
-        <span *ngIf="cargando" class="spinner-border spinner-border-sm"></span>
+        <span>🔍 Buscar</span>
       </button>
     </div>
   </div>
@@ -70,16 +69,14 @@
             🎡 Ir a ejecución
           </button>
           <button class="br-btn br-btn--secondary" (click)="verDetalle(r)" [disabled]="cargandoDetalle">
-            <span *ngIf="!(cargandoDetalle && rifaDetalle === null)">📋 Ver detalle</span>
-            <span *ngIf="cargandoDetalle && rifaDetalle === null" class="spinner-border spinner-border-sm"></span>
+            <span>📋 Ver detalle</span>
           </button>
           <button class="br-btn br-btn--secondary" (click)="irABoletos(r)">
             🎟️ Boletos
           </button>
           <button class="br-btn br-btn--recover" *ngIf="!r.activa && r.tipo === 'MENSUAL'"
                   (click)="recuperarRifa(r)" [disabled]="recuperando !== null">
-            <span *ngIf="recuperando !== r.id">🔄 Recuperar</span>
-            <span *ngIf="recuperando === r.id" class="spinner-border spinner-border-sm"></span>
+            <span>🔄 Recuperar</span>
           </button>
         </div>
       </div>

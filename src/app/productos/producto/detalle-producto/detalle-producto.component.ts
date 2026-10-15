@@ -93,9 +93,7 @@ export class DetalleProductoComponent implements OnInit {
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, compartir',
-      cancelButtonText: 'No, cancelar',
-      background: '#0F2A20',
-      color: '#fff'
+      cancelButtonText: 'No, cancelar'
     }).then((res) => {
       if(!res.isConfirmed){
         Swal.fire({ icon: 'info', title: 'Acción cancelada', timer: 1500, showConfirmButton: false, background: '#0F2A20', color: '#fff' });
@@ -125,11 +123,13 @@ export class DetalleProductoComponent implements OnInit {
   }
 
   detalle: IDetalleProducto[] = [];
+  /** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   isProductoEnCarrito(): boolean {
     return this.detalle.some(item =>
        item?.codigoBarras === this.producto?.codigoBarras && item.nombre === this.producto.nombre
     );
   }
+/** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
 addCarrito() {
   const { idProducto, nombre, descripcion, stock, precioVenta, codigoBarras } = this.producto;
   const prod: IDetalleProducto = {
@@ -146,6 +146,8 @@ addCarrito() {
 
   this.serviceCarrito.agregarProducto(prod);
 }
+  
+/** @deprecated 2026-10-14 — carrito de producto base, sin uso (solo hay carrito de artículos). */
   
 removeCarrito() {
   this.serviceCarrito.eliminarProducto(this.producto);
@@ -174,9 +176,7 @@ toggleMarcar(img: ImagenUpdateDto): void {
       showCancelButton: true,
       confirmButtonText: 'Sí, eliminar',
       cancelButtonText: 'Cancelar',
-      confirmButtonColor: '#ef4444',
-      background: '#0F2A20',
-      color: '#fff'
+      confirmButtonColor: 'var(--pk-danger)'
     }).then(result => {
       if (!result.isConfirmed) return;
       this.eliminando = true;

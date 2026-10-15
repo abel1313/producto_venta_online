@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Subject } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -8,9 +9,11 @@ export class AuthenticateService {
   constructor() { }
 
   private accessToken: string | null = null;
+  private sessionChange$ = new Subject<void>();
 
   setAccessToken(token: string) {
     this.accessToken = token;
+    this.sessionChange$.next();
   }
 
   getAccessToken(): string | null {
@@ -19,6 +22,12 @@ export class AuthenticateService {
 
   clearAccessToken() {
     this.accessToken = null;
+    this.sessionChange$.next();
+  }
+
+  /** Observable que emite cada vez que la sesión cambia (login, logout, refresh) */
+  getSessionChanges$() {
+    return this.sessionChange$.asObservable();
   }
 
   /** Claims del access token actual (roles, idUsuario, pantallas, exp…), o null si no hay token

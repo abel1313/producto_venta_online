@@ -1,8 +1,8 @@
-<app-boton-volver fallback="/tienda/buscar"></app-boton-volver>
+<app-boton-volver anchoContenido="820px" margen="16px" fallback="/tienda/buscar"></app-boton-volver>
 <div class="ez-wrap">
 
   <div class="ez-header">
-    <h4 class="ez-header__title">📦 Entregas por zona</h4>
+    <h4 class="ez-header__title">📦 Entregas por zona<app-ayuda-opciones titulo="Entregas por zona" [opciones]="ayudaPantalla"></app-ayuda-opciones></h4>
     <small class="ez-header__sub">Programa el viaje semanal a una zona y avísales a todos los que pidieron ahí</small>
   </div>
 
@@ -57,7 +57,7 @@
     </div>
 
     <div class="ez-vacio" *ngIf="semana.pedidos.length === 0">
-      No hay pedidos pendientes de <b>{{ nombreZonaActual }}</b> en ese rango de fechas.
+      No hay pedidos por entregar en <b>{{ nombreZonaActual }}</b> en ese rango de fechas.
     </div>
 
     <ng-container *ngIf="semana.pedidos.length > 0">
@@ -68,7 +68,8 @@
               <th>Pedido</th>
               <th>Cliente</th>
               <th>Total</th>
-              <th>Fecha</th>
+              <th>Pedido hecho el</th>
+              <th>Se entrega el</th>
             </tr>
           </thead>
           <tbody>
@@ -77,6 +78,12 @@
               <td>{{ p.nombreCliente }}</td>
               <td>{{ p.total | currency:'$' }}</td>
               <td>{{ p.fechaPedido | date:'dd/MM/yyyy' }}</td>
+              <td>
+                <ng-container *ngIf="p.fechaEntrega; else sinFecha">
+                  {{ p.fechaEntrega | date:'dd/MM/yyyy' }}<ng-container *ngIf="p.horaEntrega">, {{ p.horaEntrega }}</ng-container>
+                </ng-container>
+                <ng-template #sinFecha><span class="ez-sin-fecha">Sin fecha todavía</span></ng-template>
+              </td>
             </tr>
           </tbody>
         </table>

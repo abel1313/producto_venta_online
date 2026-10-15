@@ -51,17 +51,17 @@ h1 {
   font-weight: 600;
   text-transform: uppercase;
   white-space: nowrap;
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
+  background: var(--pk-info-soft);
+  color: var(--pk-info);
 
   &.badge-current {
-    background: rgba(107, 114, 128, 0.1);
-    color: #6b7280;
+    background: color-mix(in srgb, var(--app-text) 10%, transparent);
+    color: var(--app-text-muted);
   }
 
   &.badge-recommended {
-    background: rgba(16, 185, 129, 0.1);
-    color: #10b981;
+    background: var(--pk-success-soft);
+    color: var(--pk-success);
     font-weight: 700;
   }
 }
@@ -97,8 +97,8 @@ h1 {
   border-collapse: collapse;
 
   th {
-    background: var(--card-header-bg, #00875A);
-    color: #fff;
+    background: var(--table-header-bg);
+    color: var(--app-accent-ink);
     padding: 12px;
     text-align: left;
     font-weight: 600;
@@ -114,7 +114,7 @@ h1 {
   }
 
   tr:hover td {
-    background: rgba(0, 135, 90, 0.04);
+    background: rgba(var(--app-accent-rgb), 0.04);
   }
 
   tr:last-child td {
@@ -124,18 +124,18 @@ h1 {
   .badge {
     padding: 4px 8px;
     font-size: 0.75rem;
-    background: rgba(59, 130, 246, 0.1);
-    color: #3b82f6;
+    background: var(--pk-info-soft);
+    color: var(--pk-info);
     border-radius: 4px;
 
     &.bg-success {
-      background: rgba(16, 185, 129, 0.1);
-      color: #10b981;
+      background: var(--pk-success-soft);
+      color: var(--pk-success);
     }
 
     &.bg-danger {
-      background: rgba(239, 68, 68, 0.1);
-      color: #ef4444;
+      background: var(--pk-danger-soft);
+      color: var(--pk-danger);
     }
   }
 }
@@ -143,8 +143,8 @@ h1 {
 .demo-primeng {
   ::ng-deep {
     .p-datatable .p-datatable-thead > tr > th {
-      background: var(--card-header-bg, #00875A);
-      color: #fff;
+      background: var(--table-header-bg);
+      color: var(--app-accent-ink);
       font-weight: 600;
       border: none;
       padding: 12px;
@@ -156,7 +156,7 @@ h1 {
     }
 
     .p-datatable .p-datatable-tbody > tr:hover {
-      background: rgba(0, 135, 90, 0.04);
+      background: rgba(var(--app-accent-rgb), 0.04);
     }
   }
 }
@@ -164,7 +164,7 @@ h1 {
 .analysis {
   margin-top: 16px;
   padding: 16px;
-  background: rgba(255, 255, 255, 0.03);
+  background: color-mix(in srgb, var(--card-header-text) 3%, transparent);
   border-left: 3px solid var(--app-accent);
   border-radius: 4px;
 
@@ -212,15 +212,15 @@ h1 {
 
 .recommendation-card {
   background: linear-gradient(135deg,
-    rgba(16, 185, 129, 0.08),
-    rgba(16, 185, 129, 0.02));
-  border: 2px solid rgba(16, 185, 129, 0.3);
+    var(--pk-success-soft),
+    var(--pk-success-soft));
+  border: 2px solid var(--pk-success-soft);
   border-radius: 12px;
   padding: 28px;
   text-align: center;
 
   h3 {
-    color: #10b981;
+    color: var(--pk-success);
     font-size: 1.4rem;
     margin-top: 0;
   }
@@ -244,7 +244,7 @@ h1 {
 
       &:before {
         content: '✓ ';
-        color: #10b981;
+        color: var(--pk-success);
         font-weight: bold;
         margin-right: 8px;
       }

@@ -8,7 +8,7 @@
   background: var(--header-brand);
   backdrop-filter: var(--header-brand-filter, blur(18px));
   border-bottom: 1px solid var(--header-brand-border, var(--card-border));
-  box-shadow: 0 4px 20px var(--header-brand-shadow, rgba(0, 0, 0, 0.18));
+  box-shadow: 0 4px 20px var(--header-brand-shadow);
   padding: 18px 16px;
 
   &__content { max-width: 1120px; margin: 0 auto; }
@@ -30,7 +30,7 @@
 
 .ci-btn {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 16px; border: none; border-radius: 12px;
+  padding: 10px 16px; border: 1px solid var(--btn-primary-border); border-radius: 12px;
   font-weight: 700; font-size: .92rem; cursor: pointer;
   // var(--app-accent-ink) en vez de #fff fijo: en modo oscuro el acento es jade
   // brillante (var(--brand-1)) y texto blanco encima queda ilegible — --app-accent-ink ya
@@ -39,7 +39,7 @@
   // reportó 3 veces seguidas que el texto de este botón no se veía bien, aunque en
   // captura la relación de contraste calculada ya era aceptable (~4.6:1 en claro).
   // No hace daño reforzarlo por si el problema real es más sutil de lo medido.
-  background: var(--app-accent); color: var(--app-accent-ink);
+  background: var(--btn-primary-bg); color: var(--btn-primary-text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
   transition: filter .15s ease, transform .15s ease;
 
@@ -49,7 +49,7 @@
   &--galeria { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--sm      { padding: 7px 12px; font-size: .82rem; border-radius: 10px; width: 100%; justify-content: center; }
   &--retry   { background: var(--pk-warning); color: var(--app-accent-ink); }
-  &--completar { background: var(--app-accent); color: var(--app-accent-ink); }
+  &--completar { background: var(--btn-primary-bg); border: 1px solid var(--btn-primary-border); color: var(--btn-primary-text); }
   &--ghost   { background: transparent; color: var(--app-text-muted); border: 1px solid var(--card-border); }
   &--save    { background: var(--app-surface-2, var(--card-border)); color: var(--app-text); }
   &--pub     { background: var(--pk-success); color: var(--app-accent-ink); }
@@ -111,11 +111,11 @@
     border: 1px solid transparent;
 
     & + & { margin-top: 4px; }
-    &:nth-child(odd) { background: var(--app-surface-2, rgba(127, 127, 127, .06)); }
+    &:nth-child(odd) { background: var(--app-surface-2); }
 
     &--error {
-      border-color: rgba(239, 68, 68, .45);
-      background: rgba(239, 68, 68, .08);
+      border-color: var(--pk-danger-soft);
+      background: var(--pk-danger-soft);
     }
   }
 
@@ -167,7 +167,7 @@
   &__close {
     position: absolute; top: 6px; right: 6px; z-index: 2;
     width: 26px; height: 26px; border: none; border-radius: 50%;
-    background: rgba(0, 0, 0, .55); color: #fff; font-size: .8rem; cursor: pointer;
+    background: rgba(0, 0, 0, .55); color: var(--overlay-text); font-size: .8rem; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
   }
 
@@ -186,7 +186,7 @@
 
   &__body { padding: 10px; display: flex; flex-direction: column; gap: 7px; }
 
-  &__id  { color: var(--card-header-text, #fff); font-size: .76rem; }
+  &__id  { color: var(--card-header-text); font-size: .76rem; }
 
   &__err { margin: 0; font-size: .78rem; color: var(--pk-danger-to); line-height: 1.3; }
 }
@@ -261,7 +261,7 @@
   input, textarea {
     padding: 9px 12px; border-radius: 10px;
     border: 1px solid var(--card-border);
-    background: var(--app-surface-2, transparent);
+    background: var(--app-surface-2);
     color: var(--app-text); font-size: .9rem; font-family: inherit;
 
     &::placeholder { color: var(--app-text-placeholder, var(--app-text-muted)); }
@@ -277,7 +277,7 @@
 .ci-btn-generar {
   flex: 0 0 auto; width: 38px;
   border: 1px solid var(--card-border); border-radius: 10px;
-  background: var(--app-surface-2, transparent); color: var(--app-text);
+  background: var(--app-surface-2); color: var(--app-text);
   font-size: 1rem; cursor: pointer;
   transition: filter .15s ease;
   &:hover { filter: brightness(1.15); }
@@ -314,7 +314,7 @@
   box-shadow: 0 8px 32px rgba(0,0,0,0.6);
 
   &__title {
-    color: #fff;
+    color: var(--card-header-text);
     font-size: 0.85rem;
     font-weight: 600;
     text-align: center;
@@ -343,7 +343,7 @@
     position: absolute;
     width: 22px;
     height: 22px;
-    border-color: #ff3b3b;
+    border-color: var(--pk-danger);
     border-style: solid;
   }
   &::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 3px 0 0 0; }
@@ -353,7 +353,7 @@
     position: absolute;
     width: 22px;
     height: 22px;
-    border-color: #ff3b3b;
+    border-color: var(--pk-danger);
     border-style: solid;
   }
   &__bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 3px; }
@@ -365,7 +365,7 @@
   left: 22px;
   right: 22px;
   height: 2px;
-  background: linear-gradient(90deg, transparent, #ff3b3b, transparent);
+  background: linear-gradient(90deg, transparent, var(--pk-danger), transparent);
   animation: scanear-ci 1.8s ease-in-out infinite alternate;
   pointer-events: none;
 }

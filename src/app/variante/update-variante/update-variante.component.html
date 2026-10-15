@@ -1,4 +1,4 @@
-<app-boton-volver etiqueta="Buscar productos" fallback="/tienda/buscar"></app-boton-volver>
+<app-boton-volver anchoContenido="780px" margen="16px" fallback="/tienda/buscar"></app-boton-volver>
 
 <div class="vf-page">
   <div class="vf-card" *ngIf="variante">
@@ -70,13 +70,16 @@
           <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock">
             <ng-container *ngIf="!sd.descuadrado; else alertaDescuadrado">
               Le estás sumando <b>{{ stockQuePide }}</b> y solo quedan <b>{{ sd.disponible }}</b>.
-              El guardado va a fallar: si llegó mercancía, súbele primero el stock al producto.
+              Si llegó mercancía, primero agrégale stock al modelo.
             </ng-container>
             <ng-template #alertaDescuadrado>
               Con el modelo descuadrado no se le puede sumar stock a sus artículos: primero hay que
-              corregir el stock del producto.
+              agregarle stock al modelo.
             </ng-template>
           </div>
+          <!-- QA 2026-10-14 (Prueba 20.3): el stock se le agrega al modelo desde aquí, sin salir del artículo. -->
+          <button type="button" class="vf-stock__btn" *ngIf="seEstaPasandoDeStock || sd.disponible < 1"
+                  (click)="ofrecerStockAlModelo()">➕ Agregar stock al modelo</button>
         </div>
 
         <div class="vf-stock vf-stock--cargando" *ngIf="cargandoStock">
@@ -96,7 +99,7 @@
           </div>
           <div class="vf-field">
             <label class="vf-label">Color</label>
-            <input class="vf-input" formControlName="color" placeholder="negro, azul…">
+            <input class="vf-input" appUppercase appSoloLetras formControlName="color" placeholder="NEGRO, AZUL…">
           </div>
           <div class="vf-field">
             <label class="vf-label">Presentación</label>
@@ -189,7 +192,7 @@
       <!-- ── Botón ──────────────────────────────────────────────────
            Modal cámara se coloca fuera del card más abajo         -->
       <button class="vf-btn-save" [disabled]="!productoSeleccionado || guardando" (click)="actualizar()">
-        💾 Actualizar producto
+        💾 Actualizar artículo
       </button>
 
     </div>

@@ -184,8 +184,8 @@
   &--hoy { border-color: var(--app-accent); }
 
   &--sel {
-    background: var(--app-accent);
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
     border-color: var(--app-accent);
   }
 
@@ -196,6 +196,136 @@
     &:hover { background: transparent; }
   }
 }
+
+// ── Título: mes y año se tocan para elegirlos directo (QA 2026-10-14) ─────
+.sf__titulo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.sf__titulo-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: .85rem;
+  font-weight: 800;
+  cursor: pointer;
+
+  &:hover { background: var(--app-accent-soft); border-color: var(--app-accent); }
+}
+
+.sf__titulo-caret { font-size: .62rem; color: var(--card-text-muted); }
+.sf__titulo-texto { font-size: .85rem; font-weight: 800; color: var(--card-text); }
+
+.sf__guia {
+  margin: 0 0 6px;
+  font-size: .72rem;
+  font-weight: 700;
+  color: var(--card-text-muted);
+  text-align: center;
+}
+
+// ── Meses (3 × 4) y años (4 columnas con scroll) ─────────────────────────
+.sf__meses {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.sf__anios {
+  // relative: el offsetTop de cada año se mide contra la lista, para centrar el año activo al abrir.
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  max-height: 228px;
+  overflow-y: auto;
+  padding: 2px;
+  overscroll-behavior: contain;
+}
+
+.sf__opcion {
+  padding: 10px 0;
+  border: 1px solid var(--card-border);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--card-text);
+  font-size: .82rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition: background .12s ease, border-color .12s ease;
+
+  &:hover:not(:disabled) { background: var(--app-accent-soft); border-color: var(--app-accent); }
+
+  &--hoy { border-color: var(--app-accent); }
+
+  &--sel {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--app-accent);
+  }
+
+  &:disabled { opacity: .28; cursor: not-allowed; text-decoration: line-through; }
+}
+
+// El año que está a la vista (al abrir la lista se centra ahí).
+.sf__anio--activo:not(.sf__opcion--sel) {
+  border-color: var(--app-accent);
+  box-shadow: inset 0 0 0 1px var(--app-accent);
+}
+
+// ── Escribir la fecha (modo nacimiento) ──────────────────────────────────
+.sf__escribir {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px 8px;
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.sf__escribir-label { font-size: .76rem; font-weight: 700; color: var(--card-text); }
+
+.sf__escribir-input {
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--input-text);
+  font-size: .9rem;
+  font-weight: 600;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+
+  &::placeholder { color: var(--input-placeholder); font-weight: 500; }
+  &:focus { outline: none; border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+}
+
+.sf__escribir-error {
+  grid-column: 1 / -1;
+  font-size: .72rem;
+  font-weight: 600;
+  color: var(--pk-danger);
+}
+
+.sf__escribir-o {
+  grid-column: 1 / -1;
+  font-size: .72rem;
+  color: var(--card-text-muted);
+}
+
+.sf__pop-foot:empty { display: none; }
 
 .sf__pop-foot {
   display: flex;

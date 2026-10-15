@@ -1,0 +1,327 @@
+// Ventana "🧩 Agregar artículos" (flujo A). Solo tokens: cambia con Personalización, de día y de noche.
+.aa-overlay {
+  position: fixed;
+  inset: 0;
+  // Encima del cromo fijo (botón del menú 1100, chat y "?" 10001) y debajo de SweetAlert2 (20000),
+  // igual que los overlays del CDK en styles.scss: en el celular esos botones tapaban el título y
+  // los botones de guardar (QA 2026-10-14).
+  z-index: 15000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: var(--modal-backdrop);
+  backdrop-filter: blur(3px);
+}
+
+.aa-modal {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 860px;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 16px);
+  background: var(--card-body-bg);
+  color: var(--card-text, var(--app-text));
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+
+  &--chico { max-width: 460px; }
+}
+
+.aa-cabeza {
+  position: relative;
+  padding: 16px 48px 12px 20px;
+  border-bottom: 1px solid var(--app-hairline);
+  background: var(--card-header-bg);
+  color: var(--card-header-text);
+}
+
+.aa-titulo { margin: 0; font-size: 1.05rem; font-weight: 700; text-wrap: balance; }
+.aa-sub    { margin: 2px 0 0; font-size: .82rem; opacity: .85; }
+
+.aa-cerrar {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 1rem;
+  cursor: pointer;
+
+  &:hover { background: var(--app-tint); }
+}
+
+.aa-cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 20px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.aa-texto { margin: 0; font-size: .95rem; font-weight: 600; }
+.aa-nota  { margin: 0; font-size: .76rem; color: var(--app-text-muted); line-height: 1.45; }
+
+.aa-stock {
+  margin: 0;
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.aa-aviso {
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: .82rem;
+  line-height: 1.4;
+
+  &--error {
+    border: 1px solid var(--pk-danger);
+    background: var(--pk-danger-soft);
+    color: var(--app-text);
+  }
+}
+
+.aa-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  &__titulo { margin: 0; font-size: .85rem; font-weight: 700; }
+}
+
+.aa-fila {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  > .aa-campo { flex: 1 1 14rem; }
+}
+
+.aa-copiables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 10px;
+}
+
+.aa-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--filtro-bg, var(--app-tint));
+  font-size: .8rem;
+  cursor: pointer;
+  max-width: 100%;
+
+  span { min-width: 0; overflow-wrap: anywhere; }
+  input { accent-color: var(--app-accent); }
+
+  // Marcado = ese dato cambia en este artículo: mismo look que un botón principal.
+  &--on {
+    border-color: var(--btn-primary-border);
+    background: var(--app-tint);
+    color: var(--app-accent-text);
+    font-weight: 600;
+  }
+}
+
+// ¿Qué cambia en este artículo? (QA 2026-10-14)
+.aa-cambia {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.aa-igual {
+  margin: 8px 0 0;
+  padding: 6px 10px;
+  border-left: 3px solid var(--app-gold-line, var(--app-border));
+  font-size: .76rem;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+  overflow-wrap: anywhere;
+
+  b { color: var(--app-text); font-weight: 600; }
+}
+
+.aa-cuantos { max-width: 10rem; }
+
+.aa-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+
+  &--ancho { grid-column: 1 / -1; }
+}
+
+.aa-etiqueta { font-size: .76rem; font-weight: 600; color: var(--app-text-muted); }
+.aa-opcional { font-weight: 400; opacity: .8; }
+.aa-obligatorio { color: var(--pk-danger); }
+
+.aa-en-linea {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+
+  .pk-input { flex: 1 1 auto; min-width: 0; }
+}
+
+.aa-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.aa-art {
+  padding: 12px 14px;
+  border: 1px solid var(--card-border);
+  border-radius: 12px;
+  background: var(--form-section-bg);
+
+  // Plegado: solo la línea de arriba (QA 2026-10-14).
+  &--cerrado { padding-block: 4px; }
+  &--pendiente { border-left: 3px solid var(--pk-warning-to, var(--pk-warning)); }
+
+  &__cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px 10px;
+    width: 100%;
+    padding: 6px 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  &--cerrado &__cabeza { padding-block: 4px; }
+
+  &__flecha { width: 1em; color: var(--app-accent-text); }
+  &__titulo { font-size: .85rem; font-weight: 700; color: var(--app-accent-text); }
+
+  &__resumen {
+    flex: 1 1 12rem;
+    min-width: 0;
+    font-size: .78rem;
+    color: var(--app-text-muted);
+    overflow-wrap: anywhere;
+  }
+
+  &__alerta {
+    font-size: .74rem;
+    font-weight: 600;
+    color: var(--pk-warning-to, var(--pk-warning));
+  }
+
+  &__accion {
+    margin-left: auto;
+    font-size: .74rem;
+    color: var(--app-accent-text);
+    text-decoration: underline;
+  }
+
+  &__cuerpo { padding-top: 6px; }
+
+  &__grid + &__grid { margin-top: 0; }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+  }
+}
+
+.aa-foto {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+
+  &__img {
+    width: 56px;
+    height: 56px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid var(--app-border);
+  }
+
+  &__texto { font-size: .8rem; color: var(--app-text-muted); }
+  &__boton { cursor: pointer; }
+}
+
+.aa-pie {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--app-hairline);
+  background: var(--card-footer-bg, var(--card-body-bg));
+}
+
+.aa-contador {
+  margin: 0;
+  font-size: .85rem;
+  font-variant-numeric: tabular-nums;
+
+  &--mal { color: var(--pk-danger); font-weight: 600; }
+}
+
+.aa-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 0;
+
+  .aa-modal--chico & { padding: 12px 20px 16px; }
+}
+
+@media (max-width: 520px) {
+  .aa-overlay { padding: 0; }
+  // Los formularios a pantalla completa; la pregunta corta se queda como tarjeta centrada.
+  .aa-modal:not(.aa-modal--chico) { height: 100dvh; max-height: 100dvh; border-radius: 0; }
+  .aa-modal--chico { margin: 16px; }
+  .aa-acciones .pk-btn { flex: 1 1 auto; }
+}
+
+// Abrir todos / Cerrar todos (QA 2026-10-14)
+.aa-plegar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 12px;
+
+  &__botones { display: flex; gap: 8px; }
+}
+
+.aa-revisa {
+  color: var(--app-text);
+
+  &__ver {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--app-accent-text);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+}

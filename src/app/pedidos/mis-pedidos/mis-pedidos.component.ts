@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Subject, of } from 'rxjs';
+import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PedidosService } from '../pedidos.service';
@@ -19,6 +21,20 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 import { UsuarioService } from 'src/app/shared/usuario.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
+import { GrupoPedidoService } from '../grupo-pedido.service';
+import { GrupoEnLista } from '../models/grupo-pedido.model';
+import { EstadoPago, EtiquetaCard, etiquetaEntrega, etiquetaPago, preguntarYEntregar } from '../entrega/entrega';
+import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
+import {
+  filtrosPedidosVacios, IFiltrosPedidos, IOpcionFiltro, IPedidosEncontrados,
+  OPCIONES_DINERO, OPCIONES_ENTREGA, OPCIONES_ESTADO, OPCIONES_ESTADO_ENTREGA, OPCIONES_ESTADO_PAGO, ESTADOS_ANTERIORES, OPCIONES_FORMA, OPCIONES_MODO, OPCIONES_ORDEN, OPCIONES_UNIDOS
+} from './models/filtros-pedidos.model';
+
+/** Los cuatro formularios de cobro a crédito de la card (carpeta ../cobro). */
+type FormaCobroCredito = 'liquidar' | 'abonar' | 'liquidar-grupo' | 'abonar-grupo';
+/** Bloques del panel ⚙️ Filtros con una sola acción de Gestión de roles para todo el bloque. */
+type AccionFiltroBloque = 'filtro-dinero' | 'filtro-fecha-entrega' | 'filtro-lugar'
+  | 'filtro-unidos-otros' | 'filtro-registrado' | 'filtro-total';
 
 // Leaflet calcula la URL de sus íconos por defecto en base a dónde quedó su propio bundle, y
 // con Angular/webpack casi siempre la resuelve mal — el pin del mapa sale invisible, sin
@@ -41,7 +57,7 @@ const CENTRO_MAPA_DEFAULT: L.LatLngTuple = [18.916234, -100.143567];
   templateUrl: './mis-pedidos.component.html',
   styleUrls: ['./mis-pedidos.component.scss']
 })
-export class MisPedidosComponent implements OnInit {
+export class MisPedidosComponent implements OnInit, OnDestroy {
   roles: string[] = [];
   isAdminUser: boolean = false;
   buscarProd: string = '';
@@ -85,62 +101,199 @@ export class MisPedidosComponent implements OnInit {
   terminoLugar = '';
   lugaresFiltrados: ILugarEntrega[] = [];
   mostrarDropdownLugar = false;
-  lugarFiltroId: number | null = null;
 
-  // ── Filtro por tipo de pedido (independiente del de lugar, se combinan con AND) ─────────
-  filtroNormal    = false;
-  filtroApartado  = false;
-  filtroIrPagando = false;
+  get lugarFiltroId(): number | null {
+    return this.filtros.lugarEntregaId;
+  }
 
-  toggleFiltroTipo(tipo: 'NORMAL' | 'APARTADO' | 'FIADO'): void {
-    if (tipo === 'NORMAL') this.filtroNormal = !this.filtroNormal;
-    else if (tipo === 'APARTADO') this.filtroApartado = !this.filtroApartado;
-    else this.filtroIrPagando = !this.filtroIrPagando;
+  // ── Filtros de la lista del administrador (GET /v1/pedidos/buscar, 2026-10-06) ──────────
+  // Reglas R1–R13 en el back: hexagonal/busquedapedido/README.md. Filtros distintos se combinan
+  // con Y; las opciones de un mismo filtro, con O. Se guardan por persona (preferenciafiltro,
+  // pantalla 'pedidos-mis-pedidos'); el texto buscado y la página no se guardan.
+  filtros: IFiltrosPedidos = filtrosPedidosVacios();
+  /** La lista está en la vista de inicio: sin los pedidos ya pagados y entregados. */
+  vistaSinTerminados = false;
+  readonly opcionesForma   = OPCIONES_FORMA;
+  readonly opcionesEstado  = OPCIONES_ESTADO;
+  readonly opcionesPago    = OPCIONES_ESTADO_PAGO;
+  readonly opcionesEntregaEstado = OPCIONES_ESTADO_ENTREGA;
+  readonly opcionesDinero  = OPCIONES_DINERO;
+  readonly opcionesEntrega = OPCIONES_ENTREGA;
+  readonly opcionesModo    = OPCIONES_MODO;
+  /** Para el ⓘ de "Unidos y otros": los dos atajos sueltos también se explican. */
+  readonly opcionesUnidosConAyuda = [
+    ...OPCIONES_UNIDOS,
+    { texto: '💐 Ramos de flores', ayuda: 'Solo los pedidos de Flores eternas (ramos).' },
+    { texto: '🏷️ Con promoción',   ayuda: 'Solo los pedidos que llevan alguna promoción.' }
+  ];
+  readonly opcionesUnidos  = OPCIONES_UNIDOS;
+  readonly opcionesOrden   = OPCIONES_ORDEN;
+
+  /** Total de pedidos que cumplen los filtros (todas las páginas). */
+  totalRegistros = 0;
+  /** "Escribe al menos 3 letras…": el texto corto no sale al back (regla de buscadores). */
+  avisoBusqueda: string | null = null;
+
+  /** Los filtros ocupan media pantalla en celular: arrancan cerrados y cada navegador recuerda. */
+  filtrosAbiertos = MisPedidosComponent.leerFiltrosAbiertos();
+
+  private static leerFiltrosAbiertos(): boolean {
+    try { return localStorage.getItem('mis-pedidos:filtros-abiertos') === '1'; } catch { return false; }
+  }
+
+  alternarFiltros(): void {
+    this.filtrosAbiertos = !this.filtrosAbiertos;
+    try { localStorage.setItem('mis-pedidos:filtros-abiertos', this.filtrosAbiertos ? '1' : '0'); } catch { /* sin almacenamiento */ }
+  }
+
+  /** Cada opción del panel pide su acción de Gestión de roles (Mis pedidos → Filtros). */
+  puedeVerOpcion(o: IOpcionFiltro<unknown>): boolean {
+    return !o.accion || this.puedeFiltro(o.accion);
+  }
+
+  /** Un bloque completo del panel (Dinero, Fecha de entrega, Dónde se entrega...). */
+  puedeFiltro(accion: AccionFiltroBloque | string): boolean {
+    return this.authService.tieneAccion('pedidos/mis-pedidos', accion);
+  }
+
+  /** Forma de cobro y Estado van opción por opción: el bloque se esconde si no queda ninguna. */
+  algunaVisible(opciones: IOpcionFiltro<unknown>[]): boolean {
+    return opciones.some(o => this.puedeVerOpcion(o));
+  }
+
+  estaMarcado(lista: 'formas' | 'estados' | 'dinero', valor: string): boolean {
+    return (this.filtros[lista] as string[]).includes(valor);
+  }
+
+  /** Filtros de varias opciones (O entre ellas): prende o apaga una. */
+  alternar(lista: 'formas' | 'estados' | 'dinero', valor: string): void {
+    const actual = this.filtros[lista] as string[];
+    (this.filtros as any)[lista] = actual.includes(valor) ? actual.filter(v => v !== valor) : [...actual, valor];
+    this.alCambiarFiltros();
+  }
+
+  /** Filtros de una sola opción: tocar la que ya está la quita. */
+  elegirUno(campo: 'entrega' | 'modoEntrega' | 'unidos', valor: string): void {
+    (this.filtros as any)[campo] = this.filtros[campo] === valor ? null : valor;
+    this.alCambiarFiltros();
+  }
+
+  alternarOtro(campo: 'soloRamos' | 'soloConPromocion'): void {
+    this.filtros[campo] = !this.filtros[campo];
+    this.alCambiarFiltros();
+  }
+
+  /** Total y fechas: se aplican al salir del campo o con Enter, no con cada tecla. */
+  alCambiarRango(): void {
+    const f = this.filtros;
+    if (f.totalDesde != null && f.totalHasta != null && f.totalDesde > f.totalHasta) {
+      Swal.fire({ icon: 'info', title: 'Revisa el total', text: 'El total "desde" es mayor que el "hasta".' });
+      return;
+    }
+    if (f.registroDesde && f.registroHasta && f.registroDesde > f.registroHasta) {
+      Swal.fire({ icon: 'info', title: 'Revisa las fechas', text: 'La fecha "desde" va después de la fecha "hasta".' });
+      return;
+    }
+    this.alCambiarFiltros();
+  }
+
+  alCambiarFiltros(): void {
+    this.guardarFiltros();
     this.buscarPedidoAdmin();
   }
 
-  private get tiposPedidoFiltro(): string[] {
-    const tipos: string[] = [];
-    if (this.filtroNormal)    tipos.push('NORMAL');
-    if (this.filtroApartado)  tipos.push('APARTADO');
-    if (this.filtroIrPagando) tipos.push('FIADO');
-    return tipos;
-  }
-
-  // ── Filtro por estado (Pagados/Cancelados) — dimensión distinta a "tipo de
-  // pedido": un mismo pedido APARTADO puede terminar PAGADO o CANCELADO. Se
-  // combina con AND contra tipo/lugar (ej. Apartados + Cancelados = apartados
-  // que se cancelaron). Confirmado con el back: `&estadoPedido=` repetible,
-  // valores PAGADO/CANCELADO se combinan entre sí con OR, case-insensitive.
-  // ⚠️ Implementado y compilando en el back solo en `dev` al momento de este
-  // cambio — no tiene efecto real hasta que desplieguen a `qa`/producción.
-  filtroPagados    = false;
-  filtroCancelados = false;
-
-  toggleFiltroEstado(estado: 'PAGADO' | 'CANCELADO'): void {
-    if (estado === 'PAGADO') this.filtroPagados = !this.filtroPagados;
-    else this.filtroCancelados = !this.filtroCancelados;
+  quitarFiltros(): void {
+    this.filtros = filtrosPedidosVacios();
+    this.terminoLugar = '';
+    this.preferenciaFiltro.borrar('pedidos-mis-pedidos');
     this.buscarPedidoAdmin();
   }
 
-  private get estadosPedidoFiltro(): string[] {
-    const estados: string[] = [];
-    if (this.filtroPagados)    estados.push('PAGADO');
-    if (this.filtroCancelados) estados.push('CANCELADO');
-    return estados;
+  /** Cuántos filtros hay puestos, para verlo aunque el panel esté cerrado. El orden no cuenta. */
+  get filtrosActivos(): number {
+    const f = this.filtros;
+    return f.formas.length + f.estados.length + f.dinero.length
+      + (f.totalDesde != null ? 1 : 0) + (f.totalHasta != null ? 1 : 0)
+      + (f.registroDesde ? 1 : 0) + (f.registroHasta ? 1 : 0)
+      + (f.entrega ? 1 : 0) + (f.lugarEntregaId ? 1 : 0) + (f.modoEntrega ? 1 : 0) + (f.unidos ? 1 : 0)
+      + (f.soloRamos ? 1 : 0) + (f.soloConPromocion ? 1 : 0);
+  }
+
+  private guardarFiltros(): void {
+    if (this.filtrosActivos === 0 && this.filtros.orden === 'RECIENTES') {
+      this.preferenciaFiltro.borrar('pedidos-mis-pedidos');
+    } else {
+      this.preferenciaFiltro.guardar('pedidos-mis-pedidos', { ...this.filtros });
+    }
+  }
+
+  /** Lo guardado se copia campo por campo: un valor raro o de otra versión no rompe la pantalla. */
+  private aplicarFiltrosGuardados(g: Record<string, unknown> | null): void {
+    if (!g) return;
+    const base = filtrosPedidosVacios();
+    const lista = <T>(v: unknown, validos: IOpcionFiltro<T>[]): T[] =>
+      Array.isArray(v) ? (v as T[]).filter(x => validos.some(o => o.valor === x && this.puedeVerOpcion(o))) : [];
+    const uno = <T>(v: unknown, validos: IOpcionFiltro<T>[]): T | null =>
+      validos.some(o => o.valor === v && this.puedeVerOpcion(o)) ? v as T : null;
+    // Un filtro guardado de un bloque que ya no se tiene permitido no se aplica: no se vería en
+    // el panel y la persona no tendría cómo quitarlo.
+    const numero = (v: unknown, accion: AccionFiltroBloque): number | null =>
+      this.puedeFiltro(accion) && typeof v === 'number' && v >= 0 ? v : null;
+    const fecha = (v: unknown): string =>
+      this.puedeFiltro('filtro-registrado') && typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '';
+    const lugar = this.puedeFiltro('filtro-lugar');
+    const otros = this.puedeFiltro('filtro-unidos-otros');
+    this.filtros = {
+      ...base,
+      formas: lista(g['formas'], OPCIONES_FORMA),
+      // 🕓 Pendiente pasó de Forma de cobro a Pago (2026-10-13): un guardado viejo se pasa de bloque.
+      estados: lista(Array.from(new Set([
+        ...(Array.isArray(g['estados']) ? (g['estados'] as string[]).map(e => ESTADOS_ANTERIORES[e] ?? e) : []),
+        ...(Array.isArray(g['formas']) && (g['formas'] as string[]).includes('PENDIENTE') ? ['PENDIENTE'] : [])
+      ])), OPCIONES_ESTADO),
+      dinero: lista(g['dinero'], OPCIONES_DINERO),
+      totalDesde: numero(g['totalDesde'], 'filtro-total'),
+      totalHasta: numero(g['totalHasta'], 'filtro-total'),
+      registroDesde: fecha(g['registroDesde']),
+      registroHasta: fecha(g['registroHasta']),
+      entrega: uno(g['entrega'], OPCIONES_ENTREGA),
+      lugarEntregaId: numero(g['lugarEntregaId'], 'filtro-lugar'),
+      lugarNombre: lugar && typeof g['lugarNombre'] === 'string' ? g['lugarNombre'] as string : '',
+      modoEntrega: uno(g['modoEntrega'], OPCIONES_MODO),
+      unidos: uno(g['unidos'], OPCIONES_UNIDOS),
+      soloRamos: otros && g['soloRamos'] === true,
+      soloConPromocion: otros && g['soloConPromocion'] === true,
+      orden: uno(g['orden'], OPCIONES_ORDEN) ?? 'RECIENTES'
+    };
+    this.terminoLugar = this.filtros.lugarEntregaId ? this.filtros.lugarNombre : '';
   }
 
   // Resumen visible de qué filtros están activos ahora mismo, para que no quede a la
-  // adivinanza qué combinación se está usando (texto + lugar + tipo + estado pueden combinarse).
+  // adivinanza qué combinación se está usando.
   get descripcionBusqueda(): string | null {
+    const f = this.filtros;
+    const textos = <T>(valores: T[], opciones: IOpcionFiltro<T>[]) =>
+      valores.map(v => opciones.find(o => o.valor === v)?.texto ?? String(v));
     const partes: string[] = [];
-    if (this.buscarProd) partes.push(`texto "${this.buscarProd}"`);
-    if (this.lugarFiltroId && this.terminoLugar) partes.push(`lugar "${this.terminoLugar}"`);
-    if (this.filtroNormal)    partes.push('Normal');
-    if (this.filtroApartado)  partes.push('Apartados');
-    if (this.filtroIrPagando) partes.push('Ir pagando');
-    if (this.filtroPagados)    partes.push('Pagados');
-    if (this.filtroCancelados) partes.push('Cancelados');
+    if (this.buscarProd) partes.push(`"${this.buscarProd}"`);
+    if (f.formas.length)  partes.push(textos(f.formas, OPCIONES_FORMA).join(' o '));
+    const pago = f.estados.filter(e => OPCIONES_ESTADO_PAGO.some(o => o.valor === e));
+    const entrega = f.estados.filter(e => OPCIONES_ESTADO_ENTREGA.some(o => o.valor === e));
+    if (pago.length) partes.push(textos(pago, OPCIONES_ESTADO).join(' o '));
+    if (entrega.length) partes.push(textos(entrega, OPCIONES_ESTADO).join(' o '));
+    if (f.dinero.length)  partes.push(textos(f.dinero, OPCIONES_DINERO).join(' o '));
+    if (f.totalDesde != null || f.totalHasta != null) {
+      partes.push(`total ${f.totalDesde != null ? 'desde $' + f.totalDesde : ''}${f.totalDesde != null && f.totalHasta != null ? ' ' : ''}${f.totalHasta != null ? 'hasta $' + f.totalHasta : ''}`);
+    }
+    if (f.registroDesde || f.registroHasta) {
+      partes.push(`registrado ${f.registroDesde ? 'desde ' + f.registroDesde : ''}${f.registroDesde && f.registroHasta ? ' ' : ''}${f.registroHasta ? 'hasta ' + f.registroHasta : ''}`);
+    }
+    if (f.entrega) partes.push(`entrega: ${textos([f.entrega], OPCIONES_ENTREGA)[0]}`);
+    if (f.lugarEntregaId && this.terminoLugar) partes.push(`lugar "${this.terminoLugar}"`);
+    if (f.modoEntrega) partes.push(textos([f.modoEntrega], OPCIONES_MODO)[0]);
+    if (f.unidos) partes.push(textos([f.unidos], OPCIONES_UNIDOS)[0]);
+    if (f.soloRamos) partes.push('💐 Ramos de flores');
+    if (f.soloConPromocion) partes.push('🏷️ Con promoción');
     return partes.length > 0 ? `Buscando: ${partes.join(' + ')}` : null;
   }
 
@@ -159,8 +312,56 @@ export class MisPedidosComponent implements OnInit {
     private readonly route: ActivatedRoute,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly usuarioService: UsuarioService,
-    private readonly floresService: FloresService
+    private readonly floresService: FloresService,
+    private readonly grupoService: GrupoPedidoService,
+    private readonly preferenciaFiltro: PreferenciaFiltroService
   ) {}
+
+  private readonly destroy$ = new Subject<void>();
+  /** Cada tecla del buscador pasa por aquí; se busca 400 ms después de la última. */
+  private readonly texto$ = new Subject<void>();
+  /** Lo último que se buscó: una tecla que no cambia el texto (flechas, Tab) no vuelve a buscar. */
+  private ultimoTextoAdmin = '';
+  /**
+   * Toda búsqueda del administrador sale por aquí. switchMap descarta la respuesta de una búsqueda
+   * vieja que llega tarde (antes se veía el resultado de lo que se escribió antes), y el
+   * catchError va adentro para que un error no mate el buscador (regla de CLAUDE.md).
+   */
+  private readonly busquedaAdmin$ = new Subject<{ buscar: string; filtros: IFiltrosPedidos; pagina: number }>();
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+  private prepararBusquedaAdmin(): void {
+    this.texto$.pipe(debounceTime(400), takeUntil(this.destroy$)).subscribe(() => {
+      if ((this.buscarProd ?? '').trim() !== this.ultimoTextoAdmin) this.buscarPedidoAdmin();
+    });
+    this.busquedaAdmin$.pipe(
+      switchMap(c => this.pedidoService.buscarPedidosAdmin(c.buscar, c.filtros, c.pagina, this.size).pipe(
+        catchError(err => {
+          const mensaje = err?.error?.mensaje;
+          if (err?.status === 400 && mensaje) Swal.fire({ icon: 'info', title: 'Revisa la búsqueda', text: mensaje });
+          else console.error(err);
+          return of(null);
+        })
+      )),
+      takeUntil(this.destroy$)
+    ).subscribe(res => {
+      this.cargando = false;
+      if (!res) return;
+      const data: IPedidosEncontrados | null | undefined = res.data;
+      this.resposeGenericPedido = res;
+      this.pedidoGenerico = data?.list || [];
+      this.totalPaginas = data?.totalPaginas ?? 0;
+      this.totalRegistros = data?.totalRegistros ?? 0;
+      this.abrirSiVieneDeUrl();
+      const alRecargar = this.alRecargar;
+      this.alRecargar = null;
+      alRecargar?.(this.pedidoGenerico);
+    });
+  }
 
   ngOnInit(): void {
     this.pedidoIdDesdeUrl = Number(this.route.snapshot.queryParamMap.get('pedidoId')) || null;
@@ -186,8 +387,17 @@ export class MisPedidosComponent implements OnInit {
       // Si se llegó con ?pedidoId=93 (ej. desde /abonos → "Ver el pedido"), precarga el buscador
       // con ese número — buscarPedidoAdmin() ya sabe buscar por id exacto (el back lo agregó
       // justo para esto), y su `next` abre el detalle solo si pedidoIdDesdeUrl sigue puesto.
-      if (this.pedidoIdDesdeUrl) this.buscarProd = String(this.pedidoIdDesdeUrl);
-      this.buscarPedidoAdmin();
+      this.prepararBusquedaAdmin();
+      if (this.pedidoIdDesdeUrl) {
+        this.buscarProd = String(this.pedidoIdDesdeUrl);
+        this.buscarPedidoAdmin();
+      } else {
+        // Los filtros guardados de esta persona (si no hay o falla, la lista sale sin filtros).
+        this.preferenciaFiltro.obtener('pedidos-mis-pedidos').pipe(takeUntil(this.destroy$)).subscribe(g => {
+          this.aplicarFiltrosGuardados(g);
+          this.buscarPedidoAdmin();
+        });
+      }
     } else {
       // ⚠️ Antes esto usaba `getDataOneCliente(idUsuario)`, que pega a
       // `/v1/clientes/buscarPorIdCliente/{id}` — ese endpoint espera el id de **cliente**, no el
@@ -242,6 +452,79 @@ export class MisPedidosComponent implements OnInit {
     this.item = item;
   }
 
+  /**
+   * Desde el detalle se abre otro pedido del grupo. Los que no son titulares no salen en la lista,
+   * así que se buscan por número (el back sí los devuelve con el número exacto) y se abren solos.
+   */
+  abrirOtroPedido(pedidoId: number): void {
+    this.mostrarDetalle = false;
+    this.pedidoIdDesdeUrl = pedidoId;
+    this.buscarProd = String(pedidoId);
+    this.buscarPedidoAdmin();
+  }
+
+  private static readonly DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
+  private static readonly MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun',
+                                   'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+
+  private static escaparHtml(texto: string | null | undefined): string {
+    return (texto ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  private static dia(iso: string): Date {
+    const [y, m, d] = iso.split('-').map(n => parseInt(n, 10));
+    return new Date(y, m - 1, d);
+  }
+
+  /**
+   * Espera entrega lo que no está cancelado y todavía no se lo lleva (`entregado`, back
+   * 2026-10-06), igual que el filtro "Fecha de entrega" del back. Antes se miraba el estado del
+   * pago: un pedido pagado que faltaba entregar escondía su fecha, aunque Entregas por zona ya se
+   * la hubiera puesto (2026-10-13). La venta de mostrador que se lleva en el momento queda
+   * entregada, así que no dice "Recoge en el local: hoy".
+   */
+  private static esperaEntrega(p: IPedidoGenerico['pedido']): boolean {
+    if (p.grupo?.esTitular) return p.grupo.totalGrupo > 0 && p.grupo.entregadoGrupo !== true;
+    const estado = (p.estado_pedido ?? '').toUpperCase();
+    return estado !== 'CANCELADO' && p.entregado !== true;
+  }
+
+  /**
+   * "sáb 4 oct, 10:00 · Zacazonapan", o null si ya no espera entrega. Un pedido de zona sin día
+   * dice "Sin fecha todavía · Zacazonapan": así se ve cuáles faltan en Entregas por zona.
+   */
+  textoEntrega(p: IPedidoGenerico['pedido']): string | null {
+    if (!MisPedidosComponent.esperaEntrega(p)) return null;
+    if (!p.fechaEntrega) {
+      return !p.recogeEnLocal && p.lugarEntregaNombre ? `Sin fecha todavía · ${p.lugarEntregaNombre}` : null;
+    }
+    const d = MisPedidosComponent.dia(p.fechaEntrega);
+    let texto = `${MisPedidosComponent.DIAS[d.getDay()]} ${d.getDate()} ${MisPedidosComponent.MESES[d.getMonth()]}`;
+    if (p.horaEntrega) texto += `, ${p.horaEntrega}`;
+    if (!p.recogeEnLocal && p.lugarEntregaNombre) texto += ` · ${p.lugarEntregaNombre}`;
+    return texto;
+  }
+
+  /** Días que lleva pasada la fecha de entrega sin entregarse. */
+  diasAtraso(p: IPedidoGenerico['pedido']): number {
+    if (!p.fechaEntrega || !MisPedidosComponent.esperaEntrega(p)) return 0;
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const dias = Math.round((hoy.getTime() - MisPedidosComponent.dia(p.fechaEntrega).getTime()) / 86_400_000);
+    return dias > 0 ? dias : 0;
+  }
+
+  /** "#102, #105" */
+  numerosDe(ids: number[] | null | undefined): string {
+    return (ids ?? []).map(id => `#${id}`).join(', ');
+  }
+
+  esGrupoCredito(g: GrupoEnLista): boolean {
+    const tipo = (g.tipoPedido ?? '').toUpperCase();
+    return tipo === 'APARTADO' || tipo === 'FIADO';
+  }
+
   cancelarPedido(item: IPedidoGenerico) {
     // El cliente va por otra puerta: `DELETE /v1/pedidos/delete/{id}` (lo de abajo) es ADMIN-only
     // y le respondía 403 mudo. El back abrió `DELETE /v1/flores/pedidos/{id}/cancelar` para que
@@ -269,8 +552,7 @@ export class MisPedidosComponent implements OnInit {
       showCancelButton: true,
       confirmButtonText: 'Cancelar pedido',
       cancelButtonText: 'No cancelar',
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6b7280',
+      confirmButtonColor: 'var(--pk-danger)',
       didOpen: motivoFrag.didOpen,
       preConfirm: motivoFrag.preConfirm
     }).then(result => {
@@ -326,9 +608,7 @@ export class MisPedidosComponent implements OnInit {
           showCancelButton: true,
           confirmButtonText: 'Sí, cancelar mi ramo',
           cancelButtonText: 'No, dejarlo así',
-          confirmButtonColor: '#d33',
-          cancelButtonColor: '#6b7280'
-        }).then(res => {
+          confirmButtonColor: 'var(--pk-danger)',}).then(res => {
           if (!res.isConfirmed) return;
 
           this.floresService.cancelarPedidoFlores(pedidoId).subscribe({
@@ -367,13 +647,16 @@ export class MisPedidosComponent implements OnInit {
   }
 
   private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null): void {
-    const nombreReceptor   = actual?.nombreReceptor ?? '';
-    const direccionEntrega = actual?.direccionEntrega ?? '';
-    const fechaEntrega     = actual?.fechaRecogida ?? '';
-    const observaciones    = actual?.observaciones ?? '';
+    // Lo escribe el cliente al hacer su pedido: se escapa porque va dentro del HTML del aviso, y
+    // un nombre con `"><img onerror=…>` corría código en la sesión del administrador.
+    const esc = MisPedidosComponent.escaparHtml;
+    const nombreReceptor   = esc(actual?.nombreReceptor);
+    const direccionEntrega = esc(actual?.direccionEntrega);
+    const fechaEntrega     = esc(actual?.fechaRecogida);
+    const observaciones    = esc(actual?.observaciones);
     const lugarEntregaId   = actual?.lugarEntregaId ?? null;
-    const urlFacebook      = actual?.urlFacebook ?? '';
-    const referencias      = actual?.referencias ?? '';
+    const urlFacebook      = esc(actual?.urlFacebook);
+    const referencias      = esc(actual?.referencias);
 
     // Ubicación exacta de la casa del cliente (2026-08-22) — distinto de LugarEntrega (la
     // zona/pueblo). Variables mutables capturadas por el `didOpen`/`preConfirm` del Swal de
@@ -394,7 +677,7 @@ export class MisPedidosComponent implements OnInit {
     const puedeVerCoordenadas = this.isAdminUser;
 
     const opcionesLugar = this.lugares.map(l =>
-      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${l.nombre}</option>`
+      `<option value="${l.id}" ${l.id === lugarEntregaId ? 'selected' : ''}>${esc(l.nombre)}</option>`
     ).join('');
 
     // En un ramo, fecha y lugar NO se editan desde aquí — ni el cliente ni el admin. Este campo
@@ -411,7 +694,7 @@ export class MisPedidosComponent implements OnInit {
       : '';
 
     Swal.fire({
-      title: `📍 Info de entrega — Pedido #${pedidoId}`,
+      title: `📍 Dirección y fecha de entrega — Pedido #${pedidoId}`,
       width: 480,
       html: `
         <style>
@@ -592,13 +875,23 @@ export class MisPedidosComponent implements OnInit {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.pedidoService.actualizarEntrega(pedidoId, result.value).subscribe({
-        next: () => Swal.fire({ icon: 'success', title: 'Datos de entrega guardados', timer: 1800, showConfirmButton: false }),
+        next: () => Swal.fire({ icon: 'success', title: 'Dirección y fecha guardadas', timer: 1800, showConfirmButton: false }),
         error: err => Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la información de entrega.' })
       });
     });
   }
 
   cobrarAdmin(item: IPedidoGenerico) {
+    const forma = this.formaCobroCredito(item);
+    if (forma) {
+      this.abrirCobroCredito(item, forma);
+      return;
+    }
+    const grupo = item.pedido.grupo;
+    if (grupo) {
+      this.cobrarGrupo(item, grupo);
+      return;
+    }
     // APARTADO/FIADO no se cobran con este diálogo — el back rechaza
     // PUT /v1/pedidos/confirmar/{id} para esos tipos ("se liquidan mediante abonos").
     // ⚠️ `item.pedido.tipoPedido` viene de la LISTA (buscarClientePedido) — ese campo
@@ -627,19 +920,101 @@ export class MisPedidosComponent implements OnInit {
     });
   }
 
+  /**
+   * Un grupo se cobra entero desde la card del titular. De contado: un solo cobro por lo que falte
+   * de todos. A crédito: se abona al grupo en el detalle, que reparte del pedido más viejo al más nuevo.
+   */
+  private cobrarGrupo(item: IPedidoGenerico, grupo: GrupoEnLista): void {
+    if (this.esGrupoCredito(grupo)) {
+      this.abrirCobroCredito(item, (grupo.tipoPedido ?? '').toUpperCase() === 'APARTADO' ? 'liquidar-grupo' : 'abonar-grupo');
+      return;
+    }
+    if (grupo.saldoGrupo <= 0) {
+      Swal.fire({ icon: 'info', title: 'Ya está cobrado', text: 'Todos los pedidos de este grupo ya están cobrados o cancelados.' });
+      return;
+    }
+    this.abrirDialogoCobroNormal(item);
+  }
+
+  /** El grupo que se está cobrando en el diálogo, si el pedido está unido. */
+  get grupoACobrar(): GrupoEnLista | null {
+    return this.pedidoACobrar?.pedido.grupo ?? null;
+  }
+
+  get tituloCobro(): string {
+    const g = this.grupoACobrar;
+    if (!g || !this.pedidoACobrar) return `Pedido #${this.pedidoACobrar?.pedido.id ?? ''}`;
+    return `Pedidos ${this.numerosDe([this.pedidoACobrar.pedido.id, ...g.otrosPedidos])} (unidos)`;
+  }
+
+  // ── Cobro a crédito desde la card (2026-10-06) ──────────────────────────────────
+  // Antes "Cobrar" mandaba a Créditos / Abonos y había que regresar a la lista. Ahora cada caso
+  // abre su propio formulario ahí mismo (carpeta ../cobro, un formulario por caso).
+
+  /** El formulario de cobro a crédito que está abierto, y de qué card. */
+  cobroCredito: { forma: FormaCobroCredito; item: IPedidoGenerico } | null = null;
+
+  /** Qué formulario le toca a la card; `null` = es de contado y va con "Cobrar". */
+  formaCobroCredito(item: IPedidoGenerico): FormaCobroCredito | null {
+    // Unido (sea la card del titular o un miembro abierto por su número): el dinero es del grupo.
+    const g = item.pedido.grupo;
+    if (g) {
+      if (!this.esGrupoCredito(g)) return null;
+      return (g.tipoPedido ?? '').toUpperCase() === 'APARTADO' ? 'liquidar-grupo' : 'abonar-grupo';
+    }
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO') return 'liquidar';
+    if (tp === 'FIADO') return 'abonar';
+    return null;
+  }
+
+  textoBotonCobro(item: IPedidoGenerico): string {
+    switch (this.formaCobroCredito(item)) {
+      case 'liquidar':
+      case 'liquidar-grupo': return 'Liquidar';
+      case 'abonar': return 'Dar abono';
+      case 'abonar-grupo': return 'Abonar al grupo';
+      default: return 'Cobrar';
+    }
+  }
+
+  /** Contado pide la acción "cobrar"; un Apartado o Ir pagando, "abonar" (la del detalle). */
+  puedeCobrarCard(item: IPedidoGenerico): boolean {
+    if (!this.isAdminUser) return false;
+    const accion = this.formaCobroCredito(item) ? 'abonar' : 'cobrar';
+    return this.authService.tieneAccion('pedidos/mis-pedidos', accion);
+  }
+
+  private abrirCobroCredito(item: IPedidoGenerico, forma: FormaCobroCredito): void {
+    this.cobroCredito = { forma, item };
+  }
+
+  cerrarCobroCredito(): void {
+    this.cobroCredito = null;
+  }
+
+  /** Ya se cobró: la card se vuelve a pedir y se queda en la misma página. */
+  alCobrarCredito(): void {
+    const id = this.cobroCredito?.item.pedido.id;
+    this.cobroCredito = null;
+    // Si con este cobro quedó pagado y no se lo ha llevado, se pregunta (E1/E3). Se decide con la
+    // card recién leída: así cuenta igual un pedido suelto que un grupo.
+    this.alRecargar = lista => {
+      const card = lista.find(p => p.pedido.id === id);
+      if (card && this.debePreguntarEntrega(card)) this.preguntarEntregaDe(card);
+    };
+    this.buscarPedidoAdmin(false);
+  }
+
+  /** "¿Dejó solo una parte?" en Liquidar: el detalle tiene 🔁 Cambiar forma de cobro. */
+  irAlDetalleDesdeCobro(item: IPedidoGenerico): void {
+    this.cobroCredito = null;
+    this.irDetalle(item);
+  }
+
+  /** El tipo se supo por el detalle (la card no lo traía): se abre el formulario que le toca. */
   private irACobrarCredito(item: IPedidoGenerico, tipo: 'APARTADO' | 'FIADO'): void {
-    Swal.fire({
-      icon: 'info',
-      title: tipo === 'APARTADO' ? 'Pedido apartado' : 'Pedido a crédito (ir pagando)',
-      text: 'Este pedido se cobra registrando un abono, no desde este botón.',
-      showCancelButton: true,
-      confirmButtonText: 'Ir a Créditos / Abonos',
-      cancelButtonText: 'Cerrar'
-    }).then(res => {
-      if (res.isConfirmed) {
-        this.router.navigate(['/abonos'], { queryParams: { pedidoId: item.pedido.id } });
-      }
-    });
+    this.abrirCobroCredito(item, tipo === 'APARTADO' ? 'liquidar' : 'abonar');
   }
 
   private abrirDialogoCobroNormal(item: IPedidoGenerico): void {
@@ -670,15 +1045,24 @@ export class MisPedidosComponent implements OnInit {
 
   confirmarCobro() {
     if (!this.pedidoACobrar) return;
+    if (this.grupoACobrar) {
+      this.confirmarCobroGrupo(this.grupoACobrar);
+      return;
+    }
 
     const item = this.pedidoACobrar;
     item.pedido.estado_pedido = 'Entregado';
     item.pagosYMesesId = this.pagosYMesesId ?? 0;
     this.pedidoService.updateService(item.pedido.id, item).subscribe(
       () => {
-        this.pedidoGenerico = this.pedidoGenerico.filter(p => p.pedido.id !== item.pedido.id);
         this.mostrarDialogoCobro = false;
-        Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+        // Ya no se quita de la lista: ahora queda "Pagado" y, si no se lo llevó, "Falta entregar" (E4).
+        if (this.puedeEntregarAccion()) {
+          this.preguntarEntregaDe(item, 'Pedido cobrado. ¿El cliente ya se lo llevó?');
+        } else {
+          Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+          this.buscarPedidoAdmin(false);
+        }
       },
       (err) => {
         this.mostrarDialogoCobro = false;
@@ -694,6 +1078,27 @@ export class MisPedidosComponent implements OnInit {
         Swal.fire({ title: 'Ocurrio un error al cobrar el pedido, intente de nuevo', text: err?.error?.mensaje ?? err?.error?.message ?? '', icon: 'error', draggable: true });
       }
     );
+  }
+
+  private confirmarCobroGrupo(grupo: GrupoEnLista): void {
+    if (!this.pagosYMesesId) return;
+    this.grupoService.cobrarDeContado(grupo.grupoId, this.pagosYMesesId).subscribe({
+      next: r => {
+        this.mostrarDialogoCobro = false;
+        const cobrados = r?.data?.pedidosCobrados ?? [];
+        const texto = cobrados.length ? `Se cobraron los pedidos ${this.numerosDe(cobrados)}.` : 'Los pedidos del grupo quedaron cobrados.';
+        if (this.puedeEntregarAccion() && this.pedidoACobrar) {
+          this.preguntarEntregaDe(this.pedidoACobrar, `${texto} ¿Ya se los llevó?`);
+        } else {
+          Swal.fire({ icon: 'success', title: 'Pedidos cobrados', text: texto });
+          this.buscarPedidoAdmin(false);
+        }
+      },
+      error: err => {
+        this.mostrarDialogoCobro = false;
+        Swal.fire({ icon: 'error', title: 'No se pudo cobrar el grupo', text: err?.error?.mensaje ?? err?.error?.message ?? 'Intenta de nuevo.' });
+      }
+    });
   }
 
   cancelarDialogo() {
@@ -725,6 +1130,7 @@ export class MisPedidosComponent implements OnInit {
   }
 
   get totalPedido(): number {
+    if (this.grupoACobrar) return this.grupoACobrar.saldoGrupo;
     return (this.pedidoACobrar?.pedido.detalles ?? [])
       .reduce((sum, d) => sum + d.sub_total, 0);
   }
@@ -750,7 +1156,7 @@ export class MisPedidosComponent implements OnInit {
       pagosYMesesId: this.pagosYMesesId,
       cuotas:        this.mesesSeleccionado?.cuotas ?? 1,
       totalMonto:    this.totalPedido,
-      descripcion:   `Pedido #${this.pedidoACobrar.pedido.id}`
+      descripcion:   this.grupoACobrar ? this.tituloCobro : `Pedido #${this.pedidoACobrar.pedido.id}`
     };
 
     this.pagoService.iniciarPagoTerminal(request).subscribe({
@@ -849,17 +1255,18 @@ export class MisPedidosComponent implements OnInit {
     this.buscarProd = texto;
 
     if (this.isAdminUser) {
-      this.buscarPedidoAdmin();
+      this.texto$.next();
     } else {
-      if (this.buscarProd === '') {
+      // El cliente busca solo por número de pedido, con cualquier cantidad de dígitos (#1 ya se
+      // encuentra). Si escribe letras, el aviso va debajo del buscador, no en una ventana por tecla.
+      if (this.buscarProd.trim() === '') {
+        this.avisoBusqueda = null;
         this.cargarMasPedidos();
+      } else if (/^\d+$/.test(this.buscarProd.trim()) && Number(this.buscarProd) > 0) {
+        this.avisoBusqueda = null;
+        this.buscarClientePorId(Number(this.buscarProd));
       } else {
-        const pedido = Number(this.buscarProd);
-        if (!isNaN(pedido) && pedido > 0) {
-          this.buscarClientePorId(pedido);
-        } else {
-          Swal.fire({ title: 'Ingrese el numero de pedido', icon: 'info', draggable: false });
-        }
+        this.avisoBusqueda = 'Escribe solo el número de tu pedido (por ejemplo 15).';
       }
     }
   }
@@ -883,6 +1290,9 @@ export class MisPedidosComponent implements OnInit {
 
   mostrarProductos(mostrar: boolean): void {
     this.mostrarDetalle = mostrar;
+    // En el detalle se cambia la forma de cobro, se abona o se agregan artículos: sin recargar,
+    // la card seguía mostrando el tipo y el total de antes.
+    if (!mostrar && this.isAdminUser) this.buscarPedidoAdmin(false);
   }
 
   // Admin: paginación real (Anterior/Siguiente), no infinite scroll — mismo patrón que
@@ -892,19 +1302,24 @@ export class MisPedidosComponent implements OnInit {
   buscarPedidoAdmin(reset: boolean = true) {
     this.size = 10;
     if (reset) this.page = 0;
+
+    const texto = (this.buscarProd ?? '').trim();
+    this.ultimoTextoAdmin = texto;
+    const esNumero = /^#?\s*\d+$/.test(texto);
+    if (texto && !esNumero && texto.length < 3) {
+      this.avisoBusqueda = 'Escribe al menos 3 letras para buscar por nombre, teléfono, correo o artículo.';
+      return;
+    }
+    this.avisoBusqueda = null;
     this.cargando = true;
-    this.pedidoService.buscarPedidoPorCliente(this.buscarProd ?? '', this.size, this.page, this.lugarFiltroId, this.tiposPedidoFiltro, this.estadosPedidoFiltro)
-      .subscribe({
-        next: sus => {
-          this.resposeGenericPedido = sus;
-          this.pedidoGenerico = sus.data?.list || [];
-          this.ordenarPedidosDescendente();
-          this.totalPaginas = sus.data?.totalPaginas ?? 0;
-          this.cargando = false;
-          this.abrirSiVieneDeUrl();
-        },
-        error: err => { this.cargando = false; console.error(err); }
-      });
+    // Abrir un pedido por su número (link desde Abonos o desde otro pedido del grupo) no debe
+    // depender de los filtros puestos: con "Pagados" marcado, un Por cobrar no saldría nunca.
+    const base = this.pedidoIdDesdeUrl ? filtrosPedidosVacios() : this.filtros;
+    // Al abrir (sin filtros ni búsqueda) no salen los que ya están pagados y entregados: ya no hay
+    // nada que hacer con ellos. Con cualquier filtro o búsqueda sale lo que se pidió (QA 2026-10-13).
+    this.vistaSinTerminados = !texto && !this.pedidoIdDesdeUrl && this.filtrosActivos === 0;
+    const filtros: IFiltrosPedidos = this.vistaSinTerminados ? { ...base, estados: ['SIN_TERMINAR'] } : base;
+    this.busquedaAdmin$.next({ buscar: texto, filtros, pagina: this.page });
   }
 
   paginaAnteriorAdmin(): void {
@@ -929,17 +1344,19 @@ export class MisPedidosComponent implements OnInit {
   }
 
   seleccionarLugar(l: ILugarEntrega): void {
-    this.lugarFiltroId = l.id;
+    this.filtros.lugarEntregaId = l.id;
+    this.filtros.lugarNombre = l.nombre;
     this.terminoLugar = l.nombre;
     this.mostrarDropdownLugar = false;
-    this.buscarPedidoAdmin();
+    this.alCambiarFiltros();
   }
 
   limpiarFiltroLugar(): void {
-    this.lugarFiltroId = null;
+    this.filtros.lugarEntregaId = null;
+    this.filtros.lugarNombre = '';
     this.terminoLugar = '';
     this.mostrarDropdownLugar = false;
-    this.buscarPedidoAdmin();
+    this.alCambiarFiltros();
   }
 
   // El (mousedown) de seleccionarLugar() necesita disparar ANTES que este (blur) — un delay
@@ -953,6 +1370,16 @@ export class MisPedidosComponent implements OnInit {
   // exactamente lo que ya dice el badge de tipo ("📦 Apartado" + "APARTADO" abajo). Para
   // crédito se muestra el estado de pago en su lugar; NORMAL/Cancelado no cambian.
   estadoBadge(item: IPedidoGenerico): { icono: string; texto: string } {
+    // La card del titular habla del grupo: un abono al grupo liquida primero al pedido más viejo,
+    // así que el titular podía decir "Pagado" mientras la misma card decía "Falta $100".
+    const g = item.pedido.grupo;
+    if (g?.esTitular) {
+      if (g.totalGrupo <= 0) return { icono: 'pi-times-circle', texto: 'Cancelado' };
+      const credito = this.esGrupoCredito(g);
+      return g.saldoGrupo > 0.005
+        ? { icono: 'pi-clock', texto: credito ? 'Por cobrar' : 'Pendiente' }
+        : { icono: 'pi-check-circle', texto: credito ? 'Pagado' : 'Entregado' };
+    }
     // Cancelado va primero: un Ir pagando cancelado mostraba "Por cobrar" (2026-09-29).
     if (this.esCancelado(item)) {
       return { icono: 'pi-times-circle', texto: 'Cancelado' };
@@ -967,6 +1394,15 @@ export class MisPedidosComponent implements OnInit {
     return { icono, texto: item.pedido.estado_pedido };
   }
 
+  /**
+   * El pedido que el cliente hizo desde su cuenta y nadie ha cobrado ni apartado: contado
+   * (`NORMAL`) con estado 'Pendiente'. Es la forma de cobro "🕓 Pendiente" de los filtros (2026-10-07).
+   */
+  esPedidoEnLinea(item: IPedidoGenerico): boolean {
+    const tp = item.pedido.tipoPedido ?? 'NORMAL';
+    return tp === 'NORMAL' && (item.pedido.estado_pedido ?? '').toLowerCase() === 'pendiente';
+  }
+
   // El back guarda 'cancelado' en minúscula; comparar contra 'Cancelado' nunca coincidía, así
   // que la card no se enteraba y el botón Cancelar quedaba habilitado.
   esCancelado(item: IPedidoGenerico): boolean {
@@ -978,11 +1414,137 @@ export class MisPedidosComponent implements OnInit {
   // clickeable, y al hacer clic el back lo rechazaba (o mandaba a Abonos, que a su vez decía
   // "ya está pagado"). Mismo criterio de tipoPedido que ya usan estadoBadge()/puedeGenerarTicket().
   pedidoYaCobrado(item: IPedidoGenerico): boolean {
+    // Unido: lo que manda es el grupo, no el estado de este pedido (el titular puede estar
+    // cancelado y quedar otros por cobrar).
+    if (item.pedido.grupo) return item.pedido.grupo.saldoGrupo <= 0;
     const estado = item.pedido.estado_pedido;
     if (this.esCancelado(item)) return true;
     const tp = item.pedido.tipoPedido;
     if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO';
     return estado === 'Entregado';
+  }
+
+  /**
+   * Lo que le falta pagar a un pedido a crédito que ya tiene abonos; `null` si no aplica (contado,
+   * sin abonos, pagado o cancelado). La card mostraba solo el total, y un pedido recién separado de
+   * un grupo parecía seguir debiendo todo aunque ya se le hubiera dejado parte de lo abonado.
+   */
+  // ── Pago y entrega (dominio entrega del back, 2026-10-06; skill reglas-pedidos 2.4) ─────
+  // La card dice siempre dos cosas: Pagado / Falta pagar y Entregado / Falta entregar.
+
+  /** Lo que se ejecuta una vez cuando llega la siguiente página de la lista. */
+  private alRecargar: ((lista: IPedidoGenerico[]) => void) | null = null;
+
+  pagoDeCard(item: IPedidoGenerico): EstadoPago {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) {
+      if (g.totalGrupo <= 0) return 'CANCELADO';
+      return g.saldoGrupo > 0.005 ? 'FALTA_PAGAR' : 'PAGADO';
+    }
+    if (this.esCancelado(item)) return 'CANCELADO';
+    const estado = (item.pedido.estado_pedido ?? '').toUpperCase();
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return estado === 'PAGADO' ? 'PAGADO' : 'FALTA_PAGAR';
+    return estado === 'ENTREGADO' ? 'PAGADO' : 'FALTA_PAGAR';
+  }
+
+  /** Cuánto falta, para "Falta pagar $X". */
+  private faltaDeCard(item: IPedidoGenerico): number | null {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) return g.saldoGrupo;
+    const total = item.pedido.detalles.reduce((s, d) => s + d.sub_total, 0);
+    const falta = Math.round((total - (item.pedido.totalPagado ?? 0)) * 100) / 100;
+    return falta > 0 ? falta : null;
+  }
+
+  entregadoDeCard(item: IPedidoGenerico): boolean {
+    const g = item.pedido.grupo;
+    if (g?.esTitular) return g.entregadoGrupo === true;
+    return item.pedido.entregado === true;
+  }
+
+  etiquetaPagoCard(item: IPedidoGenerico): EtiquetaCard {
+    return etiquetaPago(this.pagoDeCard(item), this.faltaDeCard(item));
+  }
+
+  etiquetaEntregaCard(item: IPedidoGenerico): EtiquetaCard {
+    return etiquetaEntrega(this.entregadoDeCard(item));
+  }
+
+  /** Ir pagando (suelto o grupo) se puede entregar debiendo; lo demás, solo pagado (E8). */
+  private esIrPagando(item: IPedidoGenerico): boolean {
+    const g = item.pedido.grupo;
+    return (g?.tipoPedido ?? item.pedido.tipoPedido ?? '').toUpperCase() === 'FIADO';
+  }
+
+  puedeEntregarAccion(): boolean {
+    return this.isAdminUser && this.authService.tieneAccion('pedidos/mis-pedidos', 'entregar');
+  }
+
+  /** 📦 Entregar en la card. */
+  puedeEntregar(item: IPedidoGenerico): boolean {
+    const pago = this.pagoDeCard(item);
+    if (!this.puedeEntregarAccion() || pago === 'CANCELADO' || this.entregadoDeCard(item)) return false;
+    return pago === 'PAGADO' || this.esIrPagando(item);
+  }
+
+  puedeRegresarEntrega(item: IPedidoGenerico): boolean {
+    return this.isAdminUser && this.authService.tieneAccion('pedidos/mis-pedidos', 'regresar-entrega')
+      && this.pagoDeCard(item) !== 'CANCELADO' && this.entregadoDeCard(item);
+  }
+
+  /** Tras cobrar: preguntar solo si quedó pagado, no se lo ha llevado y se puede marcar. */
+  private debePreguntarEntrega(item: IPedidoGenerico): boolean {
+    return this.puedeEntregar(item) && this.pagoDeCard(item) === 'PAGADO';
+  }
+
+  private preguntarEntregaDe(item: IPedidoGenerico, texto?: string): void {
+    preguntarYEntregar(() => this.pedidoService.entregar(item.pedido.id),
+      () => this.buscarPedidoAdmin(false), texto);
+  }
+
+  entregar(item: IPedidoGenerico): void {
+    const g = item.pedido.grupo;
+    const quien = g ? `los pedidos ${this.numerosDe([item.pedido.id, ...g.otrosPedidos])}` : `el pedido #${item.pedido.id}`;
+    Swal.fire({
+      icon: 'question', title: '📦 Entregar',
+      text: `¿El cliente ya se llevó ${quien}?`,
+      showCancelButton: true, confirmButtonText: 'Sí, entregado', cancelButtonText: 'No'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidoService.entregar(item.pedido.id).subscribe({
+        next: () => {
+          Swal.fire({ icon: 'success', title: 'Entregado', timer: 1500, showConfirmButton: false });
+          this.buscarPedidoAdmin(false);
+        },
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo marcar como entregado', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
+  regresarEntrega(item: IPedidoGenerico): void {
+    Swal.fire({
+      icon: 'warning', title: 'Regresar a "Falta entregar"',
+      text: `El pedido #${item.pedido.id}${item.pedido.grupo ? ' y los de su grupo' : ''} quedará como "Falta entregar". ¿Seguro?`,
+      showCancelButton: true, confirmButtonText: 'Sí, regresar', cancelButtonText: 'No'
+    }).then(r => {
+      if (!r.isConfirmed) return;
+      this.pedidoService.regresarEntrega(item.pedido.id).subscribe({
+        next: () => this.buscarPedidoAdmin(false),
+        error: err => Swal.fire({ icon: 'error', title: 'No se pudo regresar', text: err?.error?.mensaje ?? 'Intenta de nuevo.' })
+      });
+    });
+  }
+
+  faltaDeCredito(item: IPedidoGenerico): number | null {
+    const tp = item.pedido.tipoPedido;
+    const estado = (item.pedido.estado_pedido ?? '').toUpperCase();
+    if ((tp !== 'APARTADO' && tp !== 'FIADO') || estado === 'PAGADO' || estado === 'CANCELADO') return null;
+    const pagado = item.pedido.totalPagado ?? 0;
+    if (pagado <= 0) return null;
+    const total = item.pedido.detalles.reduce((s, d) => s + d.sub_total, 0);
+    const falta = Math.round((total - pagado) * 100) / 100;
+    return falta > 0 ? falta : null;
   }
 
   // Pre-checa con lo que YA hay en la lista (sin pedir el detalle): para NORMAL basta con
@@ -1124,7 +1686,7 @@ export class MisPedidosComponent implements OnInit {
         if (correoDefault) {
           Swal.fire({
             title: `Enviar comprobante #${pedidoId}`,
-            html: `¿Enviar el ticket al correo de <b>${item.cliente.nombreCliente}</b>:<br><b>${correoDefault}</b>?`,
+            html: `¿Enviar el ticket al correo de <b>${MisPedidosComponent.escaparHtml(item.cliente.nombreCliente)}</b>:<br><b>${MisPedidosComponent.escaparHtml(correoDefault)}</b>?`,
             icon: 'question',
             showCancelButton: true,
             showDenyButton: true,

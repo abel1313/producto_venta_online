@@ -1,7 +1,7 @@
 // Alta de los hashtags fijos por red. Todo el color sale de las variables globales, así que
 // responde solo a claro/oscuro (ver "HOMOLOGACIÓN DE PALETA — JADE" en CLAUDE.md).
 .gh-wrap {
-  max-width: 760px;
+  max-width: var(--form-ancho, 820px);
   margin: 0 auto;
   padding: 24px 20px 60px;
 }
@@ -24,7 +24,7 @@
 
     small {
       font-size: .84rem;
-      color: var(--app-text-muted, #64748b);
+      color: var(--app-text-muted);
     }
   }
 }
@@ -33,12 +33,12 @@
   margin: 0 0 18px;
   font-size: .88rem;
   line-height: 1.5;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .gh-cargando {
   font-size: .88rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .gh-card {
@@ -73,8 +73,8 @@
 
     // .95rem/700 -- mismo tamaño de título que el resto de los headers de card
     // de la app (gp-card__titulo, ra-card__titulo, fv-card__nombre, etc.).
-    strong { font-size: .95rem; font-weight: 700; color: var(--card-header-text, #fff); }
-    small  { font-size: .78rem; color: rgba(255,255,255,0.75); }
+    strong { font-size: .95rem; font-weight: 700; color: var(--card-header-text); }
+    small  { font-size: .78rem; color: color-mix(in srgb, var(--card-header-text) 75%, transparent); }
   }
 }
 
@@ -89,7 +89,7 @@
   line-height: 1.45;
   resize: vertical;
 
-  &::placeholder { color: var(--app-text-placeholder, #94a3b8); }
+  &::placeholder { color: var(--app-text-placeholder, var(--app-text-faint)); }
 
   &:focus {
     outline: none;
@@ -104,7 +104,7 @@
   margin: 8px 0 12px;
   font-size: .78rem;
   line-height: 1.45;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .gh-acciones {
@@ -116,7 +116,7 @@
 
 .gh-estado {
   font-size: .78rem;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 
   &--pend { color: var(--app-accent); font-weight: 600; }
 }
@@ -137,9 +137,10 @@
   &:disabled { opacity: .45; cursor: not-allowed; }
 
   &--primary {
-    background: var(--app-accent);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
     // Nunca #fff fijo: en oscuro el acento es brillante y el blanco encima no se lee.
-    color: var(--app-accent-ink);
+    color: var(--btn-primary-text);
   }
 
   &--ghost {

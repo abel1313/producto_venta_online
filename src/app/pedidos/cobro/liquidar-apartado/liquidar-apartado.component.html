@@ -1,0 +1,53 @@
+<div class="cb-overlay" (click)="cancelar()"></div>
+<div class="cb-modal" role="dialog" aria-modal="true" aria-labelledby="cb-titulo-la">
+  <div class="cb-modal__hdr">
+    <h5 id="cb-titulo-la">💵 Liquidar Apartado</h5>
+    <button type="button" class="cb-modal__close" (click)="cancelar()" aria-label="Cerrar">✕</button>
+  </div>
+
+  <div class="cb-modal__info" *ngIf="detalle">
+    <span>Pedido <strong>#{{ detalle.pedidoId }}</strong></span>
+    <span>{{ detalle.clienteNombre }}</span>
+    <span>Total: <strong>${{ detalle.totalPedido | number:'1.2-2' }}</strong></span>
+    <span *ngIf="detalle.totalPagado > 0">Pagado: <strong class="cb-modal__ok">${{ detalle.totalPagado | number:'1.2-2' }}</strong></span>
+  </div>
+
+  <div class="cb-modal__body">
+    <p class="cb-nota" *ngIf="cargando">Cargando el pedido…</p>
+
+    <ng-container *ngIf="!cargando && detalle">
+      <p class="cb-aviso" *ngIf="saldo <= 0.005">Este pedido ya está pagado.</p>
+
+      <div class="cb-field">
+        <span class="cb-label">Se cobra completo</span>
+        <span class="cb-monto-fijo">${{ monto | number:'1.2-2' }}</span>
+        <small class="cb-nota">Un Apartado se paga completo cuando lo recogen.</small>
+        <button type="button" class="cb-link" (click)="irAlDetalle.emit()">¿Dejó solo una parte? Cámbialo a Ir pagando</button>
+      </div>
+
+      <app-campo-pago [(metodoPago)]="metodoPago" [(montoDado)]="montoDado" [monto]="monto" [cambio]="cambio"></app-campo-pago>
+
+      <div class="cb-field">
+        <span class="cb-label">Fecha de pago</span>
+        <app-selector-fecha [(ngModel)]="fechaPago" placeholder="Fecha de pago"></app-selector-fecha>
+      </div>
+
+      <div class="cb-field">
+        <label class="cb-label" for="cb-nota-la">{{ metodoPago === 'TRANSFERENCIA' ? 'Número de referencia (opcional)' : 'Nota (opcional)' }}</label>
+        <input id="cb-nota-la" class="cb-input" type="text" [(ngModel)]="nota"
+               [placeholder]="metodoPago === 'TRANSFERENCIA' ? 'Ej: 123456789' : 'Ej: lo recogió su hermana'">
+      </div>
+
+      <label class="cb-check" *ngIf="correoCliente">
+        <input type="checkbox" [(ngModel)]="enviarCorreo"> 📧 Enviar el ticket a {{ correoCliente }}
+      </label>
+    </ng-container>
+  </div>
+
+  <div class="cb-modal__footer">
+    <button type="button" class="cb-btn cb-btn--cancel" (click)="cancelar()">Cancelar</button>
+    <button type="button" class="cb-btn cb-btn--save" [disabled]="!puedeGuardar" (click)="guardar()">
+      {{ guardando ? 'Cobrando…' : '💵 Liquidar' }}
+    </button>
+  </div>
+</div>

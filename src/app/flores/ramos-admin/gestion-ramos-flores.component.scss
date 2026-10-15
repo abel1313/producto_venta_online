@@ -11,7 +11,7 @@
   margin-bottom: 24px;
   &__title {
     h4 { margin: 0; font-size: 1.25rem; font-weight: 700; color: var(--app-text); }
-    small { color: var(--app-text-muted, #64748b); }
+    small { color: var(--app-text-muted); }
   }
 }
 
@@ -26,7 +26,7 @@
 
 .ra-hint {
   font-size: 0.8rem;
-  color: var(--app-text-muted, #5F8375);
+  color: var(--app-text-muted);
   margin: 6px 0 16px;
   line-height: 1.4;
 }
@@ -41,12 +41,13 @@
   transition: opacity .15s;
   &:disabled { opacity: .5; cursor: not-allowed; }
   &--primary {
-    background: linear-gradient(135deg, var(--brand-2), var(--brand-1));
-    color: var(--app-accent-ink);
+    background: var(--btn-primary-bg);
+    border: 1px solid var(--btn-primary-border);
+    color: var(--btn-primary-text);
     &:hover:not(:disabled) { opacity: .85; }
   }
   &--ghost {
-    background: rgba(128,128,128,.1);
+    background: color-mix(in srgb, var(--app-text) 10%, transparent);
     color: var(--app-text);
     border: 1px solid var(--card-border);
   }
@@ -143,7 +144,7 @@
 .ra-loading, .ra-empty {
   text-align: center;
   padding: 40px;
-  color: var(--app-text-muted, #64748b);
+  color: var(--app-text-muted);
 }
 
 .ra-grid {
@@ -173,7 +174,7 @@
   &__titulo {
     font-weight: 700;
     font-size: 0.95rem;
-    color: var(--card-header-text, #fff);
+    color: var(--card-header-text);
   }
 
   &__body { padding: 0 16px 12px; }
@@ -229,7 +230,7 @@
   background: rgba(var(--app-accent-rgb),.12);
   color: var(--app-accent);
   &--activo { background: var(--pk-success-soft); color: var(--pk-success-to); }
-  &--off    { background: rgba(100,116,139,.12); color: var(--app-text-muted, #64748b); }
+  &--off    { background: color-mix(in srgb, var(--app-text) 12%, transparent); color: var(--app-text-muted); }
 }
 
 .ra-paginacion {
@@ -244,12 +245,12 @@
 
 // ── Dark mode ─────────────────────────────────────────────────────────────
 :host-context(body.theme-dark) {
-  .ra-form-card { background: rgba(255,255,255,.04); }
-  .ra-card      { background: rgba(255,255,255,.04); }
+  .ra-form-card { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
+  .ra-card      { background: color-mix(in srgb, var(--app-text) 4%, transparent); }
 }
 :host-context(body.theme-light) {
-  .ra-form-card { background: var(--card-bg, #fff); }
-  .ra-card      { background: var(--card-bg, #fff); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .ra-form-card { background: var(--card-bg, var(--card-body-bg)); }
+  .ra-card      { background: var(--card-bg, var(--card-body-bg)); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 }
 
 // Foto del ramo — vive en su variante sombra, igual que la de colores y accesorios.
@@ -286,7 +287,7 @@
     align-items: center;
     justify-content: center;
     background: rgba(0,0,0,.55);
-    color: #fff;
+    color: var(--overlay-text);
     font-weight: 700;
   }
 

@@ -6,7 +6,7 @@
       <span class="vb-header__icon">🛍️</span>
       <div>
         <h4 class="mb-0">Tienda</h4>
-        <small class="text-white-50">Todos nuestros productos</small>
+        <small>Todos nuestros productos</small>
       </div>
     </div>
 
@@ -60,6 +60,14 @@
     </div>
   </div>
 
+  <ng-container *ngIf="hayFiltrosQueMostrar">
+  <button type="button" class="vb-filtros-toggle" [class.vb-filtros-toggle--abierto]="filtrosAbiertos"
+          (click)="alternarFiltros()" [attr.aria-expanded]="filtrosAbiertos" aria-controls="vb-filtros-panel">
+    <span>⚙️ Filtros</span>
+    <span class="vb-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
+    <span class="vb-filtros-toggle__flecha" aria-hidden="true">▾</span>
+  </button>
+  <div id="vb-filtros-panel" *ngIf="filtrosAbiertos">
   <!-- Filtros solo admin: cada checkbox es independiente (no excluyente). Se pueden marcar
        varios a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae
        ambos, solo excluye la dimension cuando queda marcado EXACTAMENTE uno de los dos). Se
@@ -125,29 +133,22 @@
   <!-- Filtros públicos del catálogo: talla / color / marca / precio -- visitantes sin sesión
        siempre los ven (isAnonymous); cuentas con sesión necesitan el permiso puntual. -->
   <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
-    <select *ngIf="isAnonymous || puedeFiltroTalla" class="vb-pub-select" [(ngModel)]="filtroTalla" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Talla</option>
-      <option *ngFor="let t of filtrosDisponibles.tallas" [value]="t">{{ t }}</option>
-    </select>
-    <select *ngIf="isAnonymous || puedeFiltroColor" class="vb-pub-select" [(ngModel)]="filtroColor" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Color</option>
-      <option *ngFor="let c of filtrosDisponibles.colores" [value]="c">{{ c }}</option>
-    </select>
-    <select *ngIf="isAnonymous || puedeFiltroMarca" class="vb-pub-select" [(ngModel)]="filtroMarca" (ngModelChange)="onFiltroPublicoChange()">
-      <option value="">Marca</option>
-      <option *ngFor="let m of filtrosDisponibles.marcas" [value]="m">{{ m }}</option>
-    </select>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroTalla" etiqueta="Talla" [opciones]="filtrosDisponibles.tallas" [valor]="filtroTalla" (valorChange)="filtroTalla = $event; onFiltroPublicoChange()"></app-filtro-buscable>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroColor" etiqueta="Color" [opciones]="filtrosDisponibles.colores" [valor]="filtroColor" (valorChange)="filtroColor = $event; onFiltroPublicoChange()"></app-filtro-buscable>
+    <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroMarca" etiqueta="Marca" [opciones]="filtrosDisponibles.marcas" [valor]="filtroMarca" (valorChange)="filtroMarca = $event; onFiltroPublicoChange()"></app-filtro-buscable>
     <div *ngIf="isAnonymous || puedeFiltroPrecio" class="vb-pub-precio">
       <input type="number" class="vb-pub-input" placeholder="$ mín"
-             [(ngModel)]="filtroPrecioMin" (ngModelChange)="onFiltroPublicoChange()"
+             [(ngModel)]="filtroPrecioMin" (ngModelChange)="onPrecioChange()"
              [min]="filtrosDisponibles.precioMin ?? 0" />
       <span class="vb-pub-precio__sep">–</span>
       <input type="number" class="vb-pub-input" placeholder="$ máx"
-             [(ngModel)]="filtroPrecioMax" (ngModelChange)="onFiltroPublicoChange()"
+             [(ngModel)]="filtroPrecioMax" (ngModelChange)="onPrecioChange()"
              [max]="filtrosDisponibles.precioMax ?? null" />
     </div>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
   </div>
+  </div>
+  </ng-container>
   </div><!-- /vb-header__content -->
 </div>
 
@@ -218,14 +219,13 @@
         ✕
       </button>
 
-      <!-- Badge deshabilitado (solo admin) -->
-      <span *ngIf="esVistaAdmin && !estaHabilitado(v)" class="vb-badge-disabled">Deshabilitado</span>
-
       <!-- Header -- mismo degradado de marca que el resto de las cards de la app
            (Personalización); colorHeader() solo se usa para el puntito de color real
            de la prenda, no para el fondo del header. Va primero, como en el resto de
            las cards de la app (design-system.scss: header + imagen + body + footer). -->
-      <div class="vb-card__header">
+      <div class="vb-card__header"
+           [class.vb-card__header--con-check]="puedeHabilitar"
+           [class.vb-card__header--con-baja]="puedeEliminar">
         <div class="vb-card__color-dot" [style.background]="colorHeader(v.color ?? '')"></div>
         <div class="vb-card__header-content">
           <div class="vb-card__chips">
@@ -241,10 +241,16 @@
         </span>
       </div>
 
+      <!-- Deshabilitado (solo admin). Antes era una etiqueta flotante arriba a la derecha y se
+           encimaba con la ✕ de dar de baja y con "Agotado" (2026-10-14, QA): ahora es una franja
+           propia debajo del encabezado, así cada cosa tiene su lugar. -->
+      <div *ngIf="esVistaAdmin && !estaHabilitado(v)" class="vb-badge-disabled">⛔ Deshabilitado</div>
+
       <!-- Imagen -->
       <div class="vb-card__img-wrap" (click)="irDetalle(v)" style="cursor:pointer;" title="Ver imágenes">
         <ng-container *ngIf="v.imagenUrl | imagenSrc | async as src">
-          <img [src]="src" class="vb-card__img" alt="Imagen variante" (error)="$any($event.target).style.display='none'" />
+          <img [src]="src" class="vb-card__img" [alt]="(v.nombreProducto || 'Artículo') + (v.talla ? ' talla ' + v.talla : '') + (v.color ? ' ' + v.color : '')" (error)="$any($event.target).style.display='none'; $any($event.target).nextElementSibling.style.display='flex'; marcarImagenFallida(v)" />
+          <div class="vb-card__img-placeholder" style="display:none">📦</div>
         </ng-container>
         <div *ngIf="!v.imagenUrl" class="vb-card__img-placeholder">📦</div>
         <button *ngIf="!isAnonymous && favoritosDisponibles" class="vb-card__heart" [class.vb-card__heart--activo]="esFavorito(v)"
@@ -265,15 +271,15 @@
           
           <div class="vb-card__detail-row" *ngIf="v.talla">
             <span class="vb-card__detail-label">Talla</span>
-            <span class="vb-card__detail-val">{{ v.talla }}</span>
+            <span class="vb-card__detail-val">{{ v.talla | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.color">
             <span class="vb-card__detail-label">Color</span>
-            <span class="vb-card__detail-val">{{ v.color }}</span>
+            <span class="vb-card__detail-val">{{ v.color | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.marca">
             <span class="vb-card__detail-label">Marca</span>
-            <span class="vb-card__detail-val">{{ v.marca }}</span>
+            <span class="vb-card__detail-val">{{ v.marca | uppercase }}</span>
           </div>
           <div class="vb-card__detail-row" *ngIf="v.presentacion">
             <span class="vb-card__detail-label">Presentación</span>
@@ -334,7 +340,7 @@
           <span class="vb-btn-card__label">Precio</span>
         </button>
 
-        <button *ngIf="puedeCompartirImagen && v.imagenUrl"
+        <button *ngIf="puedeCompartirImagen && v.imagenUrl && !imagenFallo(v)"
                 class="vb-btn-card vb-btn-card--share"
                 (click)="compartirImagen(v)"
                 title="Compartir imagen">

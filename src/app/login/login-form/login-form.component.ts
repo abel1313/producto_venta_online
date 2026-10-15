@@ -5,6 +5,7 @@ import { Subscription } from 'rxjs';
 import { AuthenticateService as auth } from 'src/app/auth.service';
 import { AuthService } from 'src/app/auth/auth.service';
 import Swal from 'sweetalert2';
+import { pedirCambioPasswordForzado } from '../cambio-password-forzado';
 import { AccederService } from '../acceder.service';
 import { PresentacionService, IImagenPresentacionV2Dto } from 'src/app/presentacion/presentacion.service';
 import { CarritoVarianteService } from 'src/app/variante/service/carrito-variante.service';
@@ -319,112 +320,20 @@ export class LoginFormComponent implements OnInit, AfterViewInit, OnDestroy {
     });
   }
 
-  // Mismas reglas que passwordFuerte (src/app/validador/validador.ts), usadas en el registro —
-  // el checklist visual del Swal debe validar exactamente lo mismo que el backend exige.
-  private static readonly REGEX_ESPECIAL = /[!@#$%^&*()\-_=+\[\]{};:'",.<>?\/\\|`~]/;
-  private cumpleRequisitos(valor: string): boolean {
-    return valor.length >= 8
-      && /[A-Z]/.test(valor)
-      && /[a-z]/.test(valor)
-      && /[0-9]/.test(valor)
-      && LoginFormComponent.REGEX_ESPECIAL.test(valor);
-  }
-
   private forzarCambioPassword(passwordActual: string): void {
-    Swal.fire({
-      title: '🔑 Cambia tu contraseña',
-      html: `
-        <p style="font-size:0.88rem;color:#64748b;margin-bottom:12px;text-align:left">
-          Tu contraseña fue reseteada por un administrador.<br>
-          Debes crear una nueva contraseña para continuar.
-        </p>
-        <input id="swal-pwd-nueva" type="password" class="swal2-input" placeholder="Nueva contraseña">
-        <input id="swal-pwd-confirm" type="password" class="swal2-input" placeholder="Confirmar nueva contraseña">
-        <style>
-          .swal-pwd-reqs { margin-top: 10px; text-align: left; background: #EFF5FF; border: 1px solid #C7DDFF; border-radius: 10px; padding: 12px 14px; }
-          .swal-pwd-reqs__title { font-size: 0.7rem; font-weight: 700; color: #007AFF; text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 8px; }
-          .swal-req { display: flex; align-items: center; gap: 6px; font-size: 0.78rem; color: #dc2626; transition: color 0.2s; margin-bottom: 4px; }
-          .swal-req__icon { color: #dc2626; transition: color 0.2s; flex-shrink: 0; }
-          .swal-req.met { color: #374151; }
-          .swal-req.met .swal-req__icon { color: #10b981; }
-          .swal-pwd-bar { height: 4px; background: #e5e7eb; border-radius: 99px; overflow: hidden; margin-top: 8px; }
-          .swal-pwd-bar__fill { height: 100%; width: 0%; border-radius: 99px; background: #ef4444; transition: width 0.3s ease, background-color 0.3s ease; }
-        </style>
-        <div class="swal-pwd-reqs">
-          <p class="swal-pwd-reqs__title">Tu contraseña debe tener:</p>
-          <div id="swal-req-longitud"  class="swal-req"><span class="swal-req__icon">○</span> Mínimo 8 caracteres</div>
-          <div id="swal-req-mayuscula" class="swal-req"><span class="swal-req__icon">○</span> Una mayúscula (A, B, C…)</div>
-          <div id="swal-req-minuscula" class="swal-req"><span class="swal-req__icon">○</span> Una minúscula (a, b, c…)</div>
-          <div id="swal-req-numero"    class="swal-req"><span class="swal-req__icon">○</span> Un número (0–9)</div>
-          <div id="swal-req-especial"  class="swal-req"><span class="swal-req__icon">○</span> Un carácter especial (! @ # $ % &amp; * - _ .)</div>
-          <div class="swal-pwd-bar"><div id="swal-pwd-bar-fill" class="swal-pwd-bar__fill"></div></div>
-        </div>
-      `,
-      icon: 'warning',
-      confirmButtonText: 'Cambiar y entrar',
-      showCancelButton: false,
-      allowOutsideClick: false,
-      allowEscapeKey: false,
-      didOpen: () => {
-        const input = document.getElementById('swal-pwd-nueva') as HTMLInputElement | null;
-        const actualizarChecklist = () => {
-          const valor = input?.value ?? '';
-          const reqs: Record<string, boolean> = {
-            'swal-req-longitud':  valor.length >= 8,
-            'swal-req-mayuscula': /[A-Z]/.test(valor),
-            'swal-req-minuscula': /[a-z]/.test(valor),
-            'swal-req-numero':    /[0-9]/.test(valor),
-            'swal-req-especial':  LoginFormComponent.REGEX_ESPECIAL.test(valor),
-          };
-          let cumplidos = 0;
-          Object.entries(reqs).forEach(([id, met]) => {
-            if (met) cumplidos++;
-            const el = document.getElementById(id);
-            if (!el) return;
-            el.classList.toggle('met', met);
-            const icon = el.querySelector('.swal-req__icon');
-            if (icon) icon.textContent = met ? '✓' : '○';
-          });
-          const fill = document.getElementById('swal-pwd-bar-fill');
-          if (fill) {
-            fill.style.width = `${cumplidos * 20}%`;
-            fill.style.background = cumplidos <= 2 ? '#ef4444' : cumplidos <= 4 ? '#f59e0b' : '#10b981';
-          }
-        };
-        input?.addEventListener('input', actualizarChecklist);
-      },
-      preConfirm: async () => {
-        const nueva   = (document.getElementById('swal-pwd-nueva')   as HTMLInputElement)?.value ?? '';
-        const confirm = (document.getElementById('swal-pwd-confirm') as HTMLInputElement)?.value ?? '';
-        if (!this.cumpleRequisitos(nueva)) {
-          Swal.showValidationMessage('La contraseña no cumple todos los requisitos de arriba.');
-          return false;
-        }
-        if (nueva !== confirm) {
-          Swal.showValidationMessage('Las contraseñas no coinciden');
-          return false;
-        }
-        try {
-          await this.acceder.cambiarPassword(passwordActual, nueva).toPromise();
-          return true;
-        } catch (err: any) {
-          const msg = err?.error?.mensaje ?? err?.error?.message ?? 'Error al cambiar la contraseña.';
-          Swal.showValidationMessage(msg);
-          return false;
-        }
-      }
-    }).then(result => {
-      this.cargando = false;
-      if (!result.isConfirmed) return;
-      // Cambiar la contraseña invalida el refresh token en el instante (seguridad del back,
-      // 2026-07-31). Entrar a la app aquí dejaría al usuario con una sesión ya muerta: el
-      // siguiente refresh responde 401. Hay que volver a iniciar sesión con la nueva.
-      this.sesion.cerrarSesionLocal();
-      Swal.fire({
-        icon: 'success',
-        title: '¡Contraseña actualizada!',
-        text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+    pedirCambioPasswordForzado(nueva => this.acceder.cambiarPassword(passwordActual, nueva).toPromise().then(() => undefined))
+      .then(confirmado => {
+        this.cargando = false;
+        if (!confirmado) return;
+        // Cambiar la contraseña invalida el refresh token en el instante (seguridad del back,
+        // 2026-07-31). Entrar a la app aquí dejaría al usuario con una sesión ya muerta: el
+        // siguiente refresh responde 401. Hay que volver a iniciar sesión con la nueva.
+        this.sesion.cerrarSesionLocal();
+        Swal.fire({
+          icon: 'success',
+          title: '¡Contraseña actualizada!',
+          text: 'Vuelve a iniciar sesión con tu nueva contraseña.'
+        });
       });
-    });
   }
 }

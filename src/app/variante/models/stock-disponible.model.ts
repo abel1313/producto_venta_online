@@ -24,4 +24,10 @@ export interface IStockDisponible {
   descuadrado:       boolean;
   /** Texto ya armado para mostrar tal cual. */
   mensaje:           string;
+  /** false: el modelo está deshabilitado o dado de baja (back 2026-10-08). */
+  habilitado?:       boolean;
+  /** false: el modelo no tiene foto (al darlo de baja se le borran). */
+  conFoto?:          boolean;
+  /** Cuántos artículos más caben (1 pieza cada uno). Viene calculado. */
+  articulosQueAunCaben?: number;
 }

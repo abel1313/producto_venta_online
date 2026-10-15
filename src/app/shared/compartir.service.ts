@@ -26,17 +26,15 @@ export class CompartirService {
       return;
     }
 
-    const nombre  = `${data.titulo}.${ext}`;
+    // Nombre neutro: el dueño no quiere que al pegar salga el nombre del producto (2026-10-14).
+    const nombre  = `imagen.${ext}`;
     const archivo = new File([blob], nombre, { type: blob.type });
 
     // ── Móvil: Web Share API con archivo ──────────────────────────────
     if (this.puedeCompartirArchivo(archivo)) {
       try {
-        await navigator.share({
-          files: [archivo],
-          title: data.titulo,
-          text:  `${data.titulo} — $${data.precio}`
-        });
+        // Solo la imagen: sin título ni texto ("Nombre — $150"), que se pegaban junto a la foto.
+        await navigator.share({ files: [archivo] });
       } catch (err: any) {
         if (err?.name !== 'AbortError') this.descargarArchivo(archivo);
       }

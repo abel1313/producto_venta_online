@@ -28,7 +28,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   @ViewChild('canvasCamara', { static: false }) canvasCamaraRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('videoScanner', { static: false }) videoScannerRef!: ElementRef<HTMLVideoElement>;
 
-  @Input() nombreCard    = 'Agregar Modelo';
+  @Input() nombreCard    = 'Agregar Producto';
   @Input() productoUpdate: IProductoDTORec | null = null;
 
   formProductos!: FormGroup;
@@ -368,7 +368,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   private avisoGuardado(): void {
     Swal.fire({
-      title: this.esActualizar ? '¡Modelo actualizado!' : '¡Modelo guardado!',
+      title: this.esActualizar ? '¡Producto actualizado!' : '¡Producto guardado!',
       icon: 'success',
       timer: 1600,
       showConfirmButton: false

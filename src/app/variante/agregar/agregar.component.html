@@ -8,7 +8,7 @@
       <span class="vf-card__header-icon">🧩</span>
       <div class="vf-card__header-text">
         <h3 class="vf-card__title">Nuevo artículo</h3>
-        <p class="vf-card__subtitle">Lo que se vende: un modelo con su talla y color. Solo el modelo es obligatorio</p>
+        <p class="vf-card__subtitle">Lo que se vende: un producto con su talla y color. Solo el producto es obligatorio</p>
       </div>
     </div>
 
@@ -16,7 +16,7 @@
 
       <!-- ── Búsqueda de modelo ────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Modelo <span class="vf-required">*</span>
+        <p class="vf-section__label">Producto <span class="vf-required">*</span>
           <span style="opacity:.6;font-weight:400">— el producto base al que le vas a dar talla y color</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
@@ -25,7 +25,7 @@
             <input
               class="vf-product-search__input"
               type="text"
-              placeholder="Buscar modelo por nombre o código…"
+              placeholder="Buscar producto por nombre o código…"
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"
@@ -56,7 +56,7 @@
             <strong>{{ productoSeleccionado.nombre }}<ng-container *ngIf="productoSeleccionado.codigoBarras"> · {{ productoSeleccionado.codigoBarras }}</ng-container></strong>
             <small>{{ productoSeleccionado.precioVenta | currency:'MXN':'symbol':'1.2-2' }} · Stock {{ productoSeleccionado.stock }}</small>
           </div>
-          <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar modelo">✕</button>
+          <button class="vf-product-chip__clear" (click)="limpiarProducto()" title="Cambiar producto">✕</button>
         </div>
 
         <!-- ── Cuánto stock del modelo queda sin repartir ──────────────────────────
@@ -65,21 +65,21 @@
              si la pantalla repitiera la resta habría dos versiones del mismo número. -->
         <!-- Estado del modelo (2026-10-08): deshabilitado o dado de baja → Habilitar; sin foto → aviso -->
         <div class="vf-estado vf-estado--off" *ngIf="productoSeleccionado && modeloDeshabilitado">
-          <p class="vf-estado__titulo">⛔ Este modelo está deshabilitado</p>
+          <p class="vf-estado__titulo">⛔ Este producto está deshabilitado</p>
           <p class="vf-estado__texto">No sale en la tienda ni en ventas, y sus artículos tampoco. Puede ser que lo
             hayan deshabilitado o dado de baja. Para agregarle artículos, primero habilítalo.</p>
           <button type="button" class="pk-btn pk-btn--primary pk-btn--sm" *ngIf="puedeHabilitarModelo"
                   [disabled]="habilitando" (click)="habilitarModelo()">
-            {{ habilitando ? 'Habilitando…' : '✅ Habilitar modelo' }}
+            {{ habilitando ? 'Habilitando…' : '✅ Habilitar producto' }}
           </button>
           <p class="vf-estado__texto" *ngIf="!puedeHabilitarModelo">
-            Pídele a alguien con permiso de <b>Habilitar</b> en Catálogo → 🔍 Modelos que lo habilite.
+            Pídele a alguien con permiso de <b>Habilitar</b> en Catálogo → 🔍 Productos que lo habilite.
           </p>
         </div>
         <div class="vf-estado" *ngIf="productoSeleccionado && modeloSinFoto">
-          <p class="vf-estado__texto">📷 Este modelo no tiene foto (si lo dieron de baja, sus fotos se borraron).
-            Sus artículos no salen en la tienda hasta que tengan una: súbela abajo para el artículo, o al modelo en
-            Catálogo → 🔍 Modelos → ✏️ Actualizar.</p>
+          <p class="vf-estado__texto">📷 Este producto no tiene foto (si lo dieron de baja, sus fotos se borraron).
+            Sus artículos no salen en la tienda hasta que tengan una: súbela abajo para el artículo, o al producto en
+            Catálogo → 🔍 Productos → ✏️ Actualizar.</p>
         </div>
 
         <div class="vf-stock" *ngIf="productoSeleccionado && stockDisponible as sd"
@@ -90,12 +90,12 @@
                quitarle. Se guarda junto con el artículo, en una sola operación. -->
           <div class="vf-stock__fila">
             <label class="vf-stock__campo">
-              <span>Stock total del modelo</span>
+              <span>Stock total del producto</span>
               <input class="vf-input" type="number" [value]="sd.stockTotal" disabled
                      title="Solo se lee: para cambiarlo usa el campo de al lado">
             </label>
             <label class="vf-stock__campo" *ngIf="puedeAjustarStockModelo">
-              <span>Agregar (+) o quitar (−) al modelo</span>
+              <span>Agregar (+) o quitar (−) al producto</span>
               <span class="vf-stock__en-linea">
                 <input class="vf-input" type="number" step="1" [(ngModel)]="ajusteStockModelo"
                        [ngModelOptions]="{ standalone: true }" placeholder="0">
@@ -103,7 +103,7 @@
                 <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm"
                         [disabled]="!ajusteStockModelo || ajusteInvalido || guardandoAjuste || modeloDeshabilitado"
                         (click)="guardarAjusteEnModelo()">
-                  {{ guardandoAjuste ? 'Guardando…' : 'Guardar en el modelo' }}
+                  {{ guardandoAjuste ? 'Guardando…' : 'Guardar en el producto' }}
                 </button>
               </span>
             </label>
@@ -114,7 +114,7 @@
               (tiene {{ sd.variantesActivas }} activo{{ sd.variantesActivas === 1 ? '' : 's' }}).
             </ng-container>
             <ng-container *ngIf="articulosQueCaben === 0">
-              No le queda stock libre: agrégale stock al modelo para hacer artículos nuevos.
+              No le queda stock libre: agrégale stock al producto para hacer artículos nuevos.
             </ng-container>
           </div>
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm vf-stock__varios"
@@ -123,14 +123,14 @@
           </button>
           <div class="vf-stock__num" *ngIf="!sd.descuadrado">
             Repartido: <b>{{ sd.enVariantes }}</b> · Libre: <b>{{ disponibleConAjuste }}</b>
-            <ng-container *ngIf="ajusteStockModelo"> · El modelo quedaría en <b>{{ stockModeloQuedaria }}</b></ng-container>
+            <ng-container *ngIf="ajusteStockModelo"> · El producto quedaría en <b>{{ stockModeloQuedaria }}</b></ng-container>
           </div>
           <div class="vf-stock__alerta" *ngIf="ajusteInvalido">
-            No se puede dejar el modelo en {{ stockModeloQuedaria }}: ya tiene {{ sd.enVariantes }} repartidos.
+            No se puede dejar el producto en {{ stockModeloQuedaria }}: ya tiene {{ sd.enVariantes }} repartidos.
           </div>
 
           <div class="vf-stock__num" *ngIf="sd.descuadrado">
-            ⚠️ Modelo descuadrado
+            ⚠️ Producto descuadrado
           </div>
 
           <!-- `mensaje` viene armado del back para mostrarse tal cual -->
@@ -139,7 +139,7 @@
           <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock && !sd.descuadrado">
             Estás repartiendo <b>{{ stockEnEstaPantalla }}</b> y solo quedan
             <b>{{ disponibleConAjuste }}</b>.
-            <ng-container *ngIf="puedeAjustarStockModelo">Súbele stock al modelo en el campo de arriba.</ng-container>
+            <ng-container *ngIf="puedeAjustarStockModelo">Súbele stock al producto en el campo de arriba.</ng-container>
             <ng-container *ngIf="!puedeAjustarStockModelo">El guardado va a fallar.</ng-container>
           </div>
         </div>
@@ -194,7 +194,7 @@
 
           <!-- Nuevo — categoría que se aplica a todas las variantes del lote -->
           <div class="vf-field vf-field--full">
-            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(aplica a todos; viene la del modelo y la puedes cambiar)</span></label>
+            <label class="vf-label">Categoría <span style="opacity:.6;font-weight:400">(aplica a todos; viene la del producto y la puedes cambiar)</span></label>
             <app-palabra-clave-autocomplete
               [valorInicial]="palabraClaveSeleccionada"
               (seleccionada)="onPalabraClaveSeleccionada($event)">
@@ -363,7 +363,7 @@
       </p>
 
       <p class="vf-faltantes" *ngIf="!productoSeleccionado">
-        Falta elegir el <b>modelo</b> en el buscador de arriba.
+        Falta elegir el <b>producto</b> en el buscador de arriba.
         La imagen es opcional — no bloquea el guardado.
       </p>
 

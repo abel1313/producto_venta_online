@@ -9,7 +9,7 @@
       <span class="vf-card__header-icon">✏️</span>
       <div>
         <h3 class="vf-card__title">Editar artículo <span class="vf-card__id">#{{ variante.id }}</span></h3>
-        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el modelo</p>
+        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
       </div>
     </div>
 
@@ -17,7 +17,7 @@
 
       <!-- ── Modelo ───────────────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Modelo <span class="vf-required">*</span></p>
+        <p class="vf-section__label">Producto <span class="vf-required">*</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
           <div class="vf-product-search__wrap">
@@ -25,7 +25,7 @@
             <input
               class="vf-product-search__input"
               type="text"
-              placeholder="Buscar modelo por nombre o código…"
+              placeholder="Buscar producto por nombre o código…"
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"
@@ -60,7 +60,7 @@
           <div class="vf-stock__num" *ngIf="!sd.descuadrado">
             Quedan <b>{{ sd.disponible }}</b> disponibles de {{ sd.stockTotal }}
           </div>
-          <div class="vf-stock__num" *ngIf="sd.descuadrado">⚠️ Modelo descuadrado</div>
+          <div class="vf-stock__num" *ngIf="sd.descuadrado">⚠️ Producto descuadrado</div>
 
           <div class="vf-stock__msg">{{ sd.mensaje }}</div>
           <div class="vf-stock__msg">
@@ -70,16 +70,16 @@
           <div class="vf-stock__alerta" *ngIf="seEstaPasandoDeStock">
             <ng-container *ngIf="!sd.descuadrado; else alertaDescuadrado">
               Le estás sumando <b>{{ stockQuePide }}</b> y solo quedan <b>{{ sd.disponible }}</b>.
-              Si llegó mercancía, primero agrégale stock al modelo.
+              Si llegó mercancía, primero agrégale stock al producto.
             </ng-container>
             <ng-template #alertaDescuadrado>
-              Con el modelo descuadrado no se le puede sumar stock a sus artículos: primero hay que
-              agregarle stock al modelo.
+              Con el producto descuadrado no se le puede sumar stock a sus artículos: primero hay que
+              agregarle stock al producto.
             </ng-template>
           </div>
           <!-- QA 2026-10-14 (Prueba 20.3): el stock se le agrega al modelo desde aquí, sin salir del artículo. -->
           <button type="button" class="vf-stock__btn" *ngIf="seEstaPasandoDeStock || sd.disponible < 1"
-                  (click)="ofrecerStockAlModelo()">➕ Agregar stock al modelo</button>
+                  (click)="ofrecerStockAlModelo()">➕ Agregar stock al producto</button>
         </div>
 
         <div class="vf-stock vf-stock--cargando" *ngIf="cargandoStock">

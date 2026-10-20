@@ -437,7 +437,7 @@ export class DetalleVarianteComponent implements OnInit, OnDestroy {
   confirmarIndependizar(): void {
     if (!this.varianteSeleccionada || this.independizando) return;
     if (!this.indepForm.nombre.trim()) {
-      this.independizarError = 'El nombre del modelo nuevo es obligatorio.';
+      this.independizarError = 'El nombre del producto nuevo es obligatorio.';
       return;
     }
     if (!this.indepForm.codigoBarras.trim()) {
@@ -470,7 +470,7 @@ export class DetalleVarianteComponent implements OnInit, OnDestroy {
         Swal.fire({
           icon: 'success',
           title: '✅ Artículo independizado',
-          html: `Modelo nuevo creado con ID <strong>#${d.productoNuevoId}</strong><br>
+          html: `Producto nuevo creado con ID <strong>#${d.productoNuevoId}</strong><br>
                  Código: <strong>${d.codigoBarras}</strong><br>
                  Stock restante del producto origen: <strong>${d.stockProductoOrigenRestante}</strong>`,
           showCancelButton: true,

@@ -75,7 +75,7 @@
         <form [formGroup]="submenuForm" (ngSubmit)="guardarSubmenu()" class="pk-form pk-form--stack">
           <div class="pk-form__field">
             <input class="pk-input" formControlName="nombre" type="text"
-                   placeholder="Nombre de la pantalla (ej. Modelos)…" autocomplete="off" maxlength="80" />
+                   placeholder="Nombre de la pantalla (ej. Productos)…" autocomplete="off" maxlength="80" />
             <small class="pk-error" *ngIf="submenuForm.get('nombre')?.invalid && submenuForm.get('nombre')?.touched">
               El nombre es obligatorio
             </small>

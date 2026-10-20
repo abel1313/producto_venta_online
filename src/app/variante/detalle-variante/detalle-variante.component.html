@@ -240,7 +240,7 @@
   <div *ngIf="isAdminUser" class="dv-admin-actions">
     <button class="dv-btn dv-btn--independizar" (click)="abrirIndependizar()" [disabled]="cargandoIndependizar">
       <span *ngIf="cargandoIndependizar">Cargando…</span>
-      <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Convertir en modelo propio</span>
+      <span *ngIf="!cargandoIndependizar"><i class="pi pi-external-link"></i> Convertir en producto propio</span>
     </button>
   </div>
 
@@ -251,12 +251,12 @@
   <div class="dv-indep-modal" (click)="$event.stopPropagation()">
 
     <div class="dv-indep-modal__header">
-      <h3 class="dv-indep-modal__title">⚡ Convertir en modelo propio #{{ varianteSeleccionada?.id }}</h3>
+      <h3 class="dv-indep-modal__title">⚡ Convertir en producto propio #{{ varianteSeleccionada?.id }}</h3>
       <button class="dv-indep-modal__close" (click)="cerrarIndependizar()" [disabled]="independizando">✕</button>
     </div>
 
     <p class="dv-indep-modal__hint">
-      Este artículo pasará a tener su propio modelo aparte. Las imágenes se copian y el stock se transfiere automáticamente.
+      Este artículo pasará a tener su propio producto aparte. Las imágenes se copian y el stock se transfiere automáticamente.
     </p>
 
     <div class="dv-indep-stock-info">
@@ -274,8 +274,8 @@
 
       <div class="dv-indep-row">
         <div class="dv-indep-field dv-indep-field--full">
-          <label class="dv-indep-label">Nombre del modelo nuevo <span class="dv-indep-req">*</span></label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.nombre" placeholder="Nombre del modelo nuevo" />
+          <label class="dv-indep-label">Nombre del producto nuevo <span class="dv-indep-req">*</span></label>
+          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.nombre" placeholder="Nombre del producto nuevo" />
         </div>
       </div>
 

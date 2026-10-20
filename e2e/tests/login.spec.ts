@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 // de 5 intentos fallidos, y correr esa prueba varias veces seguidas te dejaría sin poder entrar
 // a QA desde tu Mac.
 
-test('entrar con usuario y contraseña lleva a la lista de modelos', async ({ page }) => {
+test('entrar con usuario y contraseña lleva a la lista de productos', async ({ page }) => {
   await page.goto('/login');
 
   await page.getByLabel('Usuario').fill(process.env.E2E_USUARIO ?? '');
@@ -12,5 +12,5 @@ test('entrar con usuario y contraseña lleva a la lista de modelos', async ({ pa
   await page.getByRole('button', { name: 'Entrar' }).click();
 
   await expect(page).toHaveURL(/\/productos\/buscar/);
-  await expect(page.getByPlaceholder('Buscar nombre o código…')).toBeVisible();
+  await expect(page.getByPlaceholder('Buscar producto por nombre o código…')).toBeVisible();
 });

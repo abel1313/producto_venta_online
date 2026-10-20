@@ -4659,16 +4659,22 @@ aparecieron las variantes (talla/color), ya no quedaba una palabra libre para lo
 realmente se vende. Este cambio libera la palabra "Producto" para el SKU vendible —que es lo
 que el cliente entiende por producto— y le da un nombre propio al agrupador: **Modelo**.
 
-### Vocabulario oficial
+### Vocabulario oficial (ACTUALIZADO 2026-10-20 — reemplaza al de 2026-07-16)
 
-| Entidad (código) | Nombre visible | Qué es | Quién lo ve |
+> La tabla de julio decía *Modelo = padre, Producto = SKU*. Quedó obsoleta: primero la variante pasó a
+> **Artículo** (2026-10-20) y después el padre pasó a **Producto**. Ver `RENOMBRE_MODELO_A_PRODUCTO.md` (back).
+
+| Entidad (código) | Nombre visible (admin) | Qué es | Quién lo ve |
 |---|---|---|---|
-| `Producto` (padre) | **Modelo** | El agrupador: "Blusa Zara". Tiene nombre, precios base y categoría. | Solo admin |
-| `Variante` (SKU) | **Producto** | Lo que de verdad se vende: "Blusa Zara / M / Negro". Tiene **stock, precio y código de barras**. | Cliente y admin |
+| `Producto` (padre, tabla `producto`) | **Producto** | El agrupador: "Blusa Zara". Tiene nombre, precios base, stock total y categoría. | Solo admin |
+| `Variante` (SKU, tabla `variantes`) | **Artículo** | Lo que de verdad se vende: "Blusa Zara / M / Negro". Tiene **talla, color, stock y precio propio**. | Admin; el cliente lo ve como "producto" en la tienda (a propósito) |
 | `palabraClave` | **Categoría** | — | Ambos |
 
-**La regla de oro:** *Modelo agrupa, Producto se vende.* Si tiene código de barras y stock, es
-un **Producto**.
+**La regla de oro:** *El Producto agrupa, el Artículo se vende.*
+
+- **Cliente final** (tienda, carrito, favoritos, reseñas, chatbot, Términos y Privacidad): sigue leyendo "producto" para lo que compra. No se cambia.
+- **Admin y pedidos:** "artículo" para lo que se vende; "producto" para el agrupador.
+- **Arquitectura:** `dominio/modelo`, "modelo de datos" y similares **no se tocan**: son vocabulario técnico, no del negocio.
 
 ### ⚠️ El código NO se renombró — y es a propósito
 

@@ -208,10 +208,10 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         && this.stockQuePide > this.stockDisponible.disponible;
   }
 
-  // ── Agregar stock al modelo sin salir del artículo (QA 2026-10-14, Prueba 20.3) ──
-  // El dueño: "si en el artículo pongo Actualizar stock y el modelo ya no tiene, que salga un modal
-  // para ponerle 10 o 100 al modelo; eso se guarda solo en el modelo, y al cerrarlo en el artículo
-  // pongo 1 o 2". El modal NO toca el artículo ni lo guarda: solo suma al modelo y recarga lo libre.
+  // ── Agregar stock al producto sin salir del artículo (QA 2026-10-14, Prueba 20.3) ──
+  // El dueño: "si en el artículo pongo Actualizar stock y el producto ya no tiene, que salga un modal
+  // para ponerle 10 o 100 al producto; eso se guarda solo en el producto, y al cerrarlo en el artículo
+  // pongo 1 o 2". El modal NO toca el artículo ni lo guarda: solo suma al producto y recarga lo libre.
 
   /** Mismo permiso que pide el back para PUT /v1/stock/producto/{id}/ajuste. */
   get puedeAjustarStockModelo(): boolean {
@@ -219,7 +219,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       || ['productos/buscar', 'productos/agregar', 'tienda/venta'].some(r => this.authService.tieneEscritura(r));
   }
 
-  /** Lo mínimo que le falta al modelo para darle a este artículo lo que se le pide. */
+  /** Lo mínimo que le falta al producto para darle a este artículo lo que se le pide. */
   get faltaEnElModelo(): number {
     const libre = this.stockDisponible?.disponible ?? 0;
     return Math.max(this.stockQuePide - libre, 1);
@@ -233,31 +233,31 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     const nombre = (p.nombre ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     const situacion = this.stockQuePide > 0
-      ? `<p>El modelo <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'} y a este artículo le pides <b>${this.stockQuePide}</b> más.</p>`
-      : `<p>El modelo <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'}.</p>`;
+      ? `<p>El producto <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'} y a este artículo le pides <b>${this.stockQuePide}</b> más.</p>`
+      : `<p>El producto <b>«${nombre}»</b> tiene <b>${libres}</b> libre${libres === 1 ? '' : 's'}.</p>`;
 
     if (!this.puedeAjustarStockModelo) {
       Swal.fire({
         icon: 'info',
-        title: 'Al modelo no le alcanza el stock',
-        html: situacion + '<p>Pídele a alguien con permiso de Catálogo que le sume stock al modelo, o baja lo que le pides a este artículo.</p>',
+        title: 'Al producto no le alcanza el stock',
+        html: situacion + '<p>Pídele a alguien con permiso de Catálogo que le sume stock al producto, o baja lo que le pides a este artículo.</p>',
         confirmButtonText: 'Entendido'
       });
       return;
     }
 
     Swal.fire({
-      title: '➕ Agregar stock al modelo',
+      title: '➕ Agregar stock al producto',
       html: situacion
-        + '<p>¿Cuántas piezas le agregas al <b>modelo</b>? Por ejemplo, las que llegaron: 10, 100…</p>'
-        + '<p style="font-size:.85em;opacity:.8">Esto se guarda solo en el modelo. Este artículo no cambia:'
+        + '<p>¿Cuántas piezas le agregas al <b>producto</b>? Por ejemplo, las que llegaron: 10, 100…</p>'
+        + '<p style="font-size:.85em;opacity:.8">Esto se guarda solo en el producto. Este artículo no cambia:'
         + ' al cerrar, pones su stock en «Actualizar stock» y das 💾 Actualizar artículo.</p>',
       input: 'number',
       inputValue: this.stockQuePide > 0 ? String(this.faltaEnElModelo) : '',
       inputPlaceholder: 'Ej: 10',
       inputAttributes: { min: '1', step: '1' },
       showCancelButton: true,
-      confirmButtonText: 'Agregar al modelo',
+      confirmButtonText: 'Agregar al producto',
       cancelButtonText: 'Cancelar',
       showLoaderOnConfirm: true,
       allowOutsideClick: () => !Swal.isLoading(),
@@ -281,13 +281,13 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       const alcanza = this.stockQuePide <= nuevo.disponible;
       Swal.fire({
         icon: 'success',
-        title: `Se agregaron ${nuevo.stockTotal - sd.stockTotal} al modelo`,
-        html: `<p>Ahora el modelo tiene <b>${nuevo.disponible}</b> libres de ${nuevo.stockTotal}.</p>`
+        title: `Se agregaron ${nuevo.stockTotal - sd.stockTotal} al producto`,
+        html: `<p>Ahora el producto tiene <b>${nuevo.disponible}</b> libres de ${nuevo.stockTotal}.</p>`
           + `<p>Este artículo sigue con <b>${this.stockActual}</b>. `
           + (this.stockQuePide > 0
               ? (alcanza
                   ? `Ya alcanza para sumarle ${this.stockQuePide}: da 💾 Actualizar artículo.`
-                  : `Todavía no alcanza para sumarle ${this.stockQuePide}: baja lo que le pides o agrega más al modelo.`)
+                  : `Todavía no alcanza para sumarle ${this.stockQuePide}: baja lo que le pides o agrega más al producto.`)
               : 'Pon en «Actualizar stock» cuántas le sumas y da 💾 Actualizar artículo.')
           + '</p>',
         confirmButtonText: 'Entendido'
@@ -552,7 +552,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   actualizar(): void {
     if (!this.productoSeleccionado || !this.variante?.id) return;
     if (this.form.get('eliminarStock')?.hasError('excedeStock')) return;
-    // Si el modelo no alcanza, ni se manda: se ofrece agregarle stock al modelo primero.
+    // Si el producto no alcanza, ni se manda: se ofrece agregarle stock al producto primero.
     if (this.seEstaPasandoDeStock) {
       this.ofrecerStockAlModelo();
       return;
@@ -597,7 +597,7 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.guardando = false;
-        // 422 = al modelo no le alcanzan las piezas (lo libre cambió desde que se abrió la pantalla):
+        // 422 = al producto no le alcanzan las piezas (lo libre cambió desde que se abrió la pantalla):
         // se recarga lo libre y se ofrece el mismo modal en vez del error suelto.
         if (err?.status === 422 && this.stockQuePide > 0 && this.productoSeleccionado) {
           this.varianteService.stockDisponible(this.productoSeleccionado.idProducto).pipe(takeUntil(this.destroy$)).subscribe({

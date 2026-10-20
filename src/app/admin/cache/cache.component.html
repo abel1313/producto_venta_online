@@ -19,7 +19,7 @@
         <div class="ac-warning__text">
           <strong>¿Qué hace esto?</strong>
           <p>Llama a <code>DELETE /admin/cache</code> y limpia <strong>todas las cachés registradas</strong>
-            en el servidor (imágenes, modelos, artículos, clientes, tipos de pago…).
+            en el servidor (imágenes, productos, artículos, clientes, tipos de pago…).
             La siguiente solicitud a cada recurso será más lenta mientras se reconstruye la caché en Redis.</p>
         </div>
       </div>
@@ -64,23 +64,23 @@
     </div>
     <div class="pk-card__body">
       <p class="pk-text pk-text--muted">
-        Crea modelos, artículos y pedidos de prueba para no darlos de alta a mano. Todo queda con la marca
+        Crea productos, artículos y pedidos de prueba para no darlos de alta a mano. Todo queda con la marca
         <strong>"Prueba QA"</strong> y código de barras <strong>2098…</strong>, y los pedidos a nombre de
         "Cliente Prueba QA". Corre en segundo plano: puedes salir de esta pantalla. En producción el servidor se niega.
       </p>
 
       <div class="ac-datos__campos">
         <label class="pk-field">
-          <span class="pk-label">Modelos</span>
+          <span class="pk-label">Productos</span>
           <input class="pk-input" type="number" min="1" max="20000" [(ngModel)]="plan.modelos" [disabled]="corriendo" />
           <span class="pk-hint">De 1 a 20 000</span>
         </label>
         <label class="pk-field">
-          <span class="pk-label">Artículos por modelo (mín.)</span>
+          <span class="pk-label">Artículos por producto (mín.)</span>
           <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMin" [disabled]="corriendo" />
         </label>
         <label class="pk-field">
-          <span class="pk-label">Artículos por modelo (máx.)</span>
+          <span class="pk-label">Artículos por producto (máx.)</span>
           <input class="pk-input" type="number" min="1" max="4" [(ngModel)]="plan.articulosMax" [disabled]="corriendo" />
           <span class="pk-hint">De 1 a 4</span>
         </label>
@@ -106,7 +106,7 @@
         </div>
         <p class="pk-text pk-text--bold">{{ avance.fase }} · {{ porcentaje }}%</p>
         <p class="pk-text pk-text--sm">
-          Modelos: {{ avance.modelosCreados }} de {{ avance.modelosPedidos }} ·
+          Productos: {{ avance.modelosCreados }} de {{ avance.modelosPedidos }} ·
           Artículos: {{ avance.articulosCreados }} ·
           Pedidos: {{ avance.pedidosCreados }} de {{ avance.pedidosPedidos }}
           <span *ngIf="avance.pedidosConError"> · con error: {{ avance.pedidosConError }}</span>
@@ -122,8 +122,8 @@
         <h4 class="ac-datos__seccion">Preparar una prueba</h4>
         <p class="pk-text pk-text--sm pk-text--muted">
           <b>Toca el botón con el número de la prueba que vas a hacer</b> (la Prueba 24 del documento es el botón
-          del 24). Da de alta lo que necesita esa prueba (modelos, artículos y pedidos), listo para empezar. Si ya estaba preparada, primero quita lo de antes (sus pedidos se cancelan y sus
-          modelos se dan de baja) y la vuelve a crear: tocarlo otra vez <b>reinicia</b> la prueba. «Quitar» solo
+          del 24). Da de alta lo que necesita esa prueba (productos, artículos y pedidos), listo para empezar. Si ya estaba preparada, primero quita lo de antes (sus pedidos se cancelan y sus
+          productos se dan de baja) y la vuelve a crear: tocarlo otra vez <b>reinicia</b> la prueba. «Quitar» solo
           quita, sin volver a crear. Nada se borra de la base.
         </p>
         <div class="ac-datos__acciones">
@@ -158,7 +158,7 @@
           <p class="pk-text pk-text--sm pk-text--muted">
             Cada pedido se ve en pantalla con el nombre de su clave: <b>K4</b> es el cliente «Prueba 24 K4». Para
             encontrarlo escribe ese nombre en el buscador de Mis pedidos o de Unir (mínimo 3 letras: «Prueba 24»
-            trae los de esa prueba), o pega su <b>número</b> (tócalo para abrirlo o cópialo). Los modelos y artículos
+            trae los de esa prueba), o pega su <b>número</b> (tócalo para abrirlo o cópialo). Los productos y artículos
             se buscan por su nombre («QA Prueba 17 Art-A») o por su código de barras. Esta lista se queda guardada en
             este navegador aunque cambies de pantalla; «Quitar la lista» solo la quita de aquí, no borra nada.
           </p>

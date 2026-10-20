@@ -930,7 +930,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
           this.variantes = this.variantes.filter(x => x.id !== v.id);
           this.seleccionados.delete(v.id);
           this.varianteService.invalidarCache();
-          Swal.fire({ icon: 'success', title: 'Modelo dado de baja', timer: 1500, showConfirmButton: false });
+          Swal.fire({ icon: 'success', title: 'Artículo dado de baja', timer: 1500, showConfirmButton: false });
         },
         error: (err) => {
           this.dandoDeBajaId = null;

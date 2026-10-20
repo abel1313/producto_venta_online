@@ -19,7 +19,7 @@ export class QrVentasJadeComponent {
 
   readonly tipos: Array<{ id: TipoQr; etiqueta: string; ayuda: string }> = [
     { id: 'tienda',   etiqueta: '🛍️ Tienda',              ayuda: 'Lleva a la tienda en línea.' },
-    { id: 'articulo', etiqueta: '👜 Producto o artículo',  ayuda: 'Lleva al detalle de un artículo de la tienda.' },
+    { id: 'articulo', etiqueta: '👜 Artículo',           ayuda: 'Lleva al detalle de un artículo de la tienda.' },
     { id: 'red',      etiqueta: '📱 Red social',           ayuda: 'Lleva a tu perfil o a tu WhatsApp.' },
     { id: 'libre',    etiqueta: '🔗 Enlace libre',         ayuda: 'Cualquier enlace que escribas.' }
   ];

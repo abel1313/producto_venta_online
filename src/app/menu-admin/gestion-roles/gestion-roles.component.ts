@@ -181,7 +181,7 @@ export class GestionRolesComponent implements OnInit {
   }
 
   // El checkbox "✏️ Editar" vivía siempre arriba, junto a "Ver" -- para pantallas con categoría
-  // "Tarjeta..." (Tienda: "Tarjeta de variante", Modelos: "Tarjeta de modelo") eso lo separaba
+  // "Tarjeta..." (Tienda: "Tarjeta de artículo", Modelos: "Tarjeta de modelo") eso lo separaba
   // de dónde realmente aparece su efecto (el botón ✏️ de la tarjeta). Reportado por el usuario
   // 2026-09-08 ("el editar sigue arriba en lugar de su card"). Se mueve junto a esa categoría
   // cuando existe; si la pantalla no tiene ninguna categoría "Tarjeta..." (la mayoría), se queda

@@ -306,7 +306,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Productos). */
+  /** Ventana 🧩 Agregar artículos (la misma de Agregar modelo y de 🧩 Artículos). */
   modeloParaArticulos: ModeloParaArticulos | null = null;
 
   abrirAltaArticulos(): void {
@@ -723,7 +723,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   guardar(): void {
     if (!this.productoSeleccionado) {
-      Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Selecciona un modelo', timer: 1800, showConfirmButton: false });
       return;
     }
     if (this.modeloDeshabilitado) {
@@ -789,7 +789,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
       next: () => this.onExito(),
       error: (err) => {
         this.guardando = false;
-        const msg = err?.error?.mensaje ?? 'No se pudo guardar la variante.';
+        const msg = err?.error?.mensaje ?? 'No se pudo guardar el artículo.';
         Swal.fire({ icon: 'error', title: 'Error al guardar', text: msg, confirmButtonColor: 'var(--pk-danger)' });
       }
     });
@@ -808,7 +808,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     const total = this.totalAGuardar;
     Swal.fire({
       icon: 'success',
-      title: total > 1 ? `¡${total} variantes creadas!` : '¡Variante creada!',
+      title: total > 1 ? `¡${total} artículos creados!` : '¡Artículo creado!',
       timer: 1600,
       showConfirmButton: false
     });

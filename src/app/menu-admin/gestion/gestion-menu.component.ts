@@ -212,6 +212,16 @@ export class GestionMenuComponent implements OnInit {
     });
   }
 
+  // Muestra la explicación (ℹ️) de la pantalla, la misma que ve el admin en Gestión de roles.
+  verDescripcion(s: ISubmenu): void {
+    Swal.fire({
+      icon: 'info',
+      title: `${s.icono ?? ''} ${s.nombre}`.trim(),
+      html: s.descripcion || 'Todavía no tiene descripción cargada.',
+      confirmButtonText: 'Entendido'
+    });
+  }
+
   eliminarSubmenu(s: ISubmenu): void {
     Swal.fire({
       title: `¿Eliminar "${s.nombre}"?`,

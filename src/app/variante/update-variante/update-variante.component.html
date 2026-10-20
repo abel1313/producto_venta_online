@@ -8,16 +8,16 @@
       <div class="vf-card__header-glow"></div>
       <span class="vf-card__header-icon">✏️</span>
       <div>
-        <h3 class="vf-card__title">Editar Producto <span class="vf-card__id">#{{ variante.id }}</span></h3>
-        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el producto</p>
+        <h3 class="vf-card__title">Editar artículo <span class="vf-card__id">#{{ variante.id }}</span></h3>
+        <p class="vf-card__subtitle">Todos los campos son opcionales excepto el modelo</p>
       </div>
     </div>
 
     <div class="vf-card__body">
 
-      <!-- ── Producto ───────────────────────────────────────────── -->
+      <!-- ── Modelo ───────────────────────────────────────────── -->
       <div class="vf-section">
-        <p class="vf-section__label">Producto <span class="vf-required">*</span></p>
+        <p class="vf-section__label">Modelo <span class="vf-required">*</span></p>
 
         <div *ngIf="!productoSeleccionado" class="vf-product-search">
           <div class="vf-product-search__wrap">
@@ -25,7 +25,7 @@
             <input
               class="vf-product-search__input"
               type="text"
-              placeholder="Buscar nombre o código…"
+              placeholder="Buscar modelo por nombre o código…"
               [(ngModel)]="terminoProducto"
               (keyup)="onBuscarProducto($event)"
               autocomplete="off"
@@ -202,7 +202,7 @@
   <div class="vf-imgs" *ngIf="variante">
 
     <div class="vf-imgs__header">
-      <span class="vf-imgs__title">🖼️ Imágenes del producto</span>
+      <span class="vf-imgs__title">🖼️ Imágenes del artículo</span>
       <span class="vf-imgs__count" *ngIf="imagenesExistentes.length > 0">
         {{ imagenesExistentes.length }} cargadas
       </span>

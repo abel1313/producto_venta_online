@@ -178,7 +178,7 @@
               </div>
 
               <div class="br-premio__acciones">
-                <button type="button" class="br-icono" title="Ver producto" (click)="abrirDetallePremio(v)">👁️</button>
+                <button type="button" class="br-icono" title="Ver artículo" (click)="abrirDetallePremio(v)">👁️</button>
                 <button type="button" class="br-icono br-icono--peligro" title="Quitar premio"
                         (click)="quitarPremio(v)">🗑️</button>
               </div>
@@ -192,7 +192,7 @@
           <!-- Alta de premio -->
           <div class="br-sub">Agregar premio</div>
           <div class="pk-field">
-            <input class="pk-input" type="text" placeholder="Buscar producto por nombre o código..."
+            <input class="pk-input" type="text" placeholder="Buscar artículo por nombre o código…"
                    [(ngModel)]="terminoBusca" (ngModelChange)="buscarVariante()" appUppercase />
             <span class="pk-hint" *ngIf="buscandoVariante">Buscando...</span>
           </div>
@@ -218,7 +218,7 @@
           </div>
 
           <span class="pk-hint" *ngIf="terminoBusca.trim().length >= 3 && !buscandoVariante && !variantesBusqueda.length">
-            Ningún producto coincide. Solo se pueden rifar variantes con stock, habilitadas y con foto.
+            Ningún artículo coincide. Solo se pueden rifar artículos con stock, habilitados y con foto.
           </span>
 
           <div class="br-nuevo-premio" *ngIf="varianteParaAgregar">
@@ -776,7 +776,7 @@
         <div class="pk-text pk-text--sm pk-text--muted br-centro" *ngIf="imagenesModal.length > 1">
           {{ imagenIndex + 1 }} / {{ imagenesModal.length }}
         </div>
-        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este producto no tiene imágenes cargadas.</div>
+        <div class="pk-empty" *ngIf="!cargandoImagenes && !errorImagenesModal && !imagenesModal.length">Este artículo no tiene imágenes cargadas.</div>
         <div class="pk-text pk-text--sm" *ngIf="cargandoImagenes">Cargando imágenes...</div>
         <div class="br-modal__error" *ngIf="errorImagenesModal && !cargandoImagenes">
           <span class="pk-text pk-text--sm">No se pudieron cargar las fotos.</span>

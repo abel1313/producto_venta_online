@@ -27,11 +27,11 @@ export class ResenaService {
 
   listarPorVariante(varianteId: number, pagina: number = 1, size: number = 10): Observable<ResponseGeneric<IResenaPaginable>> {
     const params = new HttpParams().set('pagina', String(pagina)).set('size', String(size));
-    return this.http.get<ResponseGeneric<IResenaPaginable>>(`${this.url}/variante/${varianteId}`, { params });
+    return this.http.get<ResponseGeneric<IResenaPaginable>>(`${this.url}/articulo/${varianteId}`, { params });
   }
 
   resumen(varianteId: number): Observable<ResponseGeneric<IResenaResumen>> {
-    return this.http.get<ResponseGeneric<IResenaResumen>>(`${this.url}/variante/${varianteId}/resumen`);
+    return this.http.get<ResponseGeneric<IResenaResumen>>(`${this.url}/articulo/${varianteId}/resumen`);
   }
 
   misResenas(pagina: number = 1, size: number = 10): Observable<ResponseGeneric<IResenaPaginable>> {

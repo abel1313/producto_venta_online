@@ -136,6 +136,10 @@
               <tr *ngFor="let s of submenus" [class.pk-row--editando]="editandoSubmenuId === s.id">
                 <td>
                   {{ s.icono }} {{ s.nombre }}
+                  <!-- 2026-10-20: mismo ℹ️ que en Gestión de roles, para leer la explicación sin
+                       entrar a ✏️ Editar (el dueño lo buscaba aquí y no existía). -->
+                  <button *ngIf="s.descripcion" type="button" class="gm-info-btn" (click)="verDescripcion(s)"
+                          title="¿Qué es esta pantalla? ¿Dónde vive en el menú?">ℹ️</button>
                   <small class="pk-meta" *ngIf="!s.descripcion" title="Sin descripción -- el botón ℹ️ en Gestión de roles no va a tener nada que mostrar">⚠️</small>
                 </td>
                 <td><small class="pk-meta">/{{ s.ruta }}</small></td>

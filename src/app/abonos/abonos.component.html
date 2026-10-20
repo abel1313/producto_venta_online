@@ -197,7 +197,7 @@
           <div class="ab-card__actions">
             <button class="ab-btn ab-btn--transferir" *ngIf="c.puedeTransferir"
                     (click)="abrirModalTransferencia(c)">
-              ↪ Aplicar a otro producto
+              ↪ Aplicar a otro artículo
             </button>
             <button class="ab-btn ab-btn--detalle" (click)="toggleDetalleCancelado(c.pedidoId)">
               {{ expandidoCanceladoId === c.pedidoId ? '▲ Ocultar' : '▼ Historial' }}
@@ -362,7 +362,7 @@
 
 <div class="ab-modal ab-modal--wide" *ngIf="modalTransferenciaAbierto">
   <div class="ab-modal__hdr">
-    <h5>↪ Aplicar saldo a otro producto</h5>
+    <h5>↪ Aplicar saldo a otro artículo</h5>
     <button class="ab-modal__close" (click)="cerrarModalTransferencia()">✕</button>
   </div>
 
@@ -374,12 +374,12 @@
 
   <div class="ab-modal__body">
 
-    <!-- Búsqueda de variante -->
+    <!-- Búsqueda de artículo -->
     <div class="ab-field">
-      <label class="ab-label">Buscar producto</label>
+      <label class="ab-label">Buscar artículo</label>
       <div class="ab-transfer-search">
         <input class="ab-input" type="text" [(ngModel)]="terminoTransferencia"
-               (input)="onInputTransferencia()" placeholder="Nombre, código o descripción..."
+               (input)="onInputTransferencia()" placeholder="Buscar artículo por nombre, código o descripción…"
                autocomplete="off" appUppercase>
         <div class="ab-transfer-dropdown" *ngIf="resultadosTransferencia.length">
           <div class="ab-transfer-item" *ngFor="let v of resultadosTransferencia"

@@ -19,7 +19,7 @@ export async function crearArticulo(page: Page, modelo: ModeloCreado, datos: Dat
   await page.locator('[formcontrolname="color"]').fill(datos.color);
   await page.locator('[formcontrolname="stock"]').fill(String(datos.stock));
   await page.getByRole('button', { name: /Guardar producto/ }).click();
-  await expect(page.locator('.swal2-title')).toHaveText('¡Variante creada!');
+  await expect(page.locator('.swal2-title')).toHaveText('¡Artículo creado!');
   await expect(page.locator('.swal2-container')).toBeHidden();
 }
 

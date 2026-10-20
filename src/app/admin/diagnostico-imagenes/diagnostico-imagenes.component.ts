@@ -166,7 +166,7 @@ export class DiagnosticoImagenesComponent implements OnDestroy {
     this.resultadoProducto = null;
     this.productoService.diagnosticoImagenes(id).subscribe({
       next: res => { this.resultadoProducto = res; this.cargando = false; },
-      error: ()  => { this.error = 'No se pudo consultar el diagnóstico del producto'; this.cargando = false; }
+      error: ()  => { this.error = 'No se pudo consultar el diagnóstico del modelo'; this.cargando = false; }
     });
   }
 
@@ -176,7 +176,7 @@ export class DiagnosticoImagenesComponent implements OnDestroy {
     this.resultadoVariante = null;
     this.varianteService.diagnosticoImagenes(id).subscribe({
       next: res => { this.resultadoVariante = res; this.cargando = false; },
-      error: ()  => { this.error = 'No se pudo consultar el diagnóstico de la variante'; this.cargando = false; }
+      error: ()  => { this.error = 'No se pudo consultar el diagnóstico del artículo'; this.cargando = false; }
     });
   }
 

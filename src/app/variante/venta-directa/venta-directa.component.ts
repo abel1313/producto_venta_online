@@ -466,7 +466,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.lineas[idx].subTotal = this.lineas[idx].cantidad * (this.lineas[idx].variante.precio ?? 0);
     } else {
       if ((v.stock ?? 0) <= 0) {
-        Swal.fire({ icon: 'warning', title: 'Producto sin stock', timer: 1400, showConfirmButton: false });
+        Swal.fire({ icon: 'warning', title: 'Artículo sin stock', timer: 1400, showConfirmButton: false });
         return;
       }
       this.lineas.push({ variante: v, cantidad: 1, subTotal: v.precio ?? 0 });
@@ -582,7 +582,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   cerrarVisor(): void { this.mostrarVisor = false; }
 
   labelVariante(v: IVarianteResumen): string {
-    return [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Variante #${v.id}`;
+    return [v.talla, v.color, v.marca].filter(Boolean).join(' · ') || `Artículo #${v.id}`;
   }
 
   // ── Cliente ────────────────────────────────────────────────────────
@@ -778,7 +778,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       cantidad:       l.cantidad,
       productoNombre: l.variante.marca
         ? `${l.variante.marca}${l.variante.talla ? ' ' + l.variante.talla : ''}`
-        : (l.variante.color ?? `Variante #${l.variante.id}`),
+        : (l.variante.color ?? `Artículo #${l.variante.id}`),
       talla:    null as string | null,
       subTotal: l.subTotal
     }));
@@ -953,7 +953,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           Swal.fire({
             icon: 'warning',
             title: 'Precio desactualizado',
-            html: `<p>${msg}</p><p>El precio de uno o más productos cambió. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
+            html: `<p>${msg}</p><p>El precio de uno o más artículos cambió. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
             confirmButtonText: '🔄 Ir al catálogo',
             showCancelButton: true,
             cancelButtonText: 'Cerrar'

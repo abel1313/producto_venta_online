@@ -679,7 +679,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'productos_sin_variantes.xlsx';
+        a.download = 'productos_sin_articulos.xlsx';
         a.click();
         URL.revokeObjectURL(url);
       },
@@ -728,7 +728,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     };
   }
 
-  /** Modelo al que se le están agregando artículos desde 🧩 Productos. */
+  /** Modelo al que se le están agregando artículos desde 🧩 Artículos. */
   modeloParaArticulos: ModeloParaArticulos | null = null;
 
   alCerrarAltaArticulos(guardo: boolean): void {

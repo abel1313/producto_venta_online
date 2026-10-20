@@ -186,6 +186,6 @@ export class PromocionesComponent implements OnInit, OnDestroy {
   }
 
   labelDetalle(d: { nombreProducto?: string; talla?: string; color?: string; marca?: string; varianteId: number }): string {
-    return [d.nombreProducto, d.talla, d.color, d.marca].filter(Boolean).join(' · ') || `Variante #${d.varianteId}`;
+    return [d.nombreProducto, d.talla, d.color, d.marca].filter(Boolean).join(' · ') || `Artículo #${d.varianteId}`;
   }
 }

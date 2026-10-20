@@ -83,7 +83,7 @@
     <ng-template pTemplate="emptymessage">
       <tr>
         <td [attr.colspan]="(mostrarTalla ? 1 : 0) + (mostrarColor ? 1 : 0) + (mostrarMarca ? 1 : 0) + (mostrarPresentacion ? 1 : 0) + (isAdminUser ? 8 : 7)" class="text-center text-muted py-4">
-          El carrito está vacío — agrega variantes desde <a routerLink="/tienda/buscar">buscar</a>.
+          El carrito está vacío — agrega artículos desde <a routerLink="/tienda/buscar">buscar</a>.
         </td>
       </tr>
     </ng-template>
@@ -102,7 +102,7 @@
           <span class="badge bg-warning text-dark ms-2">× {{ p.cantidadCombos }} combo(s)</span>
           <div class="small text-muted mt-1">
             <span *ngFor="let d of p.detalles; let i = index">
-              {{ d.cantidad }}× {{ d.nombreProducto || 'Producto ' + d.varianteId }}
+              {{ d.cantidad }}× {{ d.nombreProducto || 'Artículo #' + d.varianteId }}
               <span *ngIf="d.talla">({{ d.talla | uppercase }})</span>
               <span *ngIf="i < p.detalles.length - 1"> · </span>
             </span>

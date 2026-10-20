@@ -32,8 +32,9 @@ export interface IDescuentoArticulo {
 
 @Injectable({ providedIn: 'root' })
 export class VarianteService {
-  // ✅ Endpoint actualizado 2026-09-17: ahora usa /v1/variantes (backend renombrado)
-  private readonly url = `${environment.api_Url}/v1/variantes`;
+  // Renombre variante → artículo (2026-10-01): /v2/articulos es el mismo recurso que
+  // /v1/variantes (mismo controller en el back, mismas reglas de seguridad). /v1 sigue vivo.
+  private readonly url = `${environment.api_Url}/v2/articulos`;
 
   // Para pasar la variante al componente de edición
   private _varianteUpdate = new BehaviorSubject<IVariante | null>(null);
@@ -115,7 +116,7 @@ export class VarianteService {
    */
   resolverProductoId(varianteId: number): Observable<number> {
     return this.http
-      .get<{ data: { productoId: number } }>(`${this.url}/variante/${varianteId}/producto-id`)
+      .get<{ data: { productoId: number } }>(`${this.url}/${varianteId}/producto-id`)
       .pipe(map(res => res.data.productoId));
   }
 

@@ -89,7 +89,7 @@ export class DetalleProductoComponent implements OnInit {
     }
     Swal.fire({
       title: 'Compartir imágenes',
-      text: '¿Deseas compartir las imágenes de este producto con sus variantes?',
+      text: '¿Deseas compartir las imágenes de este producto con sus artículos?',
       icon: 'question',
       showCancelButton: true,
       confirmButtonText: 'Sí, compartir',

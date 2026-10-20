@@ -841,7 +841,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     if (!this.rifaConfig?.id || !this.modoElegido) return;
     const rifaId = this.rifaConfig.id;
     this.errorConcursante = null;
-    this.rifaService.continuarVariante(rifaId, this.modoElegido).subscribe({
+    this.rifaService.continuarArticulo(rifaId, this.modoElegido).subscribe({
       next: res => {
         this.aplicarEstado(res);
         this.ganadorActual        = null;
@@ -865,7 +865,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
         }
       },
       error: err => {
-        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo continuar con la siguiente variante.';
+        this.errorConcursante = (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo continuar con el siguiente artículo.';
       }
     });
   }
@@ -995,7 +995,7 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
   get siguienteVarianteLabel(): string {
     const orden = (this.estado?.varianteNumeroActual ?? 0) + 1;
     return this.variantesRifa.find(v => v.orden === orden)?.palabraClave
-      ?? `Variante ${orden}`;
+      ?? `Artículo ${orden}`;
   }
 
   get varianteActualNombre(): string {

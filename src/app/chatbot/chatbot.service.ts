@@ -43,7 +43,7 @@ export interface IChatbotResponse {
 export class ChatbotService {
   private readonly urlMensaje  = `${environment.api_Url}/v1/chatbot/mensaje`;
   private readonly urlBuscar   = `${environment.api_Url}/v1/chatbot/buscar`;
-  private readonly urlImagenes = `${environment.api_Url}/v1/variantes/imagenes`;
+  private readonly urlImagenes = `${environment.api_Url}/v2/articulos/imagenes`;
 
   constructor(private readonly http: HttpClient) {}
 

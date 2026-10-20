@@ -196,7 +196,7 @@
 
     <input class="dp-art-buscador__input" type="text"
            [(ngModel)]="terminoArticulo" (input)="buscarArticulo()"
-           placeholder="Buscar por nombre o código de barras (mínimo 3 letras)" appUppercase />
+           placeholder="Buscar artículo por nombre o código de barras (mínimo 3 letras)" appUppercase />
 
     <p class="dp-art-buscador__estado" *ngIf="buscandoArticulo">Buscando…</p>
     <p class="dp-art-buscador__estado"
@@ -496,7 +496,7 @@
     </p>
 
     <div class="detalle-vacio" *ngIf="(detalle?.detalles ?? []).length === 0">
-      <p>No hay productos en este pedido.</p>
+      <p>No hay artículos en este pedido.</p>
     </div>
   </div>
 

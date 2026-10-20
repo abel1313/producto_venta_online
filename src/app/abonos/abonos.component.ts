@@ -218,7 +218,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
   cancelarPedido(pedido: EstadoCuenta): void {
     const esFiado = pedido.tipoPedido === 'FIADO';
     const msgDetalle = esFiado
-      ? `El producto ya fue entregado. La deuda de $${pedido.saldo.toFixed(2)} quedará registrada.`
+      ? `El cliente ya se llevó los artículos. La deuda de $${pedido.saldo.toFixed(2)} quedará registrada.`
       : `Pagó $${pedido.totalPagado.toFixed(2)} de $${pedido.totalPedido.toFixed(2)}. Se devolverá el stock.`;
 
     this.ejecutarCancelacion({

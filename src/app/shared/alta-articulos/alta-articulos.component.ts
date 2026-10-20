@@ -125,7 +125,7 @@ export class AltaArticulosComponent implements OnInit {
   // ── Pregunta inicial: ¿cuántos artículos? ────────────────────────────
 
   get tituloPregunta(): string {
-    return this.accion === 'actualizar' ? '✅ Modelo actualizado' : '✅ Modelo guardado';
+    return this.accion === 'actualizar' ? '✅ Producto actualizado' : '✅ Producto guardado';
   }
 
   continuar(): void {
@@ -188,7 +188,7 @@ export class AltaArticulosComponent implements OnInit {
   delModelo(campo: CampoQueCambia): string {
     const m = this.modelo;
     switch (campo) {
-      case 'foto':          return m.tieneImagen ? 'la del modelo' : '';
+      case 'foto':          return m.tieneImagen ? 'la del producto' : '';
       case 'descripcion':   return (m.descripcion ?? '').trim();
       case 'color':         return (m.color ?? '').trim();
       case 'marca':         return (m.marca ?? '').trim();
@@ -223,7 +223,7 @@ export class AltaArticulosComponent implements OnInit {
   igualAlModelo(f: FormArticulo): string {
     return this.camposQueCambian
       .filter(c => !f.cambia[c.campo])
-      .map(c => `${c.etiqueta}: ${this.delModelo(c.campo) || '(el modelo no tiene)'}`)
+      .map(c => `${c.etiqueta}: ${this.delModelo(c.campo) || '(el producto no tiene)'}`)
       .join(' · ');
   }
 
@@ -235,7 +235,7 @@ export class AltaArticulosComponent implements OnInit {
     if (f.talla.trim()) partes.push(`Talla ${f.talla.trim()}`);
     if (f.stock !== null && f.stock !== undefined && String(f.stock) !== '') partes.push(`Stock ${f.stock}`);
     const cambia = this.camposQueCambian.filter(c => f.cambia[c.campo]).map(c => c.etiqueta);
-    partes.push(cambia.length ? `Cambia: ${cambia.join(', ')}` : 'Igual al modelo');
+    partes.push(cambia.length ? `Cambia: ${cambia.join(', ')}` : 'Igual al producto');
     return partes.join(' · ');
   }
 

@@ -704,8 +704,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       await Swal.fire({
         icon: 'info',
         title: 'No queda stock para artículos nuevos',
-        html: `El modelo tiene <b>${producto.stock}</b> y sus artículos ya tienen <b>${enArticulos}</b>.<br><br>`
-          + `Sube el stock del modelo (✏️ Actualizar) o quítale stock a un artículo.<br><br>`
+        html: `El producto tiene <b>${producto.stock}</b> y sus artículos ya tienen <b>${enArticulos}</b>.<br><br>`
+          + `Sube el stock del producto (✏️ Actualizar) o quítale stock a un artículo.<br><br>`
           + `<small>Si en la tienda ves menos artículos, búscalos con el filtro <b>Sin imágenes</b>: `
           + `los que no tienen foto no salen en la tienda, pero sí ocupan stock.</small>`
       });

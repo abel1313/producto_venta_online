@@ -246,7 +246,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
           // Después de habilitar se revisa su stock y se dice cuántos artículos caben.
           this.cargarStockDisponible(sd => Swal.fire({
             icon: 'success',
-            title: 'Modelo habilitado',
+            title: 'Producto habilitado',
             html: this.resumenStock(sd),
             confirmButtonText: 'Entendido'
           }));
@@ -264,7 +264,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
   private resumenStock(sd: IStockDisponible): string {
     const caben = sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
     const articulos = sd.variantesActivas === 1 ? '1 artículo' : `${sd.variantesActivas} artículos`;
-    const base = `<p>Stock del modelo: <b>${sd.stockTotal}</b>. Tiene <b>${articulos}</b> con <b>${sd.enVariantes}</b> piezas.</p>`;
+    const base = `<p>Stock del producto: <b>${sd.stockTotal}</b>. Tiene <b>${articulos}</b> con <b>${sd.enVariantes}</b> piezas.</p>`;
     return base + (caben > 0
       ? `<p>Puedes hacer hasta <b>${caben}</b> artículo${caben === 1 ? '' : 's'} más.</p>`
       : '<p>No le queda stock libre: agrégale stock para hacer artículos nuevos.</p>');
@@ -286,12 +286,12 @@ export class AgregarComponent implements OnInit, OnDestroy {
         p.stock = sd.stockTotal;
         this.productoService.invalidarProdCache();
         if (ajuste < 0) {
-          Swal.fire({ icon: 'success', title: `Se quitaron ${-ajuste} al modelo`, html: this.resumenStock(sd), confirmButtonText: 'Entendido' });
+          Swal.fire({ icon: 'success', title: `Se quitaron ${-ajuste} al producto`, html: this.resumenStock(sd), confirmButtonText: 'Entendido' });
           return;
         }
         Swal.fire({
           icon: 'success',
-          title: `Se agregaron ${ajuste} al modelo`,
+          title: `Se agregaron ${ajuste} al producto`,
           html: this.resumenStock(sd) + '<p><b>¿Deseas agregar los artículos de una vez?</b></p>',
           showCancelButton: true,
           confirmButtonText: 'Sí, agregar artículos',
@@ -723,17 +723,17 @@ export class AgregarComponent implements OnInit, OnDestroy {
 
   guardar(): void {
     if (!this.productoSeleccionado) {
-      Swal.fire({ icon: 'warning', title: 'Selecciona un modelo', timer: 1800, showConfirmButton: false });
+      Swal.fire({ icon: 'warning', title: 'Selecciona un producto', timer: 1800, showConfirmButton: false });
       return;
     }
     if (this.modeloDeshabilitado) {
-      Swal.fire({ icon: 'warning', title: 'Primero habilita el modelo',
+      Swal.fire({ icon: 'warning', title: 'Primero habilita el producto',
         text: 'Está deshabilitado: sus artículos no saldrían en la tienda ni en ventas.' });
       return;
     }
     if (this.ajusteInvalido) {
-      Swal.fire({ icon: 'warning', title: 'Revisa el stock del modelo',
-        text: `No se puede dejar el modelo en ${this.stockModeloQuedaria}: ya tiene ${this.stockDisponible?.enVariantes} repartidos en sus artículos.` });
+      Swal.fire({ icon: 'warning', title: 'Revisa el stock del producto',
+        text: `No se puede dejar el producto en ${this.stockModeloQuedaria}: ya tiene ${this.stockDisponible?.enVariantes} repartidos en sus artículos.` });
       return;
     }
 

@@ -6,8 +6,8 @@
       <div class="pl-header__title">
         <span class="pl-header__icon">📦</span>
         <div>
-          <h4 class="mb-0">Modelos</h4>
-          <small>Catálogo de modelos (producto base)</small>
+          <h4 class="mb-0">Productos</h4>
+          <small>Catálogo de productos (producto base)</small>
         </div>
       </div>
     </div>
@@ -23,7 +23,7 @@
       <input
         class="pl-search__input"
         type="text"
-        placeholder="Buscar modelo por nombre o código…"
+        placeholder="Buscar producto por nombre o código…"
         [(ngModel)]="buscarProd"
         (keyup)="buscarProductos($event)"
         autocomplete="off"
@@ -45,7 +45,7 @@
         <span class="pl-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
         <span class="pl-filtros-toggle__flecha" aria-hidden="true">▾</span>
       </button>
-      <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel de modelos sin artículos">
+      <button *ngIf="puedeDescargarExcel" class="pl-excel-btn" (click)="descargarExcel()" title="Descargar Excel de productos sin artículos">
         📥 Excel sin artículos
       </button>
     </div>
@@ -255,7 +255,7 @@
         </button>
 
         <button *ngIf="puedeCrearVariantes" class="pl-btn-card pl-btn-card--variante" (click)="inicializarVariantes(item)"
-          [disabled]="item.stock === 0" title="Agregar artículos a este modelo (cada talla o color con su stock)">
+          [disabled]="item.stock === 0" title="Agregar artículos a este producto (cada talla o color con su stock)">
           <span>🧩</span>
           <span class="pl-btn-card__label">Artículos</span>
         </button>

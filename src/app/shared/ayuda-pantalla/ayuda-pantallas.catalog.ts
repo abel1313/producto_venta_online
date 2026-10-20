@@ -35,52 +35,52 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
   // ─── Catálogo ──────────────────────────────────────────────────────────────
   {
     ruta: 'productos/agregar',
-    titulo: 'Agregar Modelo',
-    queEs: 'Da de alta el artículo base del catálogo: el modelo, sin talla ni color todavía.',
+    titulo: 'Agregar Producto',
+    queEs: 'Da de alta el producto base del catálogo, sin talla ni color todavía.',
     paraQue: [
-      'Registrar un modelo (producto base) que aún no existe en el sistema (ej. «Blusa Zara»).',
+      'Registrar un producto (ej. «Blusa Zara») que aún no existe en el sistema.',
       'Definir lo que no cambia entre tallas: nombre, marca, precios, descripción y categoría.',
-      'Es el paso 1 de 2 — el modelo por sí solo todavía no se puede vender.',
+      'Es el paso 1 de 2 — el producto por sí solo todavía no se puede vender.',
     ],
     diferencia: [{
       pantalla: 'Agregar artículo (Catálogo)',
-      explicacion: 'Allá se crea lo que SE VENDE (el modelo ya con talla y color). Aquí se crea el ' +
-        'modelo base. Primero pasas por esta pantalla, después por aquella. Si el modelo ya existe, ' +
+      explicacion: 'Allá se crea lo que SE VENDE (el producto ya con talla y color). Aquí se crea el ' +
+        'producto base. Primero pasas por esta pantalla, después por aquella. Si el producto ya existe, ' +
         'sáltate esta pantalla y ve directo a «Agregar artículo».',
     }],
-    porQue: 'Se separó en dos pantallas porque un mismo modelo suele tener muchas combinaciones de ' +
+    porQue: 'Se separó en dos pantallas porque un mismo producto suele tener muchas combinaciones de ' +
       'talla y color. Si se capturara todo junto, habría que reescribir nombre, marca y precios en ' +
       'cada talla.',
   },
   {
     ruta: 'tienda/venta',
     titulo: 'Agregar artículo',
-    queEs: 'Crea lo que realmente se vende: un modelo ya con su talla, color y stock.',
+    queEs: 'Crea lo que realmente se vende: un producto ya con su talla, color y stock.',
     paraQue: [
-      'Darle tallas y colores a un modelo que ya existe en el catálogo.',
+      'Darle tallas y colores a un producto que ya existe en el catálogo.',
       'Cargarle stock e imágenes propias a esa combinación.',
       'Es el paso 2 de 2 — a partir de aquí el artículo ya aparece en la tienda.',
     ],
     diferencia: [{
-      pantalla: 'Agregar Modelo (Catálogo)',
-      explicacion: 'Allá se crea el modelo. Aquí se le agregan los artículos que ' +
-        'se venden. Por eso el primer campo de esta pantalla es un buscador: el modelo tiene que ' +
+      pantalla: 'Agregar Producto (Catálogo)',
+      explicacion: 'Allá se crea el producto. Aquí se le agregan los artículos que ' +
+        'se venden. Por eso el primer campo de esta pantalla es un buscador: el producto tiene que ' +
         'existir antes.',
     }],
-    porQue: 'El único campo obligatorio es el modelo; talla y color son opcionales porque hay ' +
+    porQue: 'El único campo obligatorio es el producto; talla y color son opcionales porque hay ' +
       'artículos de talla única que igual necesitan venderse.',
   },
   {
     ruta: 'productos/buscar',
-    titulo: 'Buscar Modelos',
-    queEs: 'Listado de los modelos del catálogo, para consultarlos o editarlos.',
+    titulo: 'Buscar Productos',
+    queEs: 'Listado de los productos del catálogo, para consultarlos o editarlos.',
     paraQue: [
-      'Encontrar un modelo por nombre o código de barras.',
+      'Encontrar un producto por nombre o código de barras.',
       'Entrar a editar sus datos base o ver qué artículos tiene.',
     ],
     diferencia: [{
       pantalla: 'Buscar en Tienda',
-      explicacion: 'Aquí ves modelos (el producto base). Allá ves los artículos que se venden, ya con ' +
+      explicacion: 'Aquí ves productos (el que agrupa). Allá ves los artículos que se venden, ya con ' +
         'talla y color.',
     }],
   },
@@ -104,7 +104,7 @@ export const AYUDAS_PANTALLAS: AyudaPantalla[] = [
       'Evitar capturar a mano decenas de artículos.',
     ],
     diferencia: [{
-      pantalla: 'Agregar Modelo / Agregar artículo',
+      pantalla: 'Agregar Producto / Agregar artículo',
       explicacion: 'Esas son de uno en uno. Esta es para muchos a la vez, pero exige que el Excel ' +
         'venga con el formato exacto.',
     }],

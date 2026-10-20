@@ -8,7 +8,7 @@ export interface ModeloCreado {
 }
 
 /**
- * Da de alta un modelo desde "Catálogo → Agregar modelo" (productos/agregar), igual que una
+ * Da de alta un modelo desde "Catálogo → Agregar producto" (productos/agregar), igual que una
  * persona. Lo usan las pruebas que necesitan un modelo propio para trabajar.
  *
  * Los campos se ubican por su formControlName: las etiquetas de esa pantalla no están ligadas
@@ -28,10 +28,10 @@ export async function crearModelo(page: Page, stock = 10): Promise<ModeloCreado>
   await campo('descripcion').fill('Creado por una prueba automática');
   await campo('codigoBarras').fill(codigo);
 
-  await page.getByRole('button', { name: /Guardar modelo/ }).click();
+  await page.getByRole('button', { name: /Guardar producto/ }).click();
   // Desde el flujo A (2026-10-08) al guardar no sale un aviso: sale la ventana 🧩 con la pregunta
   // "¿Cuántos artículos quieres hacer?". Las pruebas hacen sus artículos aparte: "Ahora no".
-  await expect(page.locator('app-alta-articulos #aaTitulo')).toHaveText('✅ Modelo guardado');
+  await expect(page.locator('app-alta-articulos #aaTitulo')).toHaveText('✅ Producto guardado');
   await page.locator('app-alta-articulos').getByRole('button', { name: 'Ahora no' }).click();
   await expect(page.locator('app-alta-articulos')).toBeHidden();
 

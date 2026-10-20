@@ -80,7 +80,7 @@ export class CacheComponent implements OnInit, OnDestroy {
     const p = this.plan;
     Swal.fire({
       title: '¿Generar datos de prueba?',
-      html: `Se van a crear <b>${p.modelos}</b> modelos con <b>${p.articulosMin} a ${p.articulosMax}</b> artículos cada uno
+      html: `Se van a crear <b>${p.modelos}</b> productos con <b>${p.articulosMin} a ${p.articulosMax}</b> artículos cada uno
              y <b>${p.pedidos}</b> pedidos, todo con la marca <b>"Prueba QA"</b>.<br><br>
              Corre en segundo plano: puedes salir de esta pantalla. Solo funciona en QA.`,
       icon: 'question',
@@ -108,8 +108,8 @@ export class CacheComponent implements OnInit, OnDestroy {
   darDeBajaDatosPrueba(): void {
     Swal.fire({
       title: '¿Dar de baja los datos de prueba?',
-      text: 'Los modelos y artículos con marca "Prueba QA" dejan de salir en la tienda y en Modelos. '
-          + 'No se borra ninguna foto ni ningún modelo o artículo real. Los pedidos de prueba se quedan como historial.',
+      text: 'Los productos y artículos con marca "Prueba QA" dejan de salir en la tienda y en Productos. '
+          + 'No se borra ninguna foto ni ningún producto o artículo real. Los pedidos de prueba se quedan como historial.',
       icon: 'warning',
       showCancelButton: true,
       confirmButtonText: 'Sí, dar de baja',
@@ -154,7 +154,7 @@ export class CacheComponent implements OnInit, OnDestroy {
   prepararTodas(): void {
     Swal.fire({
       title: '¿Preparar todas las pruebas?',
-      text: `Se dan de alta los modelos, artículos y pedidos de las ${this.escenarios.length} pruebas, `
+      text: `Se dan de alta los productos, artículos y pedidos de las ${this.escenarios.length} pruebas, `
           + 'todos nuevos y con la marca "Prueba QA". Tarda unos segundos.',
       icon: 'question',
       showCancelButton: true,
@@ -181,7 +181,7 @@ export class CacheComponent implements OnInit, OnDestroy {
   quitarPrueba(e: IEscenarioPrueba): void {
     Swal.fire({
       title: `¿Quitar lo de la prueba ${e.prueba}?`,
-      text: 'Sus pedidos se cancelan (el stock regresa) y sus modelos se dan de baja. No se borra nada. '
+      text: 'Sus pedidos se cancelan (el stock regresa) y sus productos se dan de baja. No se borra nada. '
           + 'Después puedes volver a prepararla.',
       icon: 'question',
       showCancelButton: true,
@@ -208,7 +208,7 @@ export class CacheComponent implements OnInit, OnDestroy {
   quitarTodas(): void {
     Swal.fire({
       title: '¿Quitar lo de todas las pruebas?',
-      text: 'Los pedidos de todas las pruebas se cancelan (el stock regresa) y sus modelos se dan de baja. '
+      text: 'Los pedidos de todas las pruebas se cancelan (el stock regresa) y sus productos se dan de baja. '
           + 'No se borra nada. Después puedes volver a prepararlas.',
       icon: 'warning',
       showCancelButton: true,
@@ -234,7 +234,7 @@ export class CacheComponent implements OnInit, OnDestroy {
   /** Cómo se lee cada dato del recuadro 🧪: "M-OFF = modelo «…»", "CU = código de «Agregar mi compra»"… */
   etiquetaDato(c: ICatalogoPreparado): string {
     switch (c.tipo) {
-      case 'MODELO': return 'modelo';
+      case 'MODELO': return 'producto';
       case 'RIFA': return 'rifa';
       case 'CODIGO': return 'código de';
       case 'USUARIO': return 'usuario';
@@ -260,7 +260,7 @@ export class CacheComponent implements OnInit, OnDestroy {
     const conError = quitadas.filter(q => q.error);
     const lineas: string[] = [];
     lineas.push(pedidos || modelos || otros
-      ? `${pedidos} pedido(s) cancelado(s) y ${modelos} modelo(s) dado(s) de baja.`
+      ? `${pedidos} pedido(s) cancelado(s) y ${modelos} producto(s) dado(s) de baja.`
         + (otros ? ` ${otros} rifa(s) o usuario(s) de prueba desactivado(s).` : '')
       : 'No había nada que quitar.');
     if (sinCancelar) lineas.push(`${sinCancelar} pedido(s) no se pudieron cancelar (ver el log del servidor).`);

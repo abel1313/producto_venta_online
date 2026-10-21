@@ -27,7 +27,7 @@ export class PrivacidadComponent implements OnDestroy {
   private readonly sub: Subscription;
 
   /** Se muestra al pie. Actualizar cuando cambie el contenido del aviso. */
-  readonly ultimaActualizacion = '7 de octubre de 2026';
+  readonly ultimaActualizacion = '21 de octubre de 2026';
 
   constructor(private readonly datosLegales: DatosLegalesService) {
     this.sub = this.datos$.subscribe(d => this.correo = d.correo || CORREO_CONTACTO_RESPALDO);

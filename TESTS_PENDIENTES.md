@@ -27,9 +27,9 @@ Formato de cada entrada:
 - [ ] Cada botón respeta su permiso de siempre (`agregar-carrito`, `quitar-carrito`, `ver-carrito`, `actualizar`, `cambiar-precio`, `compartir-imagen`, `habilitar`, `eliminar`); sin ninguno no sale la fila
 - [ ] Casilla de lote, ✕ de baja y corazón no se encimen con la etiqueta de stock (a 1360 y 400 px, día y noche)
 - [ ] En 2 columnas (tarjeta de menos de 200 px) «Agregar» ocupa su propia fila y no se desborda
-- [ ] Una de cada siete tarjetas (`.vb-card--destacada`) sale grande: todo el ancho a 400 px, 2×2 a 1360 px; con 1, 2 o 3 resultados no deja huecos raros
-- [ ] El título «Tienda» no se corta ni se desborda a 320, 400 y 1360 px; el buscador de una línea cambia a color de acento al enfocarlo
-- [ ] Con `prefers-reduced-motion` no hay animación de entrada
+- [ ] El título «Tienda» con degradado no se corta a 320, 400 y 1360 px; de día y de noche el precio y los botones se leen (contraste)
+- [ ] La letra gruesa (Inter Tight) y la de código (JetBrains Mono) cargan; si no cargan, la pantalla sigue legible con Inter
+- [ ] Productos y las demás pantallas con encabezado de card **no** cambian (la regla de `styles.scss` solo se reemplaza en Tienda)
 - [ ] El corazón marcado se pinta rojo y relleno; `aria-pressed` cambia
 
 ---

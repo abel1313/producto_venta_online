@@ -1216,10 +1216,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     flex-wrap: wrap;
   }
 
-  // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco
-  // espacio por card y el texto se veía amontonado. Sin este override, .vb-grid
-  // con auto-fill/minmax(260px) cae solo a una columna, igual que productos/buscar.
-  .vb-grid { grid-template-columns: 1fr; gap: 12px; }
+  // 2 columnas (2026-10-27). El 25-ago se pasó a 1 por fila porque la tarjeta de entonces, con su
+  // encabezado de color y su lista de datos, quedaba amontonada en media pantalla. La tarjeta nueva
+  // es foto 4:5 + nombre + precio y su botón Agregar baja a su propia fila (container query), así
+  // que cabe bien. El dueño no quedó contento con 1 por fila.
+  .vb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
 }
 
 
@@ -1421,4 +1422,150 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--pk-success-soft);
     color: var(--app-accent-text);
   }
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// REVISTA DE MODA (2026-10-27) — solo Tienda → Buscar
+// Título grande sobre una línea dorada, buscador de una sola línea, y un mosaico donde una de cada
+// siete tarjetas sale grande (2×2). Todo sale de los tokens Jade; nada de colores a mano.
+// Va al final y dentro de :host-context(body) para ganarle en peso a los bloques de día y de noche
+// de arriba, que pintaban el encabezado como una caja de cristal.
+// ════════════════════════════════════════════════════════════════════
+:host-context(body) {
+
+  .vb-header {
+    padding: 28px 16px 0;
+    margin-bottom: 20px;
+  }
+
+  .vb-header .vb-header__content {
+    max-width: 1280px;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  // styles.scss pinta .vb-header__inner como franja de card con !important y :not(#_); aquí se
+  // reemplaza con el mismo peso, solo para esta pantalla (Productos y las demás no se tocan).
+  .vb-header .vb-header__inner:not(#_) {
+    align-items: flex-end;
+    margin: 0 0 22px !important;
+    padding: 0 0 18px !important;
+    background: linear-gradient(to right, var(--app-gold-line), var(--app-gold-line) calc(100% - 48px), transparent) no-repeat bottom / 100% 1px !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    color: var(--app-text) !important;
+
+    h4  { color: var(--app-text) !important; }
+    .mb-0 { color: var(--app-text) !important; }
+    small { color: var(--app-text-muted) !important; }
+    .vb-btn--cart {
+      background: transparent !important;
+      color: var(--app-text) !important;
+      &:hover { background: var(--app-tint) !important; color: var(--app-accent-text) !important; }
+    }
+  }
+
+  .vb-header .vb-header__icon { display: none; }
+
+  .vb-header .vb-header__title h4 {
+    margin: 0;
+    font-size: clamp(48px, 10vw, 104px);
+    line-height: 0.92;
+    font-weight: 500;
+    letter-spacing: -0.04em;
+    color: var(--app-text);
+    text-wrap: balance;
+  }
+
+  .vb-header .vb-header__title small {
+    display: block;
+    margin-top: 10px;
+    font-size: 14px;
+    letter-spacing: 0.01em;
+    color: var(--app-text-muted);
+  }
+
+  .vb-header .vb-btn--cart {
+    width: 52px;
+    height: 52px;
+    background: transparent;
+    border: 1px solid var(--app-border);
+    color: var(--app-text);
+    &:hover { background: var(--app-tint); border-color: var(--app-accent); color: var(--app-accent-text); transform: none; }
+  }
+
+  // Buscador: una sola línea, texto grande, sin caja
+  .vb-header .vb-search {
+    padding: 6px 0 12px;
+    margin-bottom: 14px;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--app-border);
+    border-radius: 0;
+    backdrop-filter: none;
+    transition: border-color 0.2s var(--ease-jade, ease);
+    &:focus-within { border-bottom-color: var(--app-accent); }
+  }
+  .vb-header .vb-search__input { font-size: 20px; font-weight: 400; }
+  .vb-header .vb-search__icon { margin-right: 14px; }
+
+  .vb-header .vb-scan-mobile { border-radius: var(--radius-pill, 999px); background: transparent; }
+
+  .vb-header .vb-filtros-toggle {
+    margin-bottom: 4px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--app-border);
+    font-weight: 400;
+    &:hover { border-color: var(--app-accent); background: var(--app-tint); }
+  }
+
+  // ── Mosaico ─────────────────────────────────────────────────────
+  .vb-grid-wrap { max-width: 1280px; padding: 0 16px 48px; }
+
+  .vb-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    gap: 28px 12px;
+    @media (min-width: 768px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px 20px; }
+    @media (min-width: 1100px) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 48px 24px; }
+  }
+
+  // Una de cada siete: grande. En celular ocupa todo el ancho; en compu, 2 columnas × 2 filas
+  // y su foto se estira para llenar las dos filas.
+  .vb-card--destacada {
+    grid-column: span 2;
+    @media (min-width: 768px) { grid-row: span 2; }
+
+    .vb-card__media { aspect-ratio: 4 / 3; @media (min-width: 768px) { aspect-ratio: auto; flex: 1; min-height: 0; } }
+    .vb-card__name  { font-size: clamp(22px, 2.6vw, 34px); line-height: 1.1; letter-spacing: -0.02em; -webkit-line-clamp: 3; }
+    .vb-card__price { font-size: clamp(20px, 2vw, 26px); }
+    .vb-card__desc  { font-size: 14px; -webkit-line-clamp: 3; }
+    .vb-card__info  { flex: 0 0 auto; gap: 10px; }
+  }
+
+  // Foto con esquinas casi rectas (como impresa) y sin marco; el aire lo da el espacio
+  .vb-card__media { border-radius: var(--radius-sm, 4px); box-shadow: none; }
+  .vb-card__stock { border-radius: var(--radius-sm, 4px); }
+
+  .vb-card__name  { font-size: 15px; letter-spacing: -0.005em; }
+  .vb-card__price { font-size: 15px; color: var(--app-accent-text); }
+
+  // Entrada: las tarjetas suben una tras otra, una sola vez al cargar la lista
+  .vb-card { animation: vb-subir 0.7s var(--ease-jade, ease) both; animation-delay: calc(var(--i, 0) * 55ms); }
+}
+
+@keyframes vb-subir {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host-context(body) .vb-card { animation: none; }
 }

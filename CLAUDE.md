@@ -70,16 +70,17 @@ necesita un test que compruebe esto y esto'"*.
   correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
 - Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
 
-## Tienda → Buscar: tarjeta rediseñada con Impeccable (2026-10-27, solo rama `feature/tienda-impeccable`)
+## Tienda → Buscar: rediseño "revista de moda" con Impeccable (2026-10-27, solo rama `feature/tienda-impeccable`)
 
-Prueba de diseño de UNA pantalla, hecha con la skill `impeccable` (`.claude/skills/impeccable`) y los tokens Jade.
-- La tarjeta ya no tiene encabezado de color: **foto 4:5 primero** (`.vb-card__media`), debajo nombre (`nombreProducto`, que antes no se mostraba), precio, chips de talla/color/marca y descripción a 2 líneas.
-- Etiqueta de stock sobre la foto: punto verde / ámbar (1–3) / rojo (agotado); el texto sigue en el color normal.
-- Botones de carrito: `−` · **Agregar** (principal, tokens `--btn-primary-*`) · bolsa con contador. Herramientas de admin (Editar, Precio, Imagen, Habilitar) en fila aparte. Todos conservan su permiso `tienda/buscar:*`.
-- Código de barras y «Creado» solo se ven con permiso de la pantalla (`esVistaAdmin`); antes los veía cualquiera.
-- Íconos: sprite SVG `vb-i-*` al inicio de `buscar.component.html` (sin emojis como íconos).
-- En celular **se queda 1 tarjeta por fila** (decisión del 25-ago). Para pasar a 2 columnas basta quitar el override `.vb-grid { grid-template-columns: 1fr }` del bloque `@media (max-width: 576px)`; la tarjeta ya se adapta (container query).
-- Sin cambios en el `.ts`.
+Prueba de diseño de UNA pantalla (decisión del dueño: dirección "revista de moda", alcance "solo la Tienda"), con la skill `impeccable` (`.claude/skills/impeccable`) y los tokens Jade; sin cambios en el `.ts`.
+- **Encabezado:** título «Tienda» grande (hasta 104 px) sobre una línea dorada, sin caja de cristal; buscador de una sola línea (20 px); botón de carrito delineado. El bloque vive al final de `buscar.component.scss` dentro de `:host-context(body)` y pisa con `!important` + `:not(#_)` la regla global de `styles.scss` que pinta `.vb-header__inner` como franja de card (solo para esta pantalla; Productos no se toca). Ojo: **no poner comas dentro de `:is()` en ese bloque** (Angular las parte y se pierde el resto del bloque).
+- **Mosaico:** `grid-auto-flow: dense`; 2 columnas en celular, 3 en tablet, 4 en compu. Una de cada siete tarjetas (`.vb-card--destacada`, `i % 7 === 0`) sale grande: todo el ancho en celular, 2×2 en compu, con nombre de hasta 34 px.
+- **Tarjeta:** foto 4:5 con esquinas casi rectas y etiqueta de stock encima (punto verde / ámbar 1–3 / rojo agotado); debajo nombre (`nombreProducto`, que antes no se mostraba), precio, chips de talla/color/marca y descripción a 2 líneas.
+- **Carrito:** `−` · **Agregar** (tokens `--btn-primary-*`) · bolsa con contador; Editar / Precio / Imagen / Habilitar en fila aparte. Cada botón conserva su permiso `tienda/buscar:*`. En tarjeta angosta (2 columnas en celular) Agregar baja a su fila (container query).
+- **Código de barras y «Creado»** solo con permiso de la pantalla (`esVistaAdmin`); antes los veía cualquiera.
+- **Íconos:** sprite SVG `vb-i-*` al inicio de `buscar.component.html`; sin emojis como íconos.
+- **Movimiento:** las tarjetas suben una tras otra al cargar (`vb-subir`, 55 ms entre cada una); se apaga con `prefers-reduced-motion`.
+- **Celular:** 2 tarjetas por fila (antes 1 desde el 25-ago; el dueño no quedó contento).
 
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:

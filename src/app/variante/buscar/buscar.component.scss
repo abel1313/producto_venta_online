@@ -1,3 +1,7 @@
+// Letras de la Tienda (2026-10-27): Inter Tight gruesa (el index.html solo carga Inter 400/500 y el estilo Jade
+// aplana todo a 500) y JetBrains Mono para etiquetas. Familias propias: no cambian el resto de la app.
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
 // ── Variables ──────────────────────────────────────────────────────
 $primary:    var(--brand-2);
 $primary-d:  var(--brand-1);
@@ -40,8 +44,13 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   &__icon {
-    font-size: 2rem;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    color: var(--app-accent-text);
+    background: var(--app-tint);
   }
 
   &__actions { display: flex; gap: 10px; }
@@ -59,7 +68,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   backdrop-filter: blur(6px);
   border: 1px solid var(--input-border);
 
-  &__icon { font-size: 1.1rem; margin-right: 10px; }
+  &__icon { display: grid; place-items: center; margin-right: 10px; color: var(--app-text-muted); }
 
   &__input {
     flex: 1;
@@ -89,14 +98,15 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   &__scan {
     background: none;
     border: none;
-    font-size: 1.3rem;
+    display: grid;
+    place-items: center;
     cursor: pointer;
     padding: 0 4px;
     line-height: 1;
     margin-left: 6px;
-    opacity: 0.85;
+    color: var(--app-text-muted);
     transition: $transition;
-    &:hover:not(:disabled) { opacity: 1; transform: scale(1.15); }
+    &:hover:not(:disabled) { color: var(--app-accent-text); transform: scale(1.1); }
     &:disabled { opacity: 0.35; cursor: not-allowed; }
   }
 
@@ -568,260 +578,336 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   .vb-promo__text  { color: var(--app-text-muted); }
 }
 
-.vb-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
+// ── Íconos dibujados (sprite en la plantilla) ──────────────────────
+.vb-i {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  display: inline-block;
+  vertical-align: -0.2em;
+  &--sm { width: 15px; height: 15px; }
+  &--lg { width: 28px; height: 28px; }
+  &--xl { width: 44px; height: 44px; }
 }
 
-// ── Card ───────────────────────────────────────────────────────────
+// ── Cuadrícula ─────────────────────────────────────────────────────
+// 2 columnas en celular, y de ahí crece con el ancho; la foto manda, así que las columnas no se
+// angostan de 150px para que el nombre y el botón sigan leyéndose.
+.vb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr));
+  gap: 28px 16px;
+  @media (min-width: 768px) { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 36px 20px; }
+}
+
+// ── Tarjeta ────────────────────────────────────────────────────────
+// Sin caja: la foto 4:5 y el texto debajo (misma forma que .pk-product del sistema). El borde, la
+// sombra y los degradados de antes competían con la foto, que es lo que decide la compra.
 .vb-card {
   position: relative;
-  background: var(--card-bg);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  border: 1px solid var(--card-border);
-  overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: $transition;
+  gap: 12px;
+  min-width: 0;
+  container-type: inline-size;
 
-  &:hover { transform: translateY(-5px); box-shadow: $shadow-hover; }
-
-  &__img-wrap {
-    width: 100%;
-    height: 180px;
+  &__media {
+    position: relative;
+    aspect-ratio: 4 / 5;
     overflow: hidden;
-    background: var(--form-section-bg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    border-radius: var(--radius-lg, 14px);
+    background: var(--card-body-bg);
+    box-shadow: inset 0 0 0 1px var(--app-hairline);
+    cursor: pointer;
   }
 
   &__img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    display: block;
+    transition: transform 600ms var(--ease-jade, ease);
   }
+  &__media:hover &__img { transform: scale(1.04); }
 
   &__img-placeholder {
-    font-size: 3.5rem;
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
     color: var(--app-text-faint);
   }
 
-  // Antes el fondo del header salía ENTERO de colorHeader(v.color) -- un color
-  // por variante, sin relación con Personalización. Si ese color caía cerca del
-  // blanco (ej. variantes sin color reconocido) el header quedaba invisible,
-  // como si la card no tuviera header (pedido 2026-09-01: "todas las card
-  // tienen que tener el mismo estilo... header, body y footer"). Ahora el fondo
-  // es --card-header-bg, el mismo token que usan TODAS las cards de la app
-  // (.pk-card__header en design-system.scss), con su propio control en
-  // Personalización (grupo "Card") -- colorHeader() se sigue usando, pero solo
-  // para el puntito .vb-card__color-dot como referencia del color real de la prenda.
-  &__header {
-    padding: 18px 16px 14px;
-    color: var(--card-header-text);
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    position: relative;
-    background: var(--card-header-bg);
-
-    &::after {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(180deg, rgba(0,0,0,0) 50%, rgba(0,0,0,0.28) 100%);
-      pointer-events: none;
-    }
-    // Sombreado para despegar el texto de un header de color (Clásico). En Jade el header es la
-    // misma superficie clara de la card y el sombreado se veía como mancha.
-    :host-context(body[data-estilo="jade"]) &::after { display: none; }
-  }
-
-  // Casilla de selección (arriba a la izquierda) y ✕ de dar de baja (arriba a la derecha) van
-  // flotando sobre el encabezado: se les deja su lugar para que no tapen el puntito de color,
-  // el precio ni "Agotado".
-  &__header--con-check { padding-left: 40px; }
-  &__header--con-baja  { padding-right: 44px; }
-
-  &__color-dot {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    border: 2px solid color-mix(in srgb, var(--card-header-text) 60%, transparent);
-    flex-shrink: 0;
-    margin-top: 4px;
-    filter: brightness(1.6);
-  }
-
-  &__header-content { flex: 1; min-width: 0; }
-
-  &__product {
-    font-size: 0.95rem;
-    font-weight: 700;
-    margin: 0 0 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    text-shadow: 0 1px 3px rgba(0,0,0,0.3);
-    :host-context(body[data-estilo="jade"]) & { text-shadow: none; }
-  }
-
-  &__chips { display: flex; flex-wrap: wrap; gap: 4px; }
-
-  &__body { padding: 14px 16px; flex: 1; }
-
-  &__detail { display: flex; flex-direction: column; gap: 6px; }
-
-  &__detail-row {
-    display: flex;
-    justify-content: space-between;
+  // Estado del stock sobre la foto. El punto de color dice el estado; el texto se queda en el color
+  // normal para que se lea igual de día y de noche.
+  &__stock {
+    position: absolute;
+    left: 10px;
+    bottom: 10px;
+    display: inline-flex;
     align-items: center;
-    font-size: 0.88rem;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--app-text);
+    background: var(--app-glass-strong);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    font-variant-numeric: tabular-nums;
+    &::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--pk-success);
+    }
+    &--pocas::before   { background: var(--pk-warning-to); }
+    &--agotado::before { background: var(--pk-danger); }
   }
 
-  &__detail-label { color: var(--app-text-muted); font-weight: 500; }
+  &__info { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
 
-  &__detail-val { font-weight: 600; color: var(--card-text); }
-
-  &__price { color: var(--app-accent); font-size: 1rem; }
-
-  &__in-cart {
-    margin-top: 10px;
-    background: var(--form-section-bg);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 0.82rem;
-    color: var(--app-accent);
-    font-weight: 600;
-    display: flex;
-    justify-content: space-between;
+  &__name {
+    margin: 0;
+    font-size: 15px;
+    line-height: 1.3;
+    font-weight: 500;
+    color: var(--app-text);
+    text-wrap: balance;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
   }
 
-  &__footer {
+  &__price {
+    margin: 0;
+    font-size: 17px;
+    line-height: 1.2;
+    font-weight: 500;
+    color: var(--app-accent-text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__meta {
     display: flex;
     flex-wrap: wrap;
-    border-top: 1px solid var(--card-border);
-    background: var(--card-footer-bg);
-    > * { flex: 1 0 50px; }
+    gap: 6px;
+    margin: 2px 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  &__color-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    margin-right: 6px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.18);
+    vertical-align: 0;
+  }
+
+  &__desc {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--app-text-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  &__admin-data {
+    margin: 2px 0 0;
+    padding-top: 8px;
+    display: grid;
+    gap: 2px;
+    font-size: 12px;
+    color: var(--app-text-muted);
+    background: linear-gradient(to right, transparent, var(--app-hairline) 24px, var(--app-hairline) calc(100% - 24px), transparent) no-repeat top / 100% 1px;
+    > div { display: flex; justify-content: space-between; gap: 8px; }
+    dt { font-weight: 400; }
+    dd { margin: 0; color: var(--app-text-soft); text-align: right; font-variant-numeric: tabular-nums; }
+  }
+
+  &__in-cart {
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--app-accent-text);
+  }
+
+  // Carrito: quitar · agregar · ver carrito
+  &__buy { display: flex; gap: 8px; }
+
+  // Herramientas de administración, separadas con la línea fina del sistema
+  &__tools {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    padding-top: 8px;
+    background: linear-gradient(to right, transparent, var(--app-hairline) 24px, var(--app-hairline) calc(100% - 24px), transparent) no-repeat top / 100% 1px;
   }
 }
 
-// ── Chips ──────────────────────────────────────────────────────────
-.vb-chip {
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 20px;
-  border: 1px solid color-mix(in srgb, var(--card-header-text) 40%, transparent);
-  color: color-mix(in srgb, var(--card-header-text) 95%, transparent);
-
-  &--talla { background: color-mix(in srgb, var(--card-header-text) 20%, transparent); }
-  &--color { background: color-mix(in srgb, var(--card-header-text) 14%, transparent); }
-  &--marca { background: color-mix(in srgb, var(--card-header-text) 10%, transparent); font-style: italic; }
+// Chips de lo que distingue al artículo (talla, color, marca…)
+.vb-meta {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  min-height: 24px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--app-text-soft);
+  &--talla {
+    border-color: var(--app-accent);
+    color: var(--app-accent-text);
+    background: var(--app-tint);
+  }
 }
 
-// ── Botones de card ────────────────────────────────────────────────
-.vb-btn-card {
-  display: flex;
-  flex-direction: column;
+// ── Botones de carrito ─────────────────────────────────────────────
+// Agregar es el botón principal: el mismo juego de tokens que todo botón principal de la app.
+.vb-add-btn {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 12px 6px;
-  border: none;
+  gap: 8px;
+  padding: 0 14px;
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--btn-primary-border);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font: inherit;
+  font-size: 14px;
   cursor: pointer;
-  font-size: 1.2rem;
-  transition: $transition;
+  transition: background 0.2s var(--ease-jade, ease), color 0.2s var(--ease-jade, ease), transform 0.12s ease;
+  &:hover:not(:disabled) { background: var(--btn-primary-hover-bg); color: var(--btn-primary-hover-text); }
+  &:active:not(:disabled) { transform: scale(0.98); }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+}
+
+.vb-icon-btn {
+  position: relative;
+  width: 44px;
+  min-height: 44px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: var(--radius, 8px);
+  border: 1px solid var(--app-border);
   background: transparent;
+  color: var(--app-text);
+  cursor: pointer;
+  transition: background 0.2s var(--ease-jade, ease), border-color 0.2s var(--ease-jade, ease), color 0.2s var(--ease-jade, ease);
+  &:hover:not(:disabled) { background: var(--app-tint); border-color: var(--app-accent); color: var(--app-accent-text); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+  &--remove:hover:not(:disabled) { background: var(--pk-danger-soft); border-color: var(--pk-danger); color: var(--pk-danger); }
 
-  &__label {
-    font-size: 0.68rem;
-    font-weight: 600;
-    letter-spacing: 0.02em;
-  }
-
-  &--add {
-    color: var(--pk-success-to);
-    &:hover:not(:disabled) { background: var(--pk-success-soft); }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
-  }
-
-  &--remove {
-    color: var(--pk-danger-to);
-    border-left: 1px solid var(--card-border);
-    border-right: 1px solid var(--card-border);
-    &:hover:not(:disabled) { background: var(--pk-danger-soft); }
-    &:disabled { opacity: 0.4; cursor: not-allowed; }
-  }
-
-  &--view {
-    color: var(--app-accent);
-    &:hover { background: var(--app-accent-soft); }
-  }
-
-  &--edit {
-    color: var(--app-accent);
-    border-left: 1px solid var(--card-border);
-    &:hover { background: var(--app-accent-soft); }
-  }
-
-  &--share {
-    color: var(--pk-info-to);
-    border-left: 1px solid var(--card-border);
-    &:hover { background: var(--pk-info-soft); }
-  }
-
-  &--toggle {
-    color: var(--app-accent);
-    border-left: 1px solid var(--card-border);
-    &:hover { background: rgba(var(--app-accent-rgb),0.08); }
+  &__count {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    display: grid;
+    place-items: center;
+    border-radius: 999px;
+    background: var(--app-accent);
+    color: var(--app-accent-ink, var(--pk-ink));
+    font-size: 11px;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
   }
 }
 
-// ── Card deshabilitada + seleccionada ─────────────────────────────
+.vb-tool {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--radius-sm, 4px);
+  background: transparent;
+  color: var(--app-text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s var(--ease-jade, ease), color 0.2s var(--ease-jade, ease);
+  &:hover:not(:disabled) { background: var(--app-tint); color: var(--app-accent-text); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// Si la tarjeta es angosta (2 columnas en celular) el botón Agregar ocupa su propia fila.
+// Va después de los botones y con más peso: estas reglas no llevan el atributo de Angular.
+@container (max-width: 200px) {
+  .vb-card .vb-card__buy { flex-wrap: wrap; }
+  .vb-card .vb-card__buy .vb-add-btn { flex: 1 1 100%; order: -1; }
+  .vb-card .vb-card__buy .vb-icon-btn { flex: 1 1 0; width: auto; }
+}
+
+// ── Tarjeta deshabilitada + seleccionada ──────────────────────────
 .vb-card--deshabilitado {
   opacity: 0.55;
-  outline: 2px dashed var(--pk-danger-to);
-  outline-offset: 2px;
+  .vb-card__media { outline: 2px dashed var(--pk-danger-to); outline-offset: 2px; }
 }
 
-.vb-card--seleccionada {
+.vb-card--seleccionada .vb-card__media {
   outline: 2px solid var(--app-accent);
   outline-offset: 2px;
 }
 
+.vb-card--agotado .vb-card__img { filter: grayscale(0.6) opacity(0.75); }
+
 .vb-badge-disabled {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
   background: var(--pk-danger-soft);
   color: var(--pk-danger);
-  font-size: 0.75rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  text-align: center;
-  letter-spacing: 0.03em;
-  border-bottom: 1px solid var(--pk-danger-soft);
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 6px;
 }
 
+// Corazón: botón de cristal sobre la foto (esquina inferior derecha; la casilla de selección va
+// arriba a la izquierda y la ✕ de baja arriba a la derecha).
 .vb-card__heart {
   position: absolute;
-  bottom: 8px;
-  right: 8px;
+  bottom: 10px;
+  right: 10px;
   z-index: 4;
-  border: none;
-  background: rgba(0,0,0,.35);
-  width: 30px;
-  height: 30px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
   border-radius: 50%;
-  font-size: .95rem;
+  background: var(--app-glass-strong);
+  color: var(--app-text);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: transform .15s, background .15s;
-
-  &:hover { background: rgba(0,0,0,.55); }
-  &--activo { animation: vb-heart-pop .25s ease; }
+  transition: transform 0.15s ease, color 0.15s ease;
+  &:hover { transform: scale(1.08); }
+  &--activo {
+    color: var(--pk-danger);
+    .vb-i path { fill: currentColor; }
+    animation: vb-heart-pop 0.25s ease;
+  }
 }
 
 @keyframes vb-heart-pop {
@@ -830,50 +916,49 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   100% { transform: scale(1); }
 }
 
-// Boton ✕ de dar de baja. Arriba a la derecha para no chocar con el checkbox de seleccion en
-// lote, que va arriba a la izquierda.
+// Botón de dar de baja: arriba a la derecha de la foto
 .vb-card__del-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
+  top: 10px;
+  right: 10px;
   z-index: 5;
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   display: grid;
   place-items: center;
-  border: 1px solid var(--pk-danger-soft);
+  border: 0;
   border-radius: 50%;
-  background: var(--pk-danger-soft);
+  background: var(--app-glass-strong);
   color: var(--pk-danger);
-  font-size: 0.8rem;
-  line-height: 1;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease;
-
-  &:hover:not(:disabled) {
-    background: var(--pk-danger);
-    color: var(--pk-ink);
-  }
-
-  &:disabled {
-    opacity: 0.5;
-    cursor: default;
-  }
+  &:hover:not(:disabled) { background: var(--pk-danger); color: var(--pk-ink); }
+  &:disabled { opacity: 0.5; cursor: default; }
 }
 
 .vb-card__check {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 10px;
+  left: 10px;
   z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--app-glass-strong);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   cursor: pointer;
+  input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--app-accent); cursor: pointer; }
+}
 
-  input[type="checkbox"] {
-    width: 18px;
-    height: 18px;
-    accent-color: var(--app-accent);
-    cursor: pointer;
-  }
+@media (prefers-reduced-motion: reduce) {
+  .vb-card__img, .vb-add-btn, .vb-icon-btn, .vb-card__heart { transition: none; }
+  .vb-card__heart--activo { animation: none; }
+  .vb-card__media:hover .vb-card__img { transform: none; }
 }
 
 // ── Barra de lote ─────────────────────────────────────────────────
@@ -1135,10 +1220,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     flex-wrap: wrap;
   }
 
-  // 1 en 1 en vez de 2 en 2 (25-ago) — a este ancho, 2 columnas dejaba muy poco
-  // espacio por card y el texto se veía amontonado. Sin este override, .vb-grid
-  // con auto-fill/minmax(260px) cae solo a una columna, igual que productos/buscar.
-  .vb-grid { grid-template-columns: 1fr; gap: 12px; }
+  // 2 columnas (2026-10-27). El 25-ago se pasó a 1 por fila porque la tarjeta de entonces, con su
+  // encabezado de color y su lista de datos, quedaba amontonada en media pantalla. La tarjeta nueva
+  // es foto 4:5 + nombre + precio y su botón Agregar baja a su propia fila (container query), así
+  // que cabe bien. El dueño no quedó contento con 1 por fila.
+  .vb-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px 12px; }
 }
 
 
@@ -1340,4 +1426,301 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
     background: var(--pk-success-soft);
     color: var(--app-accent-text);
   }
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// ESTILO OSCURO / CLARO DE LA TIENDA (2026-10-27) — solo Tienda → Buscar
+// Referencia del dueño: fondo casi negro con cuadrícula tenue, letra gruesa y apretada, degradado
+// lila→rosa, botón principal con ese degradado, etiquetas en letra de código. De día: fondo claro con
+// el mismo degradado más profundo (sobre blanco el pastel no se lee). Los colores viven aquí como
+// variables --t-* de la pantalla; si el dueño aprueba el estilo, pasan a Personalización.
+// Sin comas dentro de :is()/:host-context aquí: Angular las parte y se pierde el resto del bloque.
+// ════════════════════════════════════════════════════════════════════
+:host {
+  --t-bg: #f6f5fb;
+  --t-panel: #ffffff;
+  --t-line: #e3e1ee;
+  --t-line2: #cbc7de;
+  --t-fg: #0e0e12;
+  --t-mut: #5b596b;
+  --t-lila: #6a48f0;
+  --t-rosa: #d93f98;
+  --t-btn-a: #c3b2ff;
+  --t-btn-b: #f7bddf;
+  --t-btn-ink: #14101f;
+  --t-ok: #15803d;
+  --t-no: #dc2626;
+  --t-poco: #b45309;
+  --t-glass: rgba(255, 255, 255, 0.92);
+  --t-grid: rgba(30, 25, 70, 0.055);
+  --t-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --t-font: 'Inter Tight', 'Inter', system-ui, sans-serif;
+
+  display: block;
+  min-height: 100%;
+  background-color: var(--t-bg);
+  background-image:
+    linear-gradient(var(--t-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--t-grid) 1px, transparent 1px);
+  background-size: 44px 44px;
+  color: var(--t-fg);
+  // styles.scss aplica la letra a todo con `font-family: var(--font-family) !important`: se cambia la variable.
+  --font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
+}
+
+:host-context(body.theme-dark) {
+  --t-bg: #0a0a0b;
+  --t-panel: #111113;
+  --t-line: #26262b;
+  --t-line2: #3a3a42;
+  --t-fg: #f5f5f7;
+  --t-mut: #a1a1aa;
+  --t-lila: #c9b8ff;
+  --t-rosa: #f6cfe8;
+  --t-btn-a: #c9b8ff;
+  --t-btn-b: #f6cfe8;
+  --t-btn-ink: #111111;
+  --t-ok: #22c55e;
+  --t-no: #ef4444;
+  --t-poco: #f5b942;
+  --t-glass: rgba(10, 10, 11, 0.88);
+  --t-grid: rgba(255, 255, 255, 0.035);
+}
+
+// ── Encabezado ─────────────────────────────────────────────────────
+:host .vb-header { padding: 28px 16px 0; margin-bottom: 20px; }
+
+:host .vb-header .vb-header__content {
+  max-width: 1280px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+// styles.scss pinta .vb-header__inner como franja de card con !important y :not(#_); aquí se
+// reemplaza con el mismo peso, solo para esta pantalla (Productos y las demás no se tocan).
+:host .vb-header .vb-header__inner:not(#_) {
+  align-items: flex-end;
+  margin: 0 0 22px !important;
+  padding: 0 0 20px !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--t-line) !important;
+  border-radius: 0 !important;
+  color: var(--t-fg) !important;
+
+  h4 { color: var(--t-fg) !important; }
+  .mb-0 { color: var(--t-fg) !important; }
+  small { color: var(--t-mut) !important; }
+  .vb-btn--cart {
+    background: var(--t-panel) !important;
+    color: var(--t-fg) !important;
+    border: 1px solid var(--t-line2) !important;
+    &:hover { border-color: var(--t-lila) !important; }
+  }
+}
+
+:host .vb-header .vb-header__icon { display: none; }
+
+:host .vb-header .vb-header__title h4 {
+  margin: 0;
+  font-size: clamp(40px, 7vw, 76px);
+  line-height: 0.98;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  background: linear-gradient(90deg, var(--t-lila), var(--t-rosa));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+:host .vb-header .vb-header__title small {
+  display: block;
+  margin-top: 10px;
+  font-size: 15px;
+}
+
+:host .vb-header .vb-btn--cart {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  transform: none;
+}
+
+:host .vb-header .vb-search {
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line);
+  border-radius: 10px;
+  backdrop-filter: none;
+  transition: border-color 0.2s ease;
+  &:focus-within { border-color: var(--t-lila); }
+}
+:host .vb-header .vb-search__input { font-size: 16px; color: var(--t-fg); }
+:host .vb-header .vb-search__input::placeholder { color: var(--t-mut); }
+:host .vb-header .vb-search__icon { color: var(--t-mut); }
+:host .vb-header .vb-search__scan { color: var(--t-mut); &:hover:not(:disabled) { color: var(--t-lila); } }
+
+:host .vb-header .vb-scan-mobile {
+  border-radius: 10px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line2);
+  color: var(--t-fg);
+  --font-family: var(--t-mono);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+:host .vb-header .vb-filtros-toggle {
+  margin-bottom: 6px;
+  padding: 10px 16px;
+  border-radius: 10px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line2);
+  color: var(--t-fg);
+  --font-family: var(--t-mono);
+  font-size: 13px;
+  font-weight: 700;
+  &:hover { border-color: var(--t-lila); background: var(--t-panel); }
+}
+
+// ── Cuadrícula ─────────────────────────────────────────────────────
+:host .vb-grid-wrap { max-width: 1280px; padding: 0 16px 56px; }
+
+:host .vb-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  @media (min-width: 768px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (min-width: 1100px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+// ── Tarjeta ────────────────────────────────────────────────────────
+:host .vb-card {
+  padding: 12px;
+  gap: 14px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line);
+  border-radius: 18px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  &:hover { border-color: var(--t-line2); box-shadow: 0 0 0 1px rgba(106, 72, 240, 0.2), 0 18px 50px rgba(106, 72, 240, 0.1); }
+}
+
+:host .vb-card__media { border-radius: 12px; background: var(--t-bg); box-shadow: none; }
+
+:host .vb-card__stock {
+  --font-family: var(--t-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--t-fg);
+  background: var(--t-glass);
+  border: 1px solid var(--t-line2);
+  border-radius: 999px;
+  &::before { background: var(--t-ok); }
+  &--pocas::before { background: var(--t-poco); }
+  &--agotado::before { background: var(--t-no); }
+}
+
+:host .vb-card__info { padding: 0 6px; gap: 6px; }
+
+:host .vb-card__name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  color: var(--t-fg);
+}
+
+:host .vb-card__price {
+  font-size: 24px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(90deg, var(--t-lila), var(--t-rosa));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  width: fit-content;
+}
+
+:host .vb-card__desc { color: var(--t-mut); }
+:host .vb-card__in-cart { color: var(--t-lila); --font-family: var(--t-mono); font-size: 12px; }
+:host .vb-card__admin-data { color: var(--t-mut); --font-family: var(--t-mono); font-size: 11px; dd { color: var(--t-fg); } }
+
+:host .vb-meta {
+  --font-family: var(--t-mono);
+  font-size: 11px;
+  color: var(--t-fg);
+  background: transparent;
+  border: 1px solid var(--t-line2);
+  border-radius: 8px;
+  &--talla { color: var(--t-lila); border-color: var(--t-lila); background: transparent; }
+}
+
+// ── Botones ────────────────────────────────────────────────────────
+:host .vb-add-btn {
+  min-height: 46px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  background: linear-gradient(90deg, var(--t-btn-a), var(--t-btn-b));
+  color: var(--t-btn-ink);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 8px 28px rgba(106, 72, 240, 0.16);
+  &:hover:not(:disabled) { background: linear-gradient(90deg, var(--t-btn-a), var(--t-btn-b)); color: var(--t-btn-ink); filter: brightness(1.06); }
+  &:disabled { background: var(--t-panel); color: var(--t-mut); border-color: var(--t-line); box-shadow: none; opacity: 0.6; }
+}
+
+:host .vb-icon-btn {
+  min-height: 46px;
+  border-radius: 10px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line2);
+  color: var(--t-fg);
+  &:hover:not(:disabled) { background: var(--t-panel); border-color: var(--t-lila); color: var(--t-lila); }
+  &--remove:hover:not(:disabled) { border-color: var(--t-no); color: var(--t-no); background: var(--t-panel); }
+  &__count { background: var(--t-lila); color: var(--t-btn-ink); --font-family: var(--t-mono); font-weight: 700; }
+}
+
+:host .vb-tool {
+  --font-family: var(--t-mono);
+  font-size: 11px;
+  color: var(--t-mut);
+  &:hover:not(:disabled) { background: transparent; color: var(--t-lila); }
+}
+:host .vb-card__tools { background: linear-gradient(to right, transparent, var(--t-line) 24px, var(--t-line) calc(100% - 24px), transparent) no-repeat top / 100% 1px; }
+
+:host .vb-badge-disabled { --font-family: var(--t-mono); font-size: 11px; }
+
+:host .vb-card__heart {
+  background: var(--t-glass);
+  color: var(--t-fg);
+  border: 1px solid var(--t-line2);
+  &--activo { color: var(--t-no); }
+}
+:host .vb-card__check { background: var(--t-glass); border: 1px solid var(--t-line2); }
+:host .vb-card__del-btn { background: var(--t-glass); border: 1px solid var(--t-line2); color: var(--t-no); }
+
+// ── Paginación ─────────────────────────────────────────────────────
+:host .vb-page-btn {
+  --font-family: var(--t-mono);
+  font-size: 13px;
+  background: var(--t-panel);
+  border: 1px solid var(--t-line2);
+  border-radius: 10px;
+  color: var(--t-fg);
+  &:hover:not(:disabled) { background: var(--t-panel); border-color: var(--t-lila); color: var(--t-lila); }
+}
+:host .vb-page-info { --font-family: var(--t-mono); color: var(--t-mut); }
+:host .vb-empty { color: var(--t-mut); }
+
+@media (max-width: 600px) {
+  :host .vb-card { padding: 10px; gap: 12px; border-radius: 16px; }
+  :host .vb-card__name { font-size: 15px; }
+  :host .vb-card__price { font-size: 20px; }
+  :host .vb-add-btn { font-size: 14px; padding: 0 8px; }
 }

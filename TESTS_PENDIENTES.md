@@ -17,6 +17,23 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-27 — Tienda → Buscar: tarjeta rediseñada (foto primero, íconos dibujados, admin aparte)
+**Dónde:** `variante/buscar/buscar.component.html` / `.scss` (`.vb-card`, `.vb-add-btn`, `.vb-icon-btn`, `.vb-tool`, sprite `vb-i-*`)
+**Tipo:** unitario (componente) · e2e visual (Playwright)
+**Debe comprobar:**
+- [ ] Visitante sin sesión → ve foto 4:5, nombre, precio, talla/color/marca; **no** ve código de barras ni «Creado»; con permiso `tienda/buscar` (admin) sí los ve
+- [ ] Stock 0 → etiqueta «Agotado» y botón «Sin stock» deshabilitado; stock 1–3 → punto ámbar; más de 3 → punto verde
+- [ ] Botón «Agregar» suma 1 al carrito; «−» queda deshabilitado hasta que haya uno en el carrito y resta 1; la bolsa abre el carrito y muestra la cantidad
+- [ ] Cada botón respeta su permiso de siempre (`agregar-carrito`, `quitar-carrito`, `ver-carrito`, `actualizar`, `cambiar-precio`, `compartir-imagen`, `habilitar`, `eliminar`); sin ninguno no sale la fila
+- [ ] Casilla de lote, ✕ de baja y corazón no se encimen con la etiqueta de stock (a 1360 y 400 px, día y noche)
+- [ ] En 2 columnas (tarjeta de menos de 200 px) «Agregar» ocupa su propia fila y no se desborda
+- [ ] El título «Tienda» con degradado no se corta a 320, 400 y 1360 px; de día y de noche el precio y los botones se leen (contraste)
+- [ ] La letra gruesa (Inter Tight) y la de código (JetBrains Mono) cargan; si no cargan, la pantalla sigue legible con Inter
+- [ ] Productos y las demás pantallas con encabezado de card **no** cambian (la regla de `styles.scss` solo se reemplaza en Tienda)
+- [ ] El corazón marcado se pinta rojo y relleno; `aria-pressed` cambia
+
+---
+
 ### 2026-10-14 — Card de Tienda → Buscar: «Deshabilitado» en franja propia
 **Dónde:** `variante/buscar/buscar.component.html` / `.scss` (`.vb-badge-disabled`, `.vb-card__header--con-check`, `.vb-card__header--con-baja`)
 **Tipo:** unitario (componente) · e2e visual (Playwright)
@@ -366,6 +383,9 @@ Formato de cada entrada:
 ---
 
 ## Tests existentes que quedaron viejos
+
+- **2026-10-27** — `e2e/tests/descuento.spec.ts` busca la tarjeta con `.vb-card` + código de barras: sigue funcionando para quien tiene permiso `tienda/buscar` (el código ya no se muestra a visitantes). Las clases `.vb-btn-card`, `.vb-chip` y `.vb-card__header` ya no existen; si algún test las usa, hay que cambiarlo a `.vb-add-btn`, `.vb-icon-btn`, `.vb-meta`.
+
 
 | Test | Desde | Por qué falla |
 |---|---|---|

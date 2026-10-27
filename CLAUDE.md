@@ -70,6 +70,17 @@ necesita un test que compruebe esto y esto'"*.
   correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
 - Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
 
+## Tienda → Buscar: estilo oscuro/claro de la referencia del dueño (2026-10-27, solo rama `feature/tienda-impeccable`)
+
+Prueba de diseño de UNA pantalla. El dueño descartó tres propuestas y eligió una referencia (landing de Uiverse Design: fondo casi negro con cuadrícula, letra gruesa, degradado lila→rosa, botón con ese degradado, etiquetas en letra de código); pidió ver también el modo día. Sin cambios en el `.ts`; mismo comportamiento de carrito, permisos, stock, favoritos, lote, escáner y filtros.
+- **Dónde:** `variante/buscar/buscar.component.html` / `.scss`. El estilo vive al final del `.scss` en un bloque propio con variables `--t-*` en `:host` (día) y `:host-context(body.theme-dark)` (noche). **Si el dueño aprueba el estilo para toda la app, esas variables pasan a Personalización (`tema_variable`)**; todavía no.
+- **Letra:** Inter Tight (600–800) y JetBrains Mono, cargadas con `@import` al inicio del `.scss` (el `index.html` solo carga Inter 400/500). `styles.scss` aplica la letra con `font-family: var(--font-family) !important` a todo: **se cambia la variable `--font-family` en `:host`**, no `font-family`.
+- **Encabezado:** título «Tienda» con degradado, sin franja de card; styles.scss pinta `.vb-header__inner` con `!important` y `:not(#_)`, por eso se reemplaza con el mismo peso (Productos no se toca). No poner comas dentro de `:is()`/`:host-context` en ese bloque: Angular las parte y se pierde el resto.
+- **Tarjeta:** panel con borde fino, foto 4:5, etiqueta de stock en letra de código con punto de color, nombre (`nombreProducto`, que antes no se mostraba), precio con degradado, chips de talla/color/marca; botones `−` · **Agregar** (degradado) · bolsa con contador; herramientas de admin (Editar, Precio, Imagen, Habilitar) en fila aparte.
+- **Código de barras y «Creado»** solo con permiso de la pantalla (`esVistaAdmin`); antes los veía cualquiera.
+- **Celular:** 2 tarjetas por fila (antes 1 desde el 25-ago; el dueño no quedó contento). **Íconos:** sprite SVG `vb-i-*` al inicio de la plantilla, sin emojis como íconos.
+- Día: el degradado se oscurece (violeta→magenta) porque el pastel no se lee sobre blanco.
+
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:
 - Si es un fix de color/estilo → anotarlo en "FIXES PENDIENTES / REALIZADOS"

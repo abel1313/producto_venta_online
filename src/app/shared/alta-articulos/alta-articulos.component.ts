@@ -50,6 +50,10 @@ interface FormArticulo {
  * quieres hacer?"), la tarjeta del modelo en Catálogo → 🔍 Modelos (🧩 Productos) y Agregar artículo
  * después de sumarle stock al modelo; estos dos van directo a los formularios.
  *
+ * Por qué hay modales: el producto no se vende, se vende el artículo, y este trae datos que el producto
+ * no tiene (talla, presentación y su propio stock) y puede cambiar otros (foto, color, etc.); por eso se
+ * pregunta y se muestra el formulario de cada artículo (decisión del dueño, 2026-10-27).
+ *
  * Reglas (A3–A12 + QA 2026-10-14): cada artículo nace igual al modelo y solo cambia lo que se marca
  * en su formulario (foto, descripción, color, marca, contenido neto, categoría); talla, presentación
  * y stock son siempre de cada artículo. Cada artículo con stock ≥ 1 y la suma sin pasar del stock
@@ -84,6 +88,8 @@ export class AltaArticulosComponent implements OnInit {
   cantidad = 1;
   mismoStock: number | null = null;
   formularios: FormArticulo[] = [];
+  /** Aviso bajo "Mismo stock para todos": lo que sobra, o por qué no se pudo aplicar. */
+  avisoMismoStock = '';
   guardando = false;
   error = '';
 
@@ -176,10 +182,28 @@ export class AltaArticulosComponent implements OnInit {
     };
   }
 
+  /**
+   * "Mismo stock para todos": el stock libre se reparte en artículos de ese tamaño, así que la
+   * cantidad de artículos se calcula sola (libre ÷ mismo stock, hacia abajo) y lo que sobra queda
+   * libre para hacer más artículos después. Ej. con 5 libres: 1 → 5 artículos; 2 → 2 (sobra 1);
+   * 3 → 1 (sobran 2); 5 → 1; 6 o más → aviso. Antes solo copiaba el número a los formularios ya
+   * abiertos y 5 artículos de 5 pedían 25 piezas.
+   */
   aplicarMismoStock(): void {
+    this.avisoMismoStock = '';
     const s = Number(this.mismoStock);
-    if (!(s >= 1)) return;
+    if (!Number.isInteger(s) || s < 1) return;
+    if (s > this.libre) {
+      this.avisoMismoStock = `Solo hay ${this.libre} libres: un artículo de ${s} no cabe.`;
+      return;
+    }
+    this.cantidad = Math.floor(this.libre / s);
+    this.ajustarFormularios();
     this.formularios.forEach(f => f.stock = s);
+    const sobran = this.libre - this.cantidad * s;
+    this.avisoMismoStock = sobran > 0
+      ? `${this.cantidad} ${this.cantidad === 1 ? 'artículo' : 'artículos'} de ${s}. Sobran ${sobran} libres para hacer más artículos después.`
+      : '';
   }
 
   // ── Lo que cambia en cada artículo ───────────────────────────────────

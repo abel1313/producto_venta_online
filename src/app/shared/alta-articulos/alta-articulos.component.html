@@ -68,10 +68,11 @@
             <label class="aa-campo">
               <span class="aa-etiqueta">Mismo stock para todos <span class="aa-opcional">(opcional)</span></span>
               <span class="aa-en-linea">
-                <input class="pk-input" type="number" min="1" step="1" [(ngModel)]="mismoStock" placeholder="Ej: 2">
+                <input class="pk-input" type="number" min="1" step="1" [(ngModel)]="mismoStock" (ngModelChange)="avisoMismoStock = ''" placeholder="Ej: 2">
                 <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="aplicarMismoStock()"
                         [disabled]="!(mismoStock && mismoStock >= 1)">Aplicar</button>
               </span>
+              <small class="aa-nota" *ngIf="avisoMismoStock">{{ avisoMismoStock }}</small>
             </label>
           </section>
 

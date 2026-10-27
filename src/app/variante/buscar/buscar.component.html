@@ -221,9 +221,7 @@
 
 
   <div class="vb-grid">
-    <article class="vb-card" *ngFor="let v of variantes; let i = index"
-         [class.vb-card--destacada]="i % 7 === 0"
-         [style.--i]="i < 14 ? i : 14"
+    <article class="vb-card" *ngFor="let v of variantes"
          [class.vb-card--deshabilitado]="esVistaAdmin && !estaHabilitado(v)"
          [class.vb-card--seleccionada]="seleccionados.has(v.id)"
          [class.vb-card--agotado]="stockDisponible(v) === 0">

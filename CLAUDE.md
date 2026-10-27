@@ -70,6 +70,17 @@ necesita un test que compruebe esto y esto'"*.
   correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
 - Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
 
+## Tienda → Buscar: tarjeta rediseñada con Impeccable (2026-10-27, solo rama `feature/tienda-impeccable`)
+
+Prueba de diseño de UNA pantalla, hecha con la skill `impeccable` (`.claude/skills/impeccable`) y los tokens Jade.
+- La tarjeta ya no tiene encabezado de color: **foto 4:5 primero** (`.vb-card__media`), debajo nombre (`nombreProducto`, que antes no se mostraba), precio, chips de talla/color/marca y descripción a 2 líneas.
+- Etiqueta de stock sobre la foto: punto verde / ámbar (1–3) / rojo (agotado); el texto sigue en el color normal.
+- Botones de carrito: `−` · **Agregar** (principal, tokens `--btn-primary-*`) · bolsa con contador. Herramientas de admin (Editar, Precio, Imagen, Habilitar) en fila aparte. Todos conservan su permiso `tienda/buscar:*`.
+- Código de barras y «Creado» solo se ven con permiso de la pantalla (`esVistaAdmin`); antes los veía cualquiera.
+- Íconos: sprite SVG `vb-i-*` al inicio de `buscar.component.html` (sin emojis como íconos).
+- En celular **se queda 1 tarjeta por fila** (decisión del 25-ago). Para pasar a 2 columnas basta quitar el override `.vb-grid { grid-template-columns: 1fr }` del bloque `@media (max-width: 576px)`; la tarjeta ya se adapta (container query).
+- Sin cambios en el `.ts`.
+
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:
 - Si es un fix de color/estilo → anotarlo en "FIXES PENDIENTES / REALIZADOS"

@@ -115,6 +115,22 @@
           </div>
         </div>
 
+        <!-- ── Meses sin intereses (solo admin; el producto no trae este dato, ver AceptaMsiService) ── -->
+        <div class="pf-grid" *ngIf="authService.isAdminService && aceptaMsiDisponible">
+          <div class="pf-field">
+            <div class="pf-barcode-toggle">
+              <label class="pf-switch">
+                <input type="checkbox" formControlName="aceptaMsi">
+                <span class="pf-switch__track"></span>
+                <span class="pf-switch__label">
+                  Acepta meses sin intereses
+                  <span class="pf-hint">(aplica a todos sus artículos; cada artículo puede decidir distinto)</span>
+                </span>
+              </label>
+            </div>
+          </div>
+        </div>
+
         <!-- ── Contenido neto ─────────────────────────────────── -->
         <div class="pf-grid">
           <div class="pf-field">

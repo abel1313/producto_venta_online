@@ -109,6 +109,14 @@
             <label class="vf-label">Marca</label>
             <input class="vf-input" formControlName="marca" placeholder="Nike, Levi's…" appUppercase>
           </div>
+          <div class="vf-field" *ngIf="msiDisponible">
+            <label class="vf-label">Meses sin intereses</label>
+            <select class="vf-input" formControlName="aceptaMsi">
+              <option value="igual">Igual al producto ({{ productoAceptaMsi ? 'sí acepta' : 'no acepta' }})</option>
+              <option value="si">Sí acepta</option>
+              <option value="no">No acepta</option>
+            </select>
+          </div>
           <!-- Stock bloqueado -- se mueve solo con los dos inputs de abajo, mismo patrón que
                productos/update (pedido 2026-08-28: el widget viejo con input directo + botones
                ± resultaba confuso, dos formas distintas de tocar el mismo valor). -->

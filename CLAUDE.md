@@ -70,6 +70,14 @@ necesita un test que compruebe esto y esto'"*.
   correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
 - Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
 
+## Cobro con tarjeta con el módulo nuevo (2026-10-28, rama `feature/cobro-tarjeta`)
+Paso 3 del plan de pagos del back (`PLAN_PAGO_TARJETA.md`). **Solo pasarela simulada en QA; la terminal y Checkout Pro reales van al final.**
+- **Servicio y contrato:** `pedidos/pago-tarjeta.service.ts` + `pedidos/models/pago-tarjeta.model.ts` (`/v1/pagos-tarjeta`: meses, iniciar, estado, cancelar, devolver). Nunca se manda monto ni quién cobra.
+- **Terminal (admin):** el diálogo «Cobrar pedido» de `mis-pedidos` **sigue siendo el mismo**; si el pedido es de contado y NO es grupo, «Enviar a terminal» usa el módulo nuevo (`moduloTarjeta`). Si `GET .../meses` responde 404 (ambiente con el módulo apagado, p. ej. producción) o es un **grupo**, se usa el camino viejo `/v1/mp` como siempre. Al aprobarse, **no** se llama a `updateService`: el back ya dejó el pedido Pagado y Entregado.
+- **Meses:** el «Plan de pago» se filtra con los plazos que permite el back para ese pedido (`opcionesMesesVisibles`); si no hay, `motivoSinMeses` lo explica.
+- **Pago en línea (cliente):** botón «Pagar con tarjeta» en la card (`puedePagarEnLinea`: contado «Pendiente», sin grupo ni cancelado, no admin) → `pedidos/cobro/cobro-tarjeta-cliente`. Con Mercado Pago real habrá que sumar el paso por Checkout Pro (redirección) cuando el back devuelva la URL.
+- **Pendiente:** `variante/venta-directa` sigue por `/v1/mp` (crea la venta y el pedido a la vez; el módulo nuevo necesita un pedido ya creado); botón de «Devolver» para el admin; lista de cobros `COBRADO_SIN_APLICAR`.
+
 ## Casilla «Acepta meses sin intereses» (2026-10-28, rama `feature/msi-casilla`)
 Parte del plan de pagos con tarjeta (back: `PLAN_PAGO_TARJETA.md`, `CAMBIOS_FRONT.md` sección «Casilla Acepta meses sin intereses»).
 - **El producto y el artículo no traen este dato** en lo que ya guardan o consultan: se lee y se cambia **solo** con `shared/acepta-msi.service.ts` (`/v1/acepta-msi/...`, solo ADMIN). Es a propósito: así un ambiente sin la columna (producción) no tumba el catálogo.

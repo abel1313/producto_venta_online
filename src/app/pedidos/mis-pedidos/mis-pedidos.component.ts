@@ -10,6 +10,8 @@ import { AuthService } from 'src/app/auth/auth.service';
 import { ResponseGeneric } from 'src/shared/generic-response.mode';
 import { IPageable } from './models/IPageable.mode';
 import { PagoService } from '../pago.service';
+import { PagoTarjetaService } from '../pago-tarjeta.service';
+import { ICobroTarjeta, IOfertaMeses } from '../models/pago-tarjeta.model';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
 import * as L from 'leaflet';
@@ -76,6 +78,42 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
 
   // --- Diálogo de cobro ---
   mostrarDialogoCobro: boolean = false;
+
+  // ── Pago en línea del cliente (módulo nuevo `/v1/pagos-tarjeta`, canal EN_LINEA) ──
+  pagoEnLineaVisible = false;
+  pagoEnLineaPedido: IPedidoGenerico | null = null;
+
+  /**
+   * El cliente puede pagar con tarjeta su propio pedido de CONTADO que sigue sin pagar. Apartado e Ir pagando no
+   * aceptan tarjeta (se pagan en efectivo o transferencia). El back es quien decide en última instancia: si el
+   * pedido no aplica, responde con el motivo y el diálogo lo muestra.
+   */
+  puedePagarEnLinea(item: IPedidoGenerico): boolean {
+    if (this.isAdminUser) return false;
+    const tp = item.pedido.tipoPedido;
+    if (tp === 'APARTADO' || tp === 'FIADO') return false;
+    if (item.pedido.grupo || this.esCancelado(item)) return false;
+    return (item.pedido.estado_pedido ?? '').toLowerCase() === 'pendiente';
+  }
+
+  abrirPagoEnLinea(item: IPedidoGenerico): void {
+    this.pagoEnLineaPedido = item;
+    this.pagoEnLineaVisible = true;
+  }
+
+  cerrarPagoEnLinea(): void {
+    this.pagoEnLineaVisible = false;
+  }
+
+  /** El pedido quedó pagado: se refresca la lista (el cliente ve «Pagado, falta entregar»). */
+  alPagarEnLinea(): void {
+    this.pagoEnLineaVisible = false;
+    this.buscarPedidoAdmin(false);
+  }
+
+  get totalPagoEnLinea(): number {
+    return (this.pagoEnLineaPedido?.pedido.detalles ?? []).reduce((suma, d) => suma + d.sub_total, 0);
+  }
   pedidoACobrar: IPedidoGenerico | null = null;
 
   opcionesEstructuradas: IOpcionPagoDto[] = [];
@@ -87,6 +125,15 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   estadoTerminal: 'idle' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' | 'bloqueado' = 'idle';
   errorTerminal: string | null = null;
   intentId: string | null = null;
+  /**
+   * Módulo NUEVO de cobro con tarjeta (`/v1/pagos-tarjeta`): no cobra dos veces, reconcilia y devuelve. Se usa para
+   * los pedidos de contado de un solo pedido. Los cobros de GRUPO y los ambientes donde el módulo está apagado
+   * (el `GET .../meses` responde 404) siguen por el camino viejo (`/v1/mp`). 2026-10-28.
+   */
+  moduloTarjeta = false;
+  ofertaMeses: IOfertaMeses | null = null;
+  cobroTarjetaId: number | null = null;
+  private erroresPolling = 0;
   private pollingInterval: ReturnType<typeof setInterval> | null = null;
 
   imprimiendoTicket: { [id: number]: boolean } = {};
@@ -307,6 +354,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     private readonly clienteService: ClienteService,
     public  readonly authService: AuthService,
     private readonly pagoService: PagoService,
+    private readonly pagoTarjetaService: PagoTarjetaService,
     private readonly negocioService: NegocioService,
     private readonly router: Router,
     private readonly route: ActivatedRoute,
@@ -1023,8 +1071,31 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
 
     this.pagoService.getOpcionesEstructuradas().subscribe(res => {
       this.opcionesEstructuradas = res.data ?? [];
-      this.mostrarDialogoCobro = true;
+      // Un pedido suelto se cobra con el módulo nuevo si el back lo tiene; el grupo, siempre por el viejo.
+      if (this.grupoACobrar) {
+        this.mostrarDialogoCobro = true;
+        return;
+      }
+      this.pagoTarjetaService.meses(item.pedido.id).subscribe({
+        next: oferta => { this.ofertaMeses = oferta; this.moduloTarjeta = true; this.mostrarDialogoCobro = true; },
+        error: () => { this.moduloTarjeta = false; this.mostrarDialogoCobro = true; }
+      });
     });
+  }
+
+  /**
+   * Con el módulo nuevo solo se ofrecen los meses que el back permite para ESTE pedido (todos los artículos
+   * aceptan, mínimo de compra…). Si no hay ninguno, `motivoSinMeses` explica por qué.
+   */
+  get opcionesMesesVisibles(): IOpcionMesesDto[] {
+    const todas = this.tipoPagoActivo?.opciones ?? [];
+    if (!this.moduloTarjeta || !this.ofertaMeses) return todas;
+    return todas.filter(o => this.ofertaMeses!.meses.includes(o.cuotas));
+  }
+
+  get motivoSinMeses(): string | null {
+    if (!this.moduloTarjeta || !this.ofertaMeses || this.ofertaMeses.meses.length) return null;
+    return this.ofertaMeses.motivo;
   }
 
   seleccionarTipoPago(opcion: IOpcionPagoDto) {
@@ -1103,8 +1174,12 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
 
   cancelarDialogo() {
     this.stopPolling();
-    if (this.intentId && this.estadoTerminal === 'procesando') {
-      this.pagoService.cancelarPagoTerminal(this.intentId).subscribe();
+    if (this.estadoTerminal === 'procesando') {
+      if (this.cobroTarjetaId) {
+        this.pagoTarjetaService.cancelar(this.cobroTarjetaId).subscribe({ error: () => {} });
+      } else if (this.intentId) {
+        this.pagoService.cancelarPagoTerminal(this.intentId).subscribe();
+      }
     }
     this.mostrarDialogoCobro = false;
     this.resetDialogo();
@@ -1118,6 +1193,10 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     this.estadoTerminal = 'idle';
     this.errorTerminal = null;
     this.intentId = null;
+    this.moduloTarjeta = false;
+    this.ofertaMeses = null;
+    this.cobroTarjetaId = null;
+    this.erroresPolling = 0;
   }
 
   get esTarjeta(): boolean {
@@ -1147,6 +1226,10 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   }
 
   enviarATerminal(): void {
+    if (this.moduloTarjeta && !this.grupoACobrar) {
+      this.enviarATerminalNuevo();
+      return;
+    }
     if (!this.pedidoACobrar || !this.pagosYMesesId) return;
     this.estadoTerminal = 'procesando';
 
@@ -1172,7 +1255,108 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** Cobro en la terminal con el módulo nuevo. El monto y quién cobra los pone el back; aquí solo van pedido y cuotas. */
+  private enviarATerminalNuevo(): void {
+    if (!this.pedidoACobrar) return;
+    this.estadoTerminal = 'procesando';
+    this.errorTerminal = null;
+    this.erroresPolling = 0;
+    this.pagoTarjetaService.iniciar({
+      pedidoId: this.pedidoACobrar.pedido.id,
+      canal: 'TERMINAL',
+      cuotas: this.mesesSeleccionado?.cuotas ?? 1
+    }).subscribe({
+      next: cobro => {
+        this.cobroTarjetaId = cobro.id;
+        this.aplicarEstadoTarjeta(cobro);
+        if (cobro.enProceso) this.startPollingTarjeta(cobro.id);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.errorTerminal = PagoTarjetaService.mensajeDeError(err);
+        // 5xx: no se sabe si el cobro salió; se bloquea el reintento hasta revisar (el back evita el doble cobro).
+        this.estadoTerminal = err.status >= 500 ? 'bloqueado' : 'rechazado';
+      }
+    });
+  }
+
+  /** Traduce el estado del cobro nuevo a lo que ya sabe pintar el panel de la terminal. */
+  private aplicarEstadoTarjeta(cobro: ICobroTarjeta): void {
+    switch (cobro.estado) {
+      case 'CREADO':
+      case 'ENVIADO':
+        this.estadoTerminal = 'procesando';
+        break;
+      case 'APROBADO':
+        this.stopPolling();
+        this.estadoTerminal = 'aprobado';
+        this.cobroTarjetaAprobado();
+        break;
+      case 'RECHAZADO':
+        this.stopPolling();
+        this.estadoTerminal = 'rechazado';
+        this.errorTerminal = 'La tarjeta fue rechazada. Pueden probar con otra tarjeta u otra forma de pago.';
+        break;
+      case 'CANCELADO':
+        this.stopPolling();
+        this.estadoTerminal = 'cancelado';
+        break;
+      case 'EXPIRADO':
+        this.stopPolling();
+        this.estadoTerminal = 'cancelado';
+        break;
+      default: // COBRADO_SIN_APLICAR, DEVUELTO, DEVUELTO_PARCIAL
+        this.stopPolling();
+        this.estadoTerminal = 'bloqueado';
+        this.errorTerminal = cobro.estado === 'COBRADO_SIN_APLICAR'
+          ? `Se cobró la tarjeta pero el pedido ya no admitía el pago. Hay que devolver el dinero al cliente (cobro #${cobro.id}).`
+          : `Este cobro está ${cobro.estadoTexto}.`;
+    }
+  }
+
+  /** El back ya dejó el pedido pagado y entregado (terminal): aquí solo se avisa y se refresca la lista. */
+  private cobroTarjetaAprobado(): void {
+    this.mostrarDialogoCobro = false;
+    Swal.fire({ title: 'Pedido cobrado correctamente', icon: 'success', draggable: true });
+    this.buscarPedidoAdmin(false);
+  }
+
+  private startPollingTarjeta(intentoId: number): void {
+    this.stopPolling();
+    this.pollingInterval = setInterval(() => {
+      this.pagoTarjetaService.estado(intentoId).subscribe({
+        next: cobro => { this.erroresPolling = 0; this.aplicarEstadoTarjeta(cobro); },
+        error: () => {
+          // Un error al preguntar NO es un rechazo: el cobro puede haberse hecho. Se vuelve a preguntar unas veces.
+          if (++this.erroresPolling >= 5) {
+            this.stopPolling();
+            this.estadoTerminal = 'bloqueado';
+            this.errorTerminal = 'No se pudo confirmar el estado del cobro. Revisa la terminal antes de volver a intentarlo.';
+          }
+        }
+      });
+    }, 3000);
+  }
+
   cancelarTerminal(): void {
+    if (this.cobroTarjetaId) {
+      this.stopPolling();
+      const id = this.cobroTarjetaId;
+      this.pagoTarjetaService.cancelar(id).subscribe({
+        next: cobro => this.aplicarEstadoTarjeta(cobro),
+        error: err => {
+          // Si ya se había aprobado o no se sabe, se pregunta de nuevo antes de decir nada.
+          this.errorTerminal = PagoTarjetaService.mensajeDeError(err);
+          this.pagoTarjetaService.estado(id).subscribe({
+            next: cobro => {
+              this.aplicarEstadoTarjeta(cobro);
+              if (cobro.enProceso) { this.estadoTerminal = 'bloqueado'; }
+            },
+            error: () => { this.estadoTerminal = 'bloqueado'; }
+          });
+        }
+      });
+      return;
+    }
     this.stopPolling();
     if (this.intentId) {
       this.pagoService.cancelarPagoTerminal(this.intentId).subscribe();

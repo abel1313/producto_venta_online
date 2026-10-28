@@ -353,6 +353,11 @@
                   (click)="cobrarAdmin(item)">
             <i class="pi pi-dollar"></i> {{ textoBotonCobro(item) }}
           </button>
+          <!-- El cliente paga su pedido de contado con tarjeta (módulo nuevo, canal EN_LINEA) -->
+          <button class="btn-card btn-cobrar" *ngIf="puedePagarEnLinea(item)"
+                  title="Pagar este pedido con tarjeta" (click)="abrirPagoEnLinea(item)">
+            <i class="pi pi-credit-card"></i> Pagar con tarjeta
+          </button>
           <button class="btn-card btn-entregar" *ngIf="puedeEntregar(item)"
                   title="El cliente ya se lo llevó" (click)="entregar(item)">
             📦 Entregar
@@ -414,6 +419,10 @@
 
 </div>
 
+<!-- Pago en línea del cliente -->
+<app-cobro-tarjeta-cliente [visible]="pagoEnLineaVisible" [pedidoId]="pagoEnLineaPedido?.pedido?.id ?? null"
+    [total]="totalPagoEnLinea" (cerrar)="cerrarPagoEnLinea()" (pagado)="alPagarEnLinea()"></app-cobro-tarjeta-cliente>
+
 <!-- Diálogo de cobro -->
 <p-dialog header="Cobrar pedido" [(visible)]="mostrarDialogoCobro"
     [modal]="true" [style]="{ width: '520px' }" [closable]="true"
@@ -446,7 +455,7 @@
         <div class="field mb-3" *ngIf="tipoPagoActivo?.mostrarMeses">
             <label for="meses">Plan de pago</label>
             <p-dropdown id="meses"
-                [options]="tipoPagoActivo!.opciones"
+                [options]="opcionesMesesVisibles"
                 [(ngModel)]="mesesSeleccionado"
                 optionLabel="descripcion"
                 placeholder="Seleccione un plan"
@@ -455,6 +464,11 @@
                 [style]="{ width: '100%' }">
             </p-dropdown>
         </div>
+
+        <!-- Con el módulo nuevo: por qué no hay meses (artículo que no los acepta, mínimo de compra…) -->
+        <p class="cobro-grupo-nota" *ngIf="esTarjeta && motivoSinMeses">
+            Solo de contado: {{ motivoSinMeses }}
+        </p>
 
         <!-- Panel terminal Mercado Pago -->
         <div class="mp-terminal" *ngIf="esTarjeta && puedeEnviarTerminal">

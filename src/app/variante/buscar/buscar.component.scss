@@ -1438,23 +1438,23 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // Sin comas dentro de :is()/:host-context aquí: Angular las parte y se pierde el resto del bloque.
 // ════════════════════════════════════════════════════════════════════
 :host {
-  // De día se usan los colores de la propia app (crema y arena), sin blanco ni cuadrícula: el blanco
-  // puro y la cuadrícula cansaban la vista (dueño, 2026-10-28).
-  --t-bg: var(--app-bg);
-  --t-panel: var(--card-bg);
-  --t-line: var(--app-border);
-  --t-line2: rgba(28, 42, 38, 0.28);
-  --t-fg: var(--app-text);
-  --t-mut: var(--app-text-muted);
-  --t-lila: #6a48f0;
-  --t-rosa: #d93f98;
-  --t-btn-a: #c3b2ff;
-  --t-btn-b: #f7bddf;
+  // De día: beige gris cálido, tipo papel, de poca luz. El blanco puro, la cuadrícula y hasta el crema de la
+  // app (#f6f3ec) cansaban la vista del dueño (2026-10-28), así que la Tienda usa un tono más bajo.
+  --t-bg: #d9d4c7;
+  --t-panel: #e5e0d3;
+  --t-line: rgba(40, 38, 30, 0.18);
+  --t-line2: rgba(40, 38, 30, 0.32);
+  --t-fg: #26241f;
+  --t-mut: #58554b;
+  --t-lila: #5b3bd6;
+  --t-rosa: #c23a8a;
+  --t-btn-a: #b3a2f0;
+  --t-btn-b: #e5aed0;
   --t-btn-ink: #14101f;
   --t-ok: #15803d;
   --t-no: #dc2626;
   --t-poco: #b45309;
-  --t-glass: rgba(235, 230, 218, 0.92);
+  --t-glass: rgba(229, 224, 211, 0.92);
   --t-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --t-font: 'Inter Tight', 'Inter', system-ui, sans-serif;
 
@@ -1462,6 +1462,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100%;
   max-width: 1160px;
   margin-inline: auto;
+  background-color: var(--t-bg);
   color: var(--t-fg);
   // styles.scss aplica la letra a todo con `font-family: var(--font-family) !important`: se cambia la variable.
   --font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;

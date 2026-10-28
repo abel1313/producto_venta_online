@@ -1438,12 +1438,14 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // Sin comas dentro de :is()/:host-context aquí: Angular las parte y se pierde el resto del bloque.
 // ════════════════════════════════════════════════════════════════════
 :host {
-  --t-bg: #e6e3ec;
-  --t-panel: #f0eef5;
-  --t-line: #d2cedf;
-  --t-line2: #b9b3cc;
-  --t-fg: #17151f;
-  --t-mut: #565266;
+  // De día se usan los colores de la propia app (crema y arena), sin blanco ni cuadrícula: el blanco
+  // puro y la cuadrícula cansaban la vista (dueño, 2026-10-28).
+  --t-bg: var(--app-bg);
+  --t-panel: var(--card-bg);
+  --t-line: var(--app-border);
+  --t-line2: rgba(28, 42, 38, 0.28);
+  --t-fg: var(--app-text);
+  --t-mut: var(--app-text-muted);
   --t-lila: #6a48f0;
   --t-rosa: #d93f98;
   --t-btn-a: #c3b2ff;
@@ -1452,8 +1454,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-ok: #15803d;
   --t-no: #dc2626;
   --t-poco: #b45309;
-  --t-glass: rgba(240, 238, 245, 0.92);
-  --t-grid: rgba(30, 25, 70, 0.06);
+  --t-glass: rgba(235, 230, 218, 0.92);
   --t-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --t-font: 'Inter Tight', 'Inter', system-ui, sans-serif;
 
@@ -1461,11 +1462,6 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   min-height: 100%;
   max-width: 1160px;
   margin-inline: auto;
-  background-color: var(--t-bg);
-  background-image:
-    linear-gradient(var(--t-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--t-grid) 1px, transparent 1px);
-  background-size: 44px 44px;
   color: var(--t-fg);
   // styles.scss aplica la letra a todo con `font-family: var(--font-family) !important`: se cambia la variable.
   --font-family: 'Inter Tight', 'Inter', system-ui, sans-serif;
@@ -1488,6 +1484,13 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-poco: #f5b942;
   --t-glass: rgba(10, 10, 11, 0.88);
   --t-grid: rgba(255, 255, 255, 0.035);
+
+  // Solo de noche: fondo negro con cuadrícula tenue
+  background-color: var(--t-bg);
+  background-image:
+    linear-gradient(var(--t-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--t-grid) 1px, transparent 1px);
+  background-size: 44px 44px;
 }
 
 // ── Encabezado ─────────────────────────────────────────────────────
@@ -1610,7 +1613,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   border: 1px solid var(--t-line);
   border-radius: 18px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
-  &:hover { border-color: var(--t-line2); box-shadow: 0 0 0 1px rgba(106, 72, 240, 0.2), 0 18px 50px rgba(106, 72, 240, 0.1); }
+  &:hover { border-color: var(--t-line2); box-shadow: 0 0 0 1px rgba(106, 72, 240, 0.18), 0 14px 36px rgba(60, 40, 120, 0.12); }
 }
 
 :host .vb-card__media { border-radius: 12px; background: var(--t-bg); box-shadow: none; }

@@ -79,7 +79,7 @@ Prueba de diseño de UNA pantalla. El dueño descartó tres propuestas y eligió
 - **Tarjeta:** panel con borde fino, foto 4:5, etiqueta de stock en letra de código con punto de color, nombre (`nombreProducto`, que antes no se mostraba), precio con degradado, chips de talla/color/marca; botones `−` · **Agregar** (degradado) · bolsa con contador; herramientas de admin (Editar, Precio, Imagen, Habilitar) en fila aparte.
 - **Código de barras y «Creado»** solo con permiso de la pantalla (`esVistaAdmin`); antes los veía cualquiera.
 - **Celular:** 2 tarjetas por fila (antes 1 desde el 25-ago; el dueño no quedó contento). **Íconos:** sprite SVG `vb-i-*` al inicio de la plantilla, sin emojis como íconos.
-- Día: el degradado se oscurece (violeta→magenta) porque el pastel no se lee sobre blanco.
+- Día (2026-10-28): fondo crema y tarjetas arena **con los colores de la propia app** (`--app-bg`, `--card-bg`, `--app-text`…), **sin cuadrícula**; el blanco puro y la cuadrícula cansaban la vista del dueño. Solo de noche hay fondo negro con cuadrícula tenue. El degradado se oscurece (violeta→magenta) porque el pastel no se lee sobre claro. Contenido en columna centrada de 1120 px (como antes de este rediseño).
 
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:

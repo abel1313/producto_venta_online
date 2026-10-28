@@ -119,6 +119,14 @@
                   <span class="aa-etiqueta">Presentación</span>
                   <input class="pk-input" [(ngModel)]="f.presentacion" placeholder="botella, caja…">
                 </label>
+                <label class="aa-campo" *ngIf="msiDisponible">
+                  <span class="aa-etiqueta">Meses sin intereses</span>
+                  <select class="pk-input" [(ngModel)]="f.aceptaMsi">
+                    <option value="igual">Igual al producto ({{ productoAceptaMsi ? 'sí acepta' : 'no acepta' }})</option>
+                    <option value="si">Sí acepta</option>
+                    <option value="no">No acepta</option>
+                  </select>
+                </label>
               </div>
 
               <div class="aa-cambia">

@@ -17,6 +17,21 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-28 — Casilla «Acepta meses sin intereses» (producto, artículo y chip en la Tienda)
+**Dónde:** `shared/acepta-msi.service.ts` (nuevo), `productos/producto/add` (control `aceptaMsi`, `cargarAceptaMsi`, `guardarAceptaMsi`), `shared/alta-articulos` (campo por artículo, `msiDisponible`), `variante/update-variante` (select tri-estado), `variante/buscar` (setter de `variantes`, `msiEfectivo`, chip «MSI»)
+**Tipo:** unitario (componentes y servicio con HttpTestingController) · e2e (Playwright contra QA)
+**Debe comprobar:**
+- [ ] Admin abre **Actualizar producto** → la casilla refleja `GET /v1/acepta-msi/producto/{id}`; la cambia y guarda → se manda `PUT` solo si cambió; en **producto nuevo** solo se manda si la marcó
+- [ ] Si el `PUT` responde 409 (ambiente sin migración) → el producto SÍ se guardó y sale el aviso «El producto se guardó, pero…»
+- [ ] Si el `GET` responde 404/409 → la casilla **no aparece** (en producto, en alta de artículos y en editar artículo) y nada se rompe
+- [ ] Alta de artículos: «Igual al producto (sí acepta / no acepta)» por defecto = no se manda nada; «Sí acepta» / «No acepta» → se manda `PUT` al artículo **correcto** (los artículos vuelven en el mismo orden que se mandan); si falla alguno, el aviso dice cuántos
+- [ ] Editar artículo: pasar de «Sí acepta» a «Igual al producto» manda `aceptaMsi: null`
+- [ ] Tienda (admin): artículos que aceptan meses muestran el chip **MSI**; un usuario sin rol ADMIN no ve chips ni hace llamadas que fallen en pantalla
+- [ ] Producto con casilla apagada y un artículo con «Sí acepta» → el artículo muestra MSI y los demás del producto no
+- [ ] El guardado normal de producto/artículo (`/productos/save`, `/variantes/guardarConImagenes`, update) **no cambia** de contrato
+
+---
+
 ### 2026-10-14 — Card de Tienda → Buscar: «Deshabilitado» en franja propia
 **Dónde:** `variante/buscar/buscar.component.html` / `.scss` (`.vb-badge-disabled`, `.vb-card__header--con-check`, `.vb-card__header--con-baja`)
 **Tipo:** unitario (componente) · e2e visual (Playwright)

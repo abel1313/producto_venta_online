@@ -234,6 +234,8 @@
             <span *ngIf="v.precio" class="vb-chip vb-chip--talla">
               {{ v.precio | currency:'$' }}
             </span>
+            <!-- Solo quien administra (el dato viene de AceptaMsiService, no de la lista). -->
+            <span *ngIf="msiEfectivo[v.id]" class="vb-chip" title="Acepta meses sin intereses">MSI</span>
           </div>
         </div>
         <span [class]="stockClase(stockDisponible(v))" style="align-self: flex-start; font-size: 0.75rem;">

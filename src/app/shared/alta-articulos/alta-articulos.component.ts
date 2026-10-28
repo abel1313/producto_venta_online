@@ -1,8 +1,11 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { forkJoin, of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { IVarianteRequest } from 'src/app/variante/models/variante.model';
 import { VarianteService } from 'src/app/variante/service/variante.service';
+import { AceptaMsiService } from '../acepta-msi.service';
 import { comprimirImagen, IImagenBase64 } from '../imagen-comprimir.util';
 
 /** Lo que el modal necesita saber del modelo. */
@@ -32,6 +35,8 @@ interface FormArticulo {
   talla: string;
   presentacion: string;
   stock: number | null;
+  /** Meses sin intereses: 'igual' = hereda la casilla del producto (no se manda nada); 'si' / 'no' = decisión propia. */
+  aceptaMsi: 'igual' | 'si' | 'no';
   /** Check por campo (QA 2026-10-14): marcado = ese dato es distinto al del modelo. */
   cambia: Record<CampoQueCambia, boolean>;
   color: string;
@@ -92,13 +97,24 @@ export class AltaArticulosComponent implements OnInit {
   avisoMismoStock = '';
   guardando = false;
   error = '';
+  /** Casilla de meses sin intereses: se ofrece solo si el ambiente la tiene (ver AceptaMsiService). */
+  msiDisponible = false;
+  productoAceptaMsi = false;
 
-  constructor(private readonly varianteService: VarianteService) {}
+  constructor(
+    private readonly varianteService: VarianteService,
+    private readonly aceptaMsiService: AceptaMsiService
+  ) {}
 
   ngOnInit(): void {
     this.paso = this.preguntarPrimero ? 'pregunta' : 'formularios';
     this.cantidad = this.libre > 0 ? 1 : 0;
     this.ajustarFormularios();
+    // Si este ambiente no tiene la casilla de meses (409/404), el campo no sale en los formularios.
+    this.aceptaMsiService.producto(this.modelo.id).subscribe(valor => {
+      this.msiDisponible = valor !== null;
+      this.productoAceptaMsi = valor === true;
+    });
   }
 
   // ── Stock ──────────────────────────────────────────────────────────────
@@ -171,6 +187,7 @@ export class AltaArticulosComponent implements OnInit {
       talla: '',
       presentacion: '',
       stock: this.mismoStock,
+      aceptaMsi: 'igual',
       cambia: { foto: false, descripcion: false, color: false, marca: false, contenidoNeto: false, categoria: false },
       color: '',
       marca: '',
@@ -260,6 +277,7 @@ export class AltaArticulosComponent implements OnInit {
     if (f.stock !== null && f.stock !== undefined && String(f.stock) !== '') partes.push(`Stock ${f.stock}`);
     const cambia = this.camposQueCambian.filter(c => f.cambia[c.campo]).map(c => c.etiqueta);
     partes.push(cambia.length ? `Cambia: ${cambia.join(', ')}` : 'Igual al producto');
+    if (f.aceptaMsi !== 'igual') partes.push(f.aceptaMsi === 'si' ? 'Acepta meses' : 'No acepta meses');
     return partes.join(' · ');
   }
 
@@ -355,16 +373,30 @@ export class AltaArticulosComponent implements OnInit {
     }));
 
     this.guardando = true;
+    // Casillas de meses con decisión propia (el back responde los artículos en el mismo orden en que se mandan).
+    const casillas = this.formularios.map(f => f.aceptaMsi);
     this.varianteService.save(payload).subscribe({
-      next: () => {
+      next: (res) => {
         this.guardando = false;
         this.varianteService.invalidarCache();
-        Swal.fire({
-          icon: 'success',
-          title: payload.length === 1 ? '1 artículo guardado' : `${payload.length} artículos guardados`,
-          text: `Ya se pueden vender. Stock repartido: ${this.repartido} de ${this.modelo.stock}.`,
-          confirmButtonText: 'Entendido'
-        }).then(() => this.cerrar.emit(true));
+        const ids = (res?.data ?? []).map(v => v.id);
+        const pendientes = casillas
+          .map((c, i) => ({ c, id: ids[i] }))
+          .filter(x => x.c !== 'igual' && x.id != null);
+        const guardarCasillas = pendientes.length
+          ? forkJoin(pendientes.map(x => this.aceptaMsiService.cambiarArticulo(x.id as number, x.c === 'si')
+              .pipe(catchError(() => of(null)))))
+          : of([]);
+        guardarCasillas.subscribe(resultados => {
+          const fallaron = (resultados as unknown[]).filter(r => r === null).length;
+          Swal.fire({
+            icon: fallaron ? 'warning' : 'success',
+            title: payload.length === 1 ? '1 artículo guardado' : `${payload.length} artículos guardados`,
+            text: `Ya se pueden vender. Stock repartido: ${this.repartido} de ${this.modelo.stock}.`
+              + (fallaron ? ` Ojo: no se pudo guardar la casilla de meses sin intereses en ${fallaron} artículo(s); edítalos para marcarla.` : ''),
+            confirmButtonText: 'Entendido'
+          }).then(() => this.cerrar.emit(true));
+        });
       },
       error: err => {
         this.guardando = false;

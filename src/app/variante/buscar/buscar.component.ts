@@ -14,6 +14,7 @@ import { CompartirService } from 'src/app/shared/compartir.service';
 import { PromocionService } from 'src/app/promociones/service/promocion.service';
 import { FavoritoService } from 'src/app/favoritos/service/favorito.service';
 import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
+import { AceptaMsiService } from 'src/app/shared/acepta-msi.service';
 
 @Component({
   selector: 'app-buscar',
@@ -24,7 +25,24 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   @ViewChild('videoScanner') videoScanner!: ElementRef<HTMLVideoElement>;
 
-  variantes: IVarianteResumen[] = [];
+  // La lista pasa por un setter para pedir, solo a quien administra, qué artículos aceptan meses sin
+  // intereses (chip «MSI»). Ese dato no viene en la lista; ver AceptaMsiService.
+  private _variantes: IVarianteResumen[] = [];
+  get variantes(): IVarianteResumen[] { return this._variantes; }
+  set variantes(valor: IVarianteResumen[]) {
+    this._variantes = valor;
+    this.cargarMsi();
+  }
+
+  /** Valor efectivo (con herencia) de «acepta meses sin intereses» por artículo; vacío si no aplica o no hay permiso. */
+  msiEfectivo: Record<number, boolean> = {};
+
+  private cargarMsi(): void {
+    if (!this.esVistaAdmin || !this._variantes.length) return;
+    const ids = this._variantes.map(v => v.id).filter(id => !(id in this.msiEfectivo)).slice(0, 500);
+    if (!ids.length) return;
+    this.aceptaMsiService.efectivos(ids).subscribe(m => { this.msiEfectivo = { ...this.msiEfectivo, ...m }; });
+  }
   paginaActual    = 1;
   totalPaginas    = 0;
   terminoBusqueda = '';
@@ -108,7 +126,8 @@ export class BuscarComponent implements OnInit, OnDestroy {
     private readonly compartirSvc: CompartirService,
     private readonly promoService: PromocionService,
     private readonly favoritoService: FavoritoService,
-    private readonly preferenciaFiltro: PreferenciaFiltroService
+    private readonly preferenciaFiltro: PreferenciaFiltroService,
+    private readonly aceptaMsiService: AceptaMsiService
   ) {}
 
   /** Artículos cuya imagen no cargó: no se ofrece "Compartir imagen" (no hay nada que compartir). */

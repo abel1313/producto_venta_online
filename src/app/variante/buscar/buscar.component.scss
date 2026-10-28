@@ -1438,12 +1438,12 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // Sin comas dentro de :is()/:host-context aquí: Angular las parte y se pierde el resto del bloque.
 // ════════════════════════════════════════════════════════════════════
 :host {
-  --t-bg: #f6f5fb;
-  --t-panel: #ffffff;
-  --t-line: #e3e1ee;
-  --t-line2: #cbc7de;
-  --t-fg: #0e0e12;
-  --t-mut: #5b596b;
+  --t-bg: #e6e3ec;
+  --t-panel: #f0eef5;
+  --t-line: #d2cedf;
+  --t-line2: #b9b3cc;
+  --t-fg: #17151f;
+  --t-mut: #565266;
   --t-lila: #6a48f0;
   --t-rosa: #d93f98;
   --t-btn-a: #c3b2ff;
@@ -1452,13 +1452,15 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-ok: #15803d;
   --t-no: #dc2626;
   --t-poco: #b45309;
-  --t-glass: rgba(255, 255, 255, 0.92);
-  --t-grid: rgba(30, 25, 70, 0.055);
+  --t-glass: rgba(240, 238, 245, 0.92);
+  --t-grid: rgba(30, 25, 70, 0.06);
   --t-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
   --t-font: 'Inter Tight', 'Inter', system-ui, sans-serif;
 
   display: block;
   min-height: 100%;
+  max-width: 1160px;
+  margin-inline: auto;
   background-color: var(--t-bg);
   background-image:
     linear-gradient(var(--t-grid) 1px, transparent 1px),
@@ -1492,7 +1494,7 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 :host .vb-header { padding: 28px 16px 0; margin-bottom: 20px; }
 
 :host .vb-header .vb-header__content {
-  max-width: 1280px;
+  max-width: 1120px;
   padding: 0;
   background: transparent;
   border: 0;
@@ -1591,13 +1593,13 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Cuadrícula ─────────────────────────────────────────────────────
-:host .vb-grid-wrap { max-width: 1280px; padding: 0 16px 56px; }
+:host .vb-grid-wrap { max-width: 1120px; padding: 0 16px 56px; }
 
 :host .vb-grid {
+  // En celular 2 por fila; de 768 px en adelante, como antes: columnas de mínimo 260 px y 22 px de espacio.
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
-  @media (min-width: 768px)  { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
-  @media (min-width: 1100px) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  @media (min-width: 768px) { grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 22px; }
 }
 
 // ── Tarjeta ────────────────────────────────────────────────────────

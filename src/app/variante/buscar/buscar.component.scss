@@ -1483,14 +1483,9 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-no: #ef4444;
   --t-poco: #f5b942;
   --t-glass: rgba(10, 10, 11, 0.88);
-  --t-grid: rgba(255, 255, 255, 0.035);
 
-  // Solo de noche: fondo negro con cuadrícula tenue
+  // De noche: fondo negro liso (sin cuadrícula: al dueño no le gustó, 2026-10-28)
   background-color: var(--t-bg);
-  background-image:
-    linear-gradient(var(--t-grid) 1px, transparent 1px),
-    linear-gradient(90deg, var(--t-grid) 1px, transparent 1px);
-  background-size: 44px 44px;
 }
 
 // ── Encabezado ─────────────────────────────────────────────────────

@@ -402,3 +402,6 @@ Formato de cada entrada:
 |---|---|---|
 | `e2e/tests/login.spec.ts`, `e2e/tests/modelo.spec.ts` | 2026-10-08 (rama `rename/variante-a-articulo`) | Buscan el buscador de Modelos por `'Buscar nombre o código…'`; en la rama dice `'Buscar modelo por nombre o código…'`. |
 | `e2e/support/articulo.ts` → `crearArticulo()` (lo usa `descuento.spec.ts`) | 2026-10-08 (rama `rename/variante-a-articulo`) | Busca el botón `/Guardar producto/`; en la rama dice "💾 Guardar artículo". **Ojo:** el workflow de e2e corre solo después del deploy de QA, así que cuando la rama llegue a `qa` estas 3 pruebas van a salir en rojo hasta que se ajusten. |
+
+## 2026-10-28 · Pagar con tarjeta al generar el pedido
+- Cliente (no admin): carrito → Generar pedido → Confirmar → ventana «¿Quieres pagar ahora con tarjeta?». «No» deja el pedido Pendiente y vuelve a la tienda; «Pagar ahora» abre el cobro (contado/meses) y al terminar lleva a Mis pedidos. Admin: no sale la ventana.

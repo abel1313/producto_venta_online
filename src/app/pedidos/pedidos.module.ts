@@ -20,7 +20,6 @@ import { LiquidarApartadoComponent } from './cobro/liquidar-apartado/liquidar-ap
 import { DarAbonoComponent } from './cobro/dar-abono/dar-abono.component';
 import { LiquidarGrupoComponent } from './cobro/liquidar-grupo/liquidar-grupo.component';
 import { AbonarGrupoComponent } from './cobro/abonar-grupo/abonar-grupo.component';
-import { CobroTarjetaClienteComponent } from './cobro/cobro-tarjeta-cliente/cobro-tarjeta-cliente.component';
 
 @NgModule({
   declarations: [
@@ -34,8 +33,7 @@ import { CobroTarjetaClienteComponent } from './cobro/cobro-tarjeta-cliente/cobr
     LiquidarApartadoComponent,
     DarAbonoComponent,
     LiquidarGrupoComponent,
-    AbonarGrupoComponent,
-    CobroTarjetaClienteComponent
+    AbonarGrupoComponent
   ],
   imports: [
     CommonModule,

@@ -309,3 +309,6 @@
     <p class="img-visor-nombre">{{ nombreVisor }}</p>
   </div>
 </div>
+
+<app-cobro-tarjeta-cliente [visible]="pagoTarjetaVisible" [pedidoId]="pagoTarjetaPedidoId"
+    [total]="pagoTarjetaTotal" (cerrar)="cerrarPagoTarjeta()" (pagado)="cerrarPagoTarjeta()"></app-cobro-tarjeta-cliente>

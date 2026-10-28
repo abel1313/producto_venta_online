@@ -17,6 +17,22 @@ Formato de cada entrada:
 
 ---
 
+### 2026-10-28 — Cobro con tarjeta: terminal (admin) y pago en línea (cliente) con el módulo nuevo
+**Dónde:** `pedidos/pago-tarjeta.service.ts` y `pedidos/models/pago-tarjeta.model.ts` (nuevos); `pedidos/mis-pedidos` (`enviarATerminalNuevo`, `aplicarEstadoTarjeta`, `startPollingTarjeta`, `cancelarTerminal`, `opcionesMesesVisibles`, `motivoSinMeses`, `puedePagarEnLinea`); `pedidos/cobro/cobro-tarjeta-cliente` (componente nuevo)
+**Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA, pasarela simulada)
+**Debe comprobar:**
+- [ ] **Terminal, admin, pedido de contado:** Cobrar → Tarjeta → «Enviar a terminal» manda `POST /v1/pagos-tarjeta` con `{pedidoId, canal:'TERMINAL', cuotas}` (nunca monto) y pregunta `GET /{id}` cada 3 s; al `APROBADO` **no** llama a `updateService` (el back ya dejó el pedido Pagado y Entregado) y solo refresca la lista
+- [ ] Por los centavos del total en QA: `.00` aprueba a los ~4 s · `.01` rechaza («La tarjeta fue rechazada…») · `.02` nunca contesta (queda «Esperando respuesta…») · `.03` cancela
+- [ ] **Meses:** el «Plan de pago» solo ofrece los plazos de `GET /pedido/{id}/meses`; sin meses se lee «Solo de contado: <motivo>» (artículo que no acepta, mínimo $300…)
+- [ ] **Grupo** de pedidos y ambientes donde el módulo está apagado (404 en `/meses`) siguen por el camino viejo `/v1/mp` sin cambios
+- [ ] 5xx al iniciar → estado «bloqueado» (no se puede reintentar a ciegas); 5 errores seguidos al preguntar → «bloqueado» con aviso; un error al preguntar **no** cuenta como rechazo
+- [ ] Cerrar el diálogo con el cobro «procesando» lo cancela; `Cancelar` si el back dice que «ya se aprobó» pregunta el estado y muestra el pago aprobado
+- [ ] `COBRADO_SIN_APLICAR` → mensaje «Hay que devolver el dinero al cliente (cobro #N)»
+- [ ] **Cliente, pedido de contado «Pendiente»:** card con «Pagar con tarjeta» (no aparece en Apartado, Ir pagando, grupos, cancelados ni para el admin); elegir contado o meses; `.00` aprueba y la lista queda «Pagado, falta entregar»; rechazo permite «Intentar de nuevo»; cerrar con el cobro en proceso lo cancela
+- [ ] Un cliente que abre el pago de un pedido ajeno recibe «no está disponible» (404 del back)
+- [ ] **Venta directa** (`variante/venta-directa`) **no cambia**: sigue por `/v1/mp`
+- [ ] Con un cobro del camino viejo (`/v1/mp`) todavía en la terminal, iniciar el nuevo responde 400 «…por el camino anterior»; y al revés
+
 ### 2026-10-28 — Casilla «Acepta meses sin intereses» (producto, artículo y chip en la Tienda)
 **Dónde:** `shared/acepta-msi.service.ts` (nuevo), `productos/producto/add` (control `aceptaMsi`, `cargarAceptaMsi`, `guardarAceptaMsi`), `shared/alta-articulos` (campo por artículo, `msiDisponible`), `variante/update-variante` (select tri-estado), `variante/buscar` (setter de `variantes`, `msiEfectivo`, chip «MSI»)
 **Tipo:** unitario (componentes y servicio con HttpTestingController) · e2e (Playwright contra QA)

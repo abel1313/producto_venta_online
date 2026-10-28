@@ -70,6 +70,15 @@ necesita un test que compruebe esto y esto'"*.
   correr cada `.sql` en una base desechable antes de entregarlo: eso es comprobar el script, no un test.
 - Cuando el dueño diga que ya se escriban, se toman de `TESTS_PENDIENTES.md`.
 
+## Casilla «Acepta meses sin intereses» (2026-10-28, rama `feature/msi-casilla`)
+Parte del plan de pagos con tarjeta (back: `PLAN_PAGO_TARJETA.md`, `CAMBIOS_FRONT.md` sección «Casilla Acepta meses sin intereses»).
+- **El producto y el artículo no traen este dato** en lo que ya guardan o consultan: se lee y se cambia **solo** con `shared/acepta-msi.service.ts` (`/v1/acepta-msi/...`, solo ADMIN). Es a propósito: así un ambiente sin la columna (producción) no tumba el catálogo.
+- **Producto** (`productos/producto/add`): interruptor «Acepta meses sin intereses» (solo `isAdminService`); en edición se lee con `GET`; se guarda aparte con `PUT` después de guardar el producto (alta: solo si se marcó).
+- **Artículo**: en `shared/alta-articulos` (campo por artículo) y `variante/update-variante` (select): «Igual al producto» (hereda, `null`) / «Sí acepta» / «No acepta».
+- **Tienda** (`variante/buscar`): chip «MSI» con el valor efectivo (con herencia), solo para admin; la lista pasa por un setter que pide `GET /articulos?ids=…`.
+- Si el back responde 404/409 la casilla se oculta; si un `PUT` falla (409) el producto/artículo **sí** quedó guardado y se avisa.
+- **Pendiente:** chip «MSI» en Catálogo → Modelos (`productos/producto/all`): falta un endpoint por lotes de productos en el back.
+
 ## REGLA — DOCUMENTAR CADA CAMBIO
 Cada vez que se haga un cambio de código, anotarlo en este CLAUDE.md en la sección correspondiente:
 - Si es un fix de color/estilo → anotarlo en "FIXES PENDIENTES / REALIZADOS"

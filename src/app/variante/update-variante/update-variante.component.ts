@@ -10,6 +10,7 @@ import Swal from 'sweetalert2';
 import { IVariante, IVarianteImagenDto, IVarianteRequest } from '../models/variante.model';
 import { IStockDisponible } from '../models/stock-disponible.model';
 import { VarianteService } from '../service/variante.service';
+import { AceptaMsiService } from 'src/app/shared/acepta-msi.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../shared/imagen-comprimir.util';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -43,6 +44,14 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
   imagenesCargadas: IImagenDto[] = [];
   mostrandoCamara = false;
   private mediaStream: MediaStream | null = null;
+  /**
+   * Meses sin intereses: 'igual' = hereda la casilla del producto; 'si' / 'no' = decisión propia del artículo.
+   * El artículo no trae este dato: se lee y se guarda con AceptaMsiService. Si el ambiente no lo tiene, se oculta.
+   */
+  msiDisponible = false;
+  productoAceptaMsi = false;
+  private aceptaMsiOriginal: 'igual' | 'si' | 'no' = 'igual';
+
   private readonly DIMENSION_MAX = 1280;
   private readonly CALIDAD_JPEG = 0.8;
 
@@ -72,7 +81,8 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly productoService: ProductoService,
     private readonly router: Router,
-    private readonly authService: AuthService
+    private readonly authService: AuthService,
+    private readonly aceptaMsiService: AceptaMsiService
   ) {}
 
   ngOnInit(): void {
@@ -104,8 +114,10 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
             descripcion:     [variante.descripcion   ?? ''],
             marca:           [variante.marca         ?? ''],
             contenidoNeto:   [variante.contenidoNeto ?? ''],
+            aceptaMsi:       ['igual'],
           });
           this.initValidacionEliminarStock();
+          this.cargarAceptaMsi(variante.id);
 
           // Precargar producto seleccionado
           if (variante.producto) {
@@ -547,6 +559,19 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     this.palabraClaveSeleccionada = p;
   }
 
+  /** Lee la casilla de meses del artículo; si el ambiente no la tiene (o no eres admin), la oculta. */
+  private cargarAceptaMsi(varianteId: number | undefined): void {
+    if (!varianteId || !this.authService.isAdminService) return;
+    this.aceptaMsiService.articulo(varianteId).subscribe(info => {
+      if (!info) return;
+      this.msiDisponible = true;
+      this.productoAceptaMsi = info.delProducto;
+      const valor = info.propio === null ? 'igual' : (info.propio ? 'si' : 'no');
+      this.aceptaMsiOriginal = valor;
+      this.form.patchValue({ aceptaMsi: valor });
+    });
+  }
+
   // ── Actualizar ─────────────────────────────────────────────────────
 
   actualizar(): void {
@@ -559,7 +584,8 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
     }
     this.guardando = true;
 
-    const { talla, color, presentacion, descripcion, marca, contenidoNeto } = this.form.getRawValue();
+    const { talla, color, presentacion, descripcion, marca, contenidoNeto, aceptaMsi } = this.form.getRawValue();
+    const cambioMsi = this.msiDisponible && aceptaMsi !== this.aceptaMsiOriginal;
     const payload: IVarianteRequest = {
       id:                this.variante.id,
       productoId:        this.productoSeleccionado.idProducto,
@@ -592,8 +618,17 @@ export class UpdateVarianteComponent implements OnInit, OnDestroy {
         this.varianteService.invalidarCache();
         this.varianteService.clearVarianteUpdate();
         this.guardando = false;
-        Swal.fire({ icon: 'success', title: '¡Artículo actualizado!', timer: 1600, showConfirmButton: false })
+        const terminar = (fallo: boolean) => Swal.fire(fallo
+          ? { icon: 'warning', title: 'El artículo se actualizó, pero…',
+              text: 'No se pudo guardar la casilla de meses sin intereses. Vuelve a abrir el artículo para marcarla.' }
+          : { icon: 'success', title: '¡Artículo actualizado!', timer: 1600, showConfirmButton: false })
           .then(() => this.router.navigate(['/tienda/buscar']));
+        if (cambioMsi) {
+          this.aceptaMsiService.cambiarArticulo(this.variante!.id!, aceptaMsi === 'igual' ? null : aceptaMsi === 'si')
+            .subscribe({ next: () => terminar(false), error: () => terminar(true) });
+        } else {
+          terminar(false);
+        }
       },
       error: (err) => {
         this.guardando = false;

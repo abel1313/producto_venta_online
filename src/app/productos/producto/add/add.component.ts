@@ -11,6 +11,7 @@ import { IProducto } from '../models/producto.model';
 import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoService } from '../../service/producto.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
+import { AceptaMsiService } from 'src/app/shared/acepta-msi.service';
 // Nuevo — palabra clave para categorizar el producto en búsquedas
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../../shared/imagen-comprimir.util';
@@ -56,6 +57,13 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   // porque el producto cargado no traía código (ver initCodigoBarra()).
   private cargandoDesdeUpdate = false;
 
+  /**
+   * Casilla "Acepta meses sin intereses" (solo admin). El producto no trae este dato: se lee y se guarda con
+   * AceptaMsiService. Si el ambiente no la tiene (409/404), se oculta en vez de romper el formulario.
+   */
+  aceptaMsiDisponible = true;
+  private aceptaMsiOriginal = false;
+
   get esActualizar(): boolean { return this.nombreCard.startsWith('Actualizar'); }
 
   // Etiquetas tal cual aparecen en pantalla, para nombrar el campo que falta.
@@ -84,7 +92,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly service: ProductoService,
     public  readonly authService: AuthService,
     private readonly router:  Router,
-    private readonly varianteService: VarianteService
+    private readonly varianteService: VarianteService,
+    private readonly aceptaMsiService: AceptaMsiService
   ) {}
 
   // ── Ciclo de vida ──────────────────────────────────────────────────
@@ -147,6 +156,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       eliminarStock:  ['0'],
       codigoBarras:   ['', [Validators.required, Validators.maxLength(100)]],
       sinCodigoBarra: [false],
+      aceptaMsi:      [false],
     });
   }
 
@@ -236,6 +246,38 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       sinCodigoBarra:!tieneCodigo
     });
     this.cargandoDesdeUpdate = false;
+    this.cargarAceptaMsi(p.idProducto);
+  }
+
+  /** Lee la casilla de meses del producto que se edita; si no está disponible, la oculta. */
+  private cargarAceptaMsi(productoId: number | undefined): void {
+    if (!productoId || !this.authService.isAdminService) return;
+    this.aceptaMsiService.producto(productoId).subscribe(valor => {
+      if (valor === null) {
+        this.aceptaMsiDisponible = false;
+        return;
+      }
+      this.aceptaMsiOriginal = valor;
+      this.formProductos.patchValue({ aceptaMsi: valor });
+    });
+  }
+
+  /**
+   * Guarda la casilla de meses aparte del producto (el back no la lleva en /productos/save, a propósito:
+   * así un ambiente sin la columna no se cae). En un producto nuevo solo se manda si se marcó.
+   */
+  private guardarAceptaMsi(productoId: number | undefined, acepta: boolean): void {
+    if (!productoId || !this.authService.isAdminService || !this.aceptaMsiDisponible) return;
+    const cambio = this.esActualizar ? acepta !== this.aceptaMsiOriginal : acepta;
+    if (!cambio) return;
+    this.aceptaMsiService.cambiarProducto(productoId, acepta).subscribe({
+      next: valor => { this.aceptaMsiOriginal = valor; },
+      error: err => Swal.fire({
+        icon: 'warning',
+        title: 'El producto se guardó, pero…',
+        text: AceptaMsiService.mensajeDeError(err)
+      })
+    });
   }
 
   // ── Guardar ────────────────────────────────────────────────────────
@@ -306,11 +348,13 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     };
 
     this.guardando = true;
+    const aceptaMsi = !!raw.aceptaMsi;
     const categoria = this.palabraClaveSeleccionada;
     const tieneImagen = this.imagenesCargadas.length > 0;
     this.service.saveProducto(productoSave).subscribe({
       next: (guardado: { id?: number } | null) => {
         this.guardando = false;
+        this.guardarAceptaMsi(guardado?.id ?? this.productoUpdate?.idProducto, aceptaMsi);
         this.resetForm();
         this.service.invalidarProdCache();
         // Modelo nuevo: en vez del aviso, la pregunta "¿Cuántos artículos quieres hacer?"
@@ -391,7 +435,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   update(): void { this.guardar(); }
 
   private resetForm(): void {
-    this.formProductos.reset({ sinCodigoBarra: false, actualizarStock: 0, eliminarStock: 0 });
+    this.formProductos.reset({ sinCodigoBarra: false, actualizarStock: 0, eliminarStock: 0, aceptaMsi: false });
     this.imagenesCargadas = [];
     const canvas = this.canvasRef?.nativeElement;
     if (canvas) canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);

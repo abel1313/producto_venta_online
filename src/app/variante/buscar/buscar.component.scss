@@ -1472,13 +1472,15 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --t-panel: #111113;
   --t-line: #26262b;
   --t-line2: #3a3a42;
-  --t-fg: #f5f5f7;
-  --t-mut: #a1a1aa;
-  --t-lila: #c9b8ff;
-  --t-rosa: #f6cfe8;
-  --t-btn-a: #c9b8ff;
-  --t-btn-b: #f6cfe8;
-  --t-btn-ink: #111111;
+  // Letra gris claro, no blanco: el blanco casi puro sobre negro deslumbra (dueño, 2026-10-28).
+  --t-fg: #cfcfd6;
+  --t-mut: #8b8b97;
+  // Lila y rosa más apagados para que el degradado y el botón no brillen tanto.
+  --t-lila: #a898e6;
+  --t-rosa: #d3adc9;
+  --t-btn-a: #8c7dd2;
+  --t-btn-b: #bd8fb2;
+  --t-btn-ink: #0d0b14;
   --t-ok: #22c55e;
   --t-no: #ef4444;
   --t-poco: #f5b942;

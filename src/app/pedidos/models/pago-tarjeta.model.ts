@@ -18,6 +18,8 @@ export interface ICobroTarjeta {
   /** true = hay que seguir preguntando (cada ~3 s); con cualquier otro estado se deja de preguntar. */
   enProceso: boolean;
   venceEn: string;
+  /** Solo pago en línea con Mercado Pago real: a dónde mandar al cliente a pagar (null con la pasarela simulada). */
+  urlPago?: string | null;
   devuelto: number;
   restanteADevolver: number;
 }

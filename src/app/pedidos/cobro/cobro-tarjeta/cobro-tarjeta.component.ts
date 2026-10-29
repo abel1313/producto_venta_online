@@ -3,7 +3,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PagoTarjetaService } from '../../pago-tarjeta.service';
 import { CanalPago, ICobroTarjeta, IOfertaMeses } from '../../models/pago-tarjeta.model';
 
-type Fase = 'cargando' | 'elegir' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' | 'bloqueado' | 'noDisponible';
+type Fase = 'cargando' | 'elegir' | 'redirigiendo' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' | 'bloqueado' | 'noDisponible';
 
 /**
  * Cobro de un pedido con tarjeta del módulo `/v1/pagos-tarjeta`, para los dos canales:
@@ -40,6 +40,9 @@ export class CobroTarjetaComponent implements OnChanges, OnDestroy {
   cuotas = 1;
   mensaje: string | null = null;
 
+  /** A dónde se manda al cliente a pagar (solo con Mercado Pago real). */
+  urlPago: string | null = null;
+
   private cobroId: number | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private errores = 0;
@@ -63,6 +66,7 @@ export class CobroTarjetaComponent implements OnChanges, OnDestroy {
     this.cuotas = 1;
     this.mensaje = null;
     this.cobroId = null;
+    this.urlPago = null;
     this.pagoTarjetaService.meses(pedidoId).subscribe({
       next: oferta => { this.oferta = oferta; this.fase = 'elegir'; },
       // 404 = este ambiente no tiene el pago con tarjeta (módulo apagado) o el pedido no es del usuario.
@@ -84,6 +88,13 @@ export class CobroTarjetaComponent implements OnChanges, OnDestroy {
     this.pagoTarjetaService.iniciar({ pedidoId: this.pedidoId, canal: this.canal, cuotas: this.cuotas }).subscribe({
       next: cobro => {
         this.cobroId = cobro.id;
+        // Pago en línea real: se paga en la página segura de Mercado Pago y de ahí regresa a /pedidos/pago-resultado.
+        if (cobro.urlPago && cobro.enProceso) {
+          this.urlPago = cobro.urlPago;
+          this.fase = 'redirigiendo';
+          this.irAPagar();
+          return;
+        }
         this.aplicar(cobro);
         if (cobro.enProceso) this.empezarAPreguntar(cobro.id);
       },
@@ -93,6 +104,11 @@ export class CobroTarjetaComponent implements OnChanges, OnDestroy {
         this.fase = err.status >= 500 ? 'bloqueado' : 'rechazado';
       }
     });
+  }
+
+  /** Sale de la tienda hacia la página de pago de Mercado Pago. */
+  irAPagar(): void {
+    if (this.urlPago) window.location.href = this.urlPago;
   }
 
   cancelar(): void {

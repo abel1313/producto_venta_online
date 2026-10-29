@@ -408,3 +408,6 @@ Formato de cada entrada:
 
 ## 2026-10-29 · Venta directa con tarjeta por el módulo nuevo
 - Admin: Venta directa → forma de pago tarjeta → Cobrar: se abre «Cobrar con la terminal» (meses solo si el pedido cumple). Total .00 aprueba (ticket, venta pagada y entregada); .01 rechaza; .02 no contesta; .03 cancela. Tras rechazo/cancelación: Intentar de nuevo / Cancelar la venta (regresa stock) / Dejarla pendiente (queda en Mis pedidos). Efectivo, Apartado e Ir pagando: igual que antes.
+
+## 2026-10-29 · Pago en línea con Mercado Pago (Checkout Pro)
+- Cliente: Generar pedido → Pagar ahora → llega a Mercado Pago (prueba), paga con tarjeta de prueba → regresa a «Confirmando tu pago…» → «¡Pago aprobado!». Tarjeta rechazada → «No se pudo cobrar». Cerrar la pestaña de pago y volver → el pedido sigue Pendiente. Entrar a `pedidos/pago-resultado` sin parámetros o con un id ajeno → «No encontramos ese pago». Con la pasarela simulada el flujo es el de siempre.

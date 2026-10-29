@@ -1,0 +1,48 @@
+<section class="pr-pagina" aria-live="polite">
+  <div class="pr-tarjeta">
+
+    <ng-container [ngSwitch]="fase">
+
+      <ng-container *ngSwitchCase="'confirmando'">
+        <i class="pi pi-spin pi-spinner pr-icono pr-icono--proceso"></i>
+        <h1>Confirmando tu pago…</h1>
+        <p>Estamos verificando con Mercado Pago. No cierres esta página.</p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'aprobado'">
+        <i class="pi pi-check-circle pr-icono pr-icono--ok"></i>
+        <h1>¡Pago aprobado!</h1>
+        <p>Tu pedido <b *ngIf="pedidoId">#{{ pedidoId }}</b> quedó pagado. Pronto lo preparamos para entregártelo.</p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'rechazado'">
+        <i class="pi pi-times-circle pr-icono pr-icono--mal"></i>
+        <h1>No se pudo cobrar</h1>
+        <p>Tu tarjeta fue rechazada y no se te cobró. Puedes intentar de nuevo con otra tarjeta desde Mis pedidos.</p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'cancelado'">
+        <i class="pi pi-ban pr-icono pr-icono--mal"></i>
+        <h1>El pago no se completó</h1>
+        <p>No se te cobró nada. Tu pedido sigue pendiente y puedes pagarlo cuando quieras desde Mis pedidos.</p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'bloqueado'">
+        <i class="pi pi-exclamation-triangle pr-icono pr-icono--mal"></i>
+        <h1>Todavía no confirmamos tu pago</h1>
+        <p>No pagues otra vez. Revisa Mis pedidos en unos minutos; si el cobro salió, se verá ahí. Si no, avísanos y lo revisamos contigo.</p>
+      </ng-container>
+
+      <ng-container *ngSwitchCase="'noEncontrado'">
+        <i class="pi pi-question-circle pr-icono pr-icono--mal"></i>
+        <h1>No encontramos ese pago</h1>
+        <p>Revisa tus pedidos para ver cómo quedó.</p>
+      </ng-container>
+
+    </ng-container>
+
+    <button type="button" class="btn btn-success" *ngIf="fase !== 'confirmando'" (click)="verMisPedidos()">
+      Ir a Mis pedidos
+    </button>
+  </div>
+</section>

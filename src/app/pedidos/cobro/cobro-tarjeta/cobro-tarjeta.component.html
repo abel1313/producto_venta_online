@@ -31,6 +31,12 @@
       </p>
     </ng-container>
 
+    <div class="ct-estado ct-estado--proceso" *ngIf="fase === 'redirigiendo'">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>Te llevamos a Mercado Pago para que pagues con tu tarjeta. Si no se abre,
+        <a href="#" (click)="irAPagar(); $event.preventDefault()">toca aquí</a>.</span>
+    </div>
+
     <div class="ct-estado ct-estado--proceso" *ngIf="fase === 'procesando'">
       <i class="pi pi-spin pi-spinner"></i>
       <span *ngIf="!esTerminal">Procesando tu pago… no cierres esta ventana.</span>

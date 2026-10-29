@@ -14,6 +14,7 @@ import { FechaEspanolPipe } from '../fecha-espanol.pipe';
 import { TotalPedidoPipe } from '../shared/total-pedido.pipe';
 import { DetallePedidoComponent } from './detalle-pedido/detalle-pedido.component';
 import { GrupoPedidoComponent } from './grupo-pedido/grupo-pedido.component';
+import { PagoResultadoComponent } from './pago-resultado/pago-resultado.component';
 import { SharedModule } from '../shared/shared.module';
 import { CampoPagoComponent } from './cobro/campo-pago/campo-pago.component';
 import { LiquidarApartadoComponent } from './cobro/liquidar-apartado/liquidar-apartado.component';
@@ -33,7 +34,8 @@ import { AbonarGrupoComponent } from './cobro/abonar-grupo/abonar-grupo.componen
     LiquidarApartadoComponent,
     DarAbonoComponent,
     LiquidarGrupoComponent,
-    AbonarGrupoComponent
+    AbonarGrupoComponent,
+    PagoResultadoComponent
   ],
   imports: [
     CommonModule,

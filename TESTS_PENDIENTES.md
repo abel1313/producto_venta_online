@@ -18,7 +18,7 @@ Formato de cada entrada:
 ---
 
 ### 2026-10-28 — Cobro con tarjeta: terminal (admin) y pago en línea (cliente) con el módulo nuevo
-**Dónde:** `pedidos/pago-tarjeta.service.ts` y `pedidos/models/pago-tarjeta.model.ts` (nuevos); `pedidos/mis-pedidos` (`enviarATerminalNuevo`, `aplicarEstadoTarjeta`, `startPollingTarjeta`, `cancelarTerminal`, `opcionesMesesVisibles`, `motivoSinMeses`, `puedePagarEnLinea`); `pedidos/cobro/cobro-tarjeta-cliente` (componente nuevo)
+**Dónde:** `pedidos/pago-tarjeta.service.ts` y `pedidos/models/pago-tarjeta.model.ts` (nuevos); `pedidos/mis-pedidos` (`enviarATerminalNuevo`, `aplicarEstadoTarjeta`, `startPollingTarjeta`, `cancelarTerminal`, `opcionesMesesVisibles`, `motivoSinMeses`, `puedePagarEnLinea`); `pedidos/cobro/cobro-tarjeta` (componente nuevo)
 **Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA, pasarela simulada)
 **Debe comprobar:**
 - [ ] **Terminal, admin, pedido de contado:** Cobrar → Tarjeta → «Enviar a terminal» manda `POST /v1/pagos-tarjeta` con `{pedidoId, canal:'TERMINAL', cuotas}` (nunca monto) y pregunta `GET /{id}` cada 3 s; al `APROBADO` **no** llama a `updateService` (el back ya dejó el pedido Pagado y Entregado) y solo refresca la lista
@@ -405,3 +405,6 @@ Formato de cada entrada:
 
 ## 2026-10-28 · Pagar con tarjeta al generar el pedido
 - Cliente (no admin): carrito → Generar pedido → Confirmar → ventana «¿Quieres pagar ahora con tarjeta?». «No» deja el pedido Pendiente y vuelve a la tienda; «Pagar ahora» abre el cobro (contado/meses) y al terminar lleva a Mis pedidos. Admin: no sale la ventana.
+
+## 2026-10-29 · Venta directa con tarjeta por el módulo nuevo
+- Admin: Venta directa → forma de pago tarjeta → Cobrar: se abre «Cobrar con la terminal» (meses solo si el pedido cumple). Total .00 aprueba (ticket, venta pagada y entregada); .01 rechaza; .02 no contesta; .03 cancela. Tras rechazo/cancelación: Intentar de nuevo / Cancelar la venta (regresa stock) / Dejarla pendiente (queda en Mis pedidos). Efectivo, Apartado e Ir pagando: igual que antes.

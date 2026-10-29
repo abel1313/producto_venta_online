@@ -16,7 +16,7 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
 import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
 import { DialogModule } from 'primeng/dialog';
-import { CobroTarjetaClienteComponent } from '../pedidos/cobro/cobro-tarjeta-cliente/cobro-tarjeta-cliente.component';
+import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarjeta.component';
 
 @NgModule({
   declarations: [
@@ -33,7 +33,7 @@ import { CobroTarjetaClienteComponent } from '../pedidos/cobro/cobro-tarjeta-cli
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    CobroTarjetaClienteComponent
+    CobroTarjetaComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule, DialogModule],
   exports:  [
@@ -50,7 +50,7 @@ import { CobroTarjetaClienteComponent } from '../pedidos/cobro/cobro-tarjeta-cli
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    CobroTarjetaClienteComponent
+    CobroTarjetaComponent
   ]
 })
 export class SharedModule {}

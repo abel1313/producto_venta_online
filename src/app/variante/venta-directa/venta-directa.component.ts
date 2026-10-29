@@ -851,6 +851,19 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
     this.varianteService.saveVentaDirecta(request).subscribe({
       next: (res: IVentaDirectaResponse) => {
+        if (res.cobroConModuloNuevo && res.pedidoId) {
+          // Tarjeta con el módulo nuevo: el pedido quedó Pendiente y la terminal lo cobra con <app-cobro-tarjeta>.
+          this.procesando = false;
+          this.varianteService.invalidarCache();
+          this.abrirCobroTerminal(res.pedidoId, res.totalVenta, () => generarHtmlTicket({
+            tipo: 'venta', numero: res.pedidoId!, cliente: clienteSnap, articulos: articulosSnap, total: totalSnap,
+            metodoPago: metodoPagoSnap, montoDado: null, cambio: null,
+            qrTienda: this.qrTienda, qrWhatsapp: this.qrWhatsapp, qrFacebook: this.qrFacebook,
+            qrInstagram: this.qrInstagram, qrTiktok: this.qrTiktok
+          }));
+          return;
+        }
+
         if (res.pedidoId) {
           // Crédito (APARTADO / FIADO)
           this.varianteService.invalidarCache();
@@ -981,6 +994,67 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         next: (r: any) => Swal.fire({ title: '✅ Enviado', text: r?.data ?? `Ticket enviado a ${res.value}`, icon: 'success', timer: 2000, showConfirmButton: false }),
         error: err => Swal.fire({ title: 'Error al enviar', text: err?.error?.mensaje ?? 'No se pudo enviar el correo.', icon: 'error' })
       });
+    });
+  }
+
+  // ── Cobro con la terminal del módulo nuevo (<app-cobro-tarjeta canal="TERMINAL">) ──
+  cobroTerminalVisible = false;
+  cobroTerminalPedidoId: number | null = null;
+  cobroTerminalTotal = 0;
+  private cobroTerminalAprobado = false;
+  private cobroTerminalTicket: (() => string) | null = null;
+
+  private abrirCobroTerminal(pedidoId: number, total: number, ticket: () => string): void {
+    this.cobroTerminalPedidoId = pedidoId;
+    this.cobroTerminalTotal = total;
+    this.cobroTerminalTicket = ticket;
+    this.cobroTerminalAprobado = false;
+    this.cobroTerminalVisible = true;
+  }
+
+  alAprobarseCobroTerminal(): void {
+    this.cobroTerminalAprobado = true;
+  }
+
+  /** Aprobado: ticket y a limpiar. Si no: el pedido sigue Pendiente (sin Venta) y se decide qué hacer con él. */
+  alCerrarCobroTerminal(): void {
+    // El diálogo avisa dos veces al cerrarse (visibleChange y onHide): la segunda no hace nada.
+    if (!this.cobroTerminalVisible) return;
+    this.cobroTerminalVisible = false;
+    const pedidoId = this.cobroTerminalPedidoId;
+    if (!pedidoId) return;
+    if (this.cobroTerminalAprobado) {
+      const html = this.cobroTerminalTicket?.() ?? '';
+      this.varianteService.invalidarCache();
+      this.limpiarTodo();
+      Swal.fire({
+        icon: 'success', title: `¡Pago aprobado! Pedido #${pedidoId}`, text: 'Quedó pagado y entregado.',
+        showConfirmButton: true, confirmButtonText: '🖨️ Imprimir ticket', showCancelButton: true, cancelButtonText: 'Cerrar'
+      }).then(r => { if (r.isConfirmed && html) imprimirTicket(html); });
+      return;
+    }
+    Swal.fire({
+      icon: 'warning',
+      title: `El pedido #${pedidoId} quedó sin cobrar`,
+      text: 'La tarjeta no se cobró. Puedes volver a intentarlo, cancelar la venta (el stock regresa) o dejarla pendiente para cobrarla en efectivo desde Mis pedidos.',
+      showDenyButton: true, showCancelButton: true,
+      confirmButtonText: '💳 Intentar de nuevo', denyButtonText: 'Cancelar la venta', cancelButtonText: 'Dejarla pendiente',
+      allowOutsideClick: false
+    }).then(r => {
+      if (r.isConfirmed) {
+        this.cobroTerminalVisible = true;
+      } else if (r.isDenied) {
+        this.pedidosService.cancelarConMotivo(pedidoId, 'Venta con tarjeta no cobrada').subscribe({
+          next: () => {
+            this.varianteService.invalidarCache();
+            Swal.fire({ icon: 'info', title: 'Venta cancelada', text: 'El stock regresó. Puedes volver a armar la venta.', timer: 2200, showConfirmButton: false });
+          },
+          error: err => Swal.fire({ icon: 'error', title: 'No se pudo cancelar', text: err?.error?.mensaje ?? 'Cancélala desde Mis pedidos.' })
+        });
+      } else {
+        this.limpiarTodo();
+        this.router.navigate(['/pedidos/mis-pedidos']);
+      }
     });
   }
 

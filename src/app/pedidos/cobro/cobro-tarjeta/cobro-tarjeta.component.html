@@ -1,4 +1,4 @@
-<p-dialog header="Pagar con tarjeta" [visible]="visible" [modal]="true" [closable]="fase !== 'procesando'"
+<p-dialog [header]="esTerminal ? 'Cobrar con la terminal' : 'Pagar con tarjeta'" [visible]="visible" [modal]="true" [closable]="fase !== 'procesando'"
           [style]="{ width: '440px', maxWidth: '95vw' }" [contentStyle]="{ overflow: 'visible' }"
           (visibleChange)="!$event && cerrarDialogo()" (onHide)="cerrarDialogo()">
 
@@ -7,14 +7,15 @@
     <p class="ct-texto" *ngIf="fase === 'cargando'">Cargando…</p>
 
     <p class="ct-texto" *ngIf="fase === 'noDisponible'">
-      El pago con tarjeta no está disponible por ahora. Puedes pagar en el local en efectivo o con tarjeta.
+      <ng-container *ngIf="!esTerminal">El pago con tarjeta no está disponible por ahora. Puedes pagar en el local en efectivo o con tarjeta.</ng-container>
+      <ng-container *ngIf="esTerminal">El cobro con la terminal no está disponible por ahora.</ng-container>
     </p>
 
     <ng-container *ngIf="fase === 'elegir' && oferta">
       <p class="ct-total">Total del pedido: <b>{{ total | currency:'$' }}</b></p>
 
       <fieldset class="ct-opciones">
-        <legend>Elige cómo pagar</legend>
+        <legend>{{ esTerminal ? 'Pregúntale al cliente cómo paga' : 'Elige cómo pagar' }}</legend>
         <label class="ct-opcion">
           <input type="radio" name="cuotas" [value]="1" [(ngModel)]="cuotas">
           <span>De contado, un solo pago</span>
@@ -32,12 +33,14 @@
 
     <div class="ct-estado ct-estado--proceso" *ngIf="fase === 'procesando'">
       <i class="pi pi-spin pi-spinner"></i>
-      <span>Procesando tu pago… no cierres esta ventana.</span>
+      <span *ngIf="!esTerminal">Procesando tu pago… no cierres esta ventana.</span>
+      <span *ngIf="esTerminal">Esperando la tarjeta en la terminal… que el cliente la inserte o la pase.</span>
     </div>
 
     <div class="ct-estado ct-estado--ok" *ngIf="fase === 'aprobado'">
       <i class="pi pi-check-circle"></i>
-      <span>¡Pago aprobado! Tu pedido quedó pagado. Pronto lo preparamos para entregártelo.</span>
+      <span *ngIf="!esTerminal">¡Pago aprobado! Tu pedido quedó pagado. Pronto lo preparamos para entregártelo.</span>
+      <span *ngIf="esTerminal">¡Pago aprobado! El pedido quedó pagado y entregado.</span>
     </div>
 
     <div class="ct-estado ct-estado--mal" *ngIf="fase === 'rechazado' || fase === 'bloqueado'">
@@ -47,7 +50,8 @@
 
     <div class="ct-estado ct-estado--mal" *ngIf="fase === 'cancelado'">
       <i class="pi pi-ban"></i>
-      <span>El pago se canceló. No se te cobró nada.</span>
+      <span *ngIf="!esTerminal">El pago se canceló. No se te cobró nada.</span>
+      <span *ngIf="esTerminal">El cobro se canceló. No se le cobró nada al cliente.</span>
     </div>
 
   </div>
@@ -58,10 +62,10 @@
         {{ fase === 'aprobado' ? 'Listo' : 'Cerrar' }}
       </button>
       <button type="button" class="btn btn-outline-danger" *ngIf="fase === 'procesando'" (click)="cancelar()">
-        Cancelar pago
+        {{ esTerminal ? 'Cancelar cobro' : 'Cancelar pago' }}
       </button>
       <button type="button" class="btn btn-success" *ngIf="fase === 'elegir'" (click)="pagar()">
-        Pagar {{ total | currency:'$' }}
+        {{ esTerminal ? 'Cobrar' : 'Pagar' }} {{ total | currency:'$' }}
       </button>
       <button type="button" class="btn btn-success" *ngIf="fase === 'rechazado' || fase === 'cancelado'" (click)="reintentar()">
         Intentar de nuevo

@@ -461,4 +461,6 @@ export interface IVentaDirectaResponse {
   correoEnviado?:   boolean;
   whatsappEnviado?: boolean;
   erroresEnvio?:    string[];
+  /** true: la venta quedó como pedido Pendiente y se cobra por /v1/pagos-tarjeta (módulo nuevo) con `pedidoId`. */
+  cobroConModuloNuevo?: boolean;
 }

@@ -614,3 +614,5 @@
   </div>
 </div>
 
+<app-cobro-tarjeta canal="TERMINAL" [visible]="cobroTerminalVisible" [pedidoId]="cobroTerminalPedidoId"
+    [total]="cobroTerminalTotal" (pagado)="alAprobarseCobroTerminal()" (cerrar)="alCerrarCobroTerminal()"></app-cobro-tarjeta>

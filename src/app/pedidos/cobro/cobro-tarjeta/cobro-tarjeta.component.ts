@@ -1,12 +1,15 @@
 import { Component, EventEmitter, Input, OnChanges, OnDestroy, Output, SimpleChanges } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { PagoTarjetaService } from '../../pago-tarjeta.service';
-import { ICobroTarjeta, IOfertaMeses } from '../../models/pago-tarjeta.model';
+import { CanalPago, ICobroTarjeta, IOfertaMeses } from '../../models/pago-tarjeta.model';
 
 type Fase = 'cargando' | 'elegir' | 'procesando' | 'aprobado' | 'rechazado' | 'cancelado' | 'bloqueado' | 'noDisponible';
 
 /**
- * El cliente paga su propio pedido con tarjeta (canal EN_LINEA del módulo `/v1/pagos-tarjeta`).
+ * Cobro de un pedido con tarjeta del módulo `/v1/pagos-tarjeta`, para los dos canales:
+ *  - `EN_LINEA` (default): el cliente paga su propio pedido; queda pagado y falta entregarlo.
+ *  - `TERMINAL`: el administrador cobra en el local con la terminal; el back lo deja pagado y entregado.
+ * Cambian los textos; el flujo (meses, cobrar, preguntar cada ~3 s, cancelar) es el mismo.
  *
  * Elige de contado o a meses sin intereses (solo los que el back permite para ESE pedido), paga y la pantalla
  * pregunta el estado cada ~3 s mientras el cobro esté en proceso. Al aprobarse el pedido queda pagado y falta
@@ -16,16 +19,17 @@ type Fase = 'cargando' | 'elegir' | 'procesando' | 'aprobado' | 'rechazado' | 'c
  * la página de Checkout Pro y regresará aquí; esa parte se agrega cuando se conecte la pasarela real.
  */
 @Component({
-  selector: 'app-cobro-tarjeta-cliente',
-  templateUrl: './cobro-tarjeta-cliente.component.html',
-  styleUrls: ['./cobro-tarjeta-cliente.component.scss']
+  selector: 'app-cobro-tarjeta',
+  templateUrl: './cobro-tarjeta.component.html',
+  styleUrls: ['./cobro-tarjeta.component.scss']
 })
-export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
+export class CobroTarjetaComponent implements OnChanges, OnDestroy {
 
   @Input() visible = false;
   @Input() pedidoId: number | null = null;
   /** Solo para mostrarlo: el back cobra el total real del pedido, nunca este número. */
   @Input() total = 0;
+  @Input() canal: CanalPago = 'EN_LINEA';
   @Output() cerrar = new EventEmitter<void>();
   /** El pedido quedó pagado: la lista debe refrescarse. */
   @Output() pagado = new EventEmitter<void>();
@@ -66,6 +70,8 @@ export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
     });
   }
 
+  get esTerminal(): boolean { return this.canal === 'TERMINAL'; }
+
   get mensualidad(): number | null {
     return this.cuotas > 1 ? Math.round((this.total / this.cuotas) * 100) / 100 : null;
   }
@@ -75,7 +81,7 @@ export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
     this.fase = 'procesando';
     this.mensaje = null;
     this.errores = 0;
-    this.pagoTarjetaService.iniciar({ pedidoId: this.pedidoId, canal: 'EN_LINEA', cuotas: this.cuotas }).subscribe({
+    this.pagoTarjetaService.iniciar({ pedidoId: this.pedidoId, canal: this.canal, cuotas: this.cuotas }).subscribe({
       next: cobro => {
         this.cobroId = cobro.id;
         this.aplicar(cobro);
@@ -137,7 +143,9 @@ export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
       case 'RECHAZADO':
         this.detener();
         this.fase = 'rechazado';
-        this.mensaje = 'Tu tarjeta fue rechazada. Puedes intentar con otra tarjeta.';
+        this.mensaje = this.esTerminal
+          ? 'La tarjeta fue rechazada. Pueden probar con otra tarjeta o pagar en efectivo.'
+          : 'Tu tarjeta fue rechazada. Puedes intentar con otra tarjeta.';
         break;
       case 'CANCELADO':
       case 'EXPIRADO':
@@ -147,7 +155,9 @@ export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
       default: // COBRADO_SIN_APLICAR, DEVUELTO, DEVUELTO_PARCIAL
         this.detener();
         this.fase = 'bloqueado';
-        this.mensaje = 'Hubo un problema con tu pago. No intentes pagar otra vez: avísanos y lo revisamos contigo.';
+        this.mensaje = this.esTerminal
+          ? 'Hubo un problema con este cobro. No lo repitas: revisa la terminal y el pedido antes de cobrar otra vez.'
+          : 'Hubo un problema con tu pago. No intentes pagar otra vez: avísanos y lo revisamos contigo.';
     }
   }
 
@@ -161,7 +171,9 @@ export class CobroTarjetaClienteComponent implements OnChanges, OnDestroy {
           if (++this.errores >= 5) {
             this.detener();
             this.fase = 'bloqueado';
-            this.mensaje = 'No pudimos confirmar tu pago. No intentes pagar otra vez: revisa tu pedido o avísanos.';
+            this.mensaje = this.esTerminal
+              ? 'No se pudo confirmar el cobro. Revisa la terminal antes de volver a cobrar.'
+              : 'No pudimos confirmar tu pago. No intentes pagar otra vez: revisa tu pedido o avísanos.';
           }
         }
       });

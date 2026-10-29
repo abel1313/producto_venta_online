@@ -15,6 +15,8 @@ import { AyudaPantallaComponent } from './ayuda-pantalla/ayuda-pantalla.componen
 import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.component';
 import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
+import { DialogModule } from 'primeng/dialog';
+import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarjeta.component';
 
 @NgModule({
   declarations: [
@@ -30,9 +32,10 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
     AyudaPantallaComponent,
     AyudaOpcionesComponent,
     AltaArticulosComponent,
-    FiltroBuscableComponent
+    FiltroBuscableComponent,
+    CobroTarjetaComponent
   ],
-  imports:  [CommonModule, FormsModule, OverlayModule],
+  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,
@@ -46,7 +49,8 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
     AyudaPantallaComponent,
     AyudaOpcionesComponent,
     AltaArticulosComponent,
-    FiltroBuscableComponent
+    FiltroBuscableComponent,
+    CobroTarjetaComponent
   ]
 })
 export class SharedModule {}

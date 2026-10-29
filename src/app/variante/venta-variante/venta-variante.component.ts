@@ -373,6 +373,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
       cancelButtonColor:  '#d33'
     }).then(result => {
       if (!result.isConfirmed) return;
+      const totalPedido = this.totalImporte; // el carrito se limpia al guardar
       this.varianteService.guardarPedidoVariante(pedido).subscribe({
         next: (res: any) => {
           if (res?.data != null) {
@@ -399,6 +400,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               } else {
                 mostrarRegistrado();
               }
+            } else if (!this.isAdminUser) {
+              this.ofrecerPagoConTarjeta(res.data.id, totalPedido);
             } else {
               Swal.fire({
                 icon: 'success',
@@ -441,6 +444,37 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
         }
       });
     });
+  }
+
+  // ── Pagar con tarjeta al generar el pedido (solo clientes) ──
+  pagoTarjetaVisible = false;
+  pagoTarjetaPedidoId: number | null = null;
+  pagoTarjetaTotal = 0;
+
+  /** El pedido ya existe y queda Pendiente; si dice que no, lo paga al recogerlo o después en Mis pedidos. */
+  private ofrecerPagoConTarjeta(pedidoId: number, total: number): void {
+    Swal.fire({
+      icon: 'success',
+      title: `Pedido #${pedidoId} generado`,
+      html: '<p>¿Quieres pagar ahora con tarjeta?</p><p class="small">Si prefieres, lo pagas cuando lo recojas.</p>',
+      showCancelButton: true,
+      confirmButtonText: '💳 Pagar ahora',
+      cancelButtonText: 'No, pago al recoger',
+      allowOutsideClick: false
+    }).then(r => {
+      if (r.isConfirmed) {
+        this.pagoTarjetaPedidoId = pedidoId;
+        this.pagoTarjetaTotal = total;
+        this.pagoTarjetaVisible = true;
+      } else {
+        this.router.navigate(['/tienda/buscar']);
+      }
+    });
+  }
+
+  cerrarPagoTarjeta(): void {
+    this.pagoTarjetaVisible = false;
+    this.router.navigate(['/pedidos/mis-pedidos']);
   }
 
   private flujoVerificacion(clienteId: number): void {

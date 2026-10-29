@@ -420,8 +420,8 @@
 </div>
 
 <!-- Pago en línea del cliente -->
-<app-cobro-tarjeta-cliente [visible]="pagoEnLineaVisible" [pedidoId]="pagoEnLineaPedido?.pedido?.id ?? null"
-    [total]="totalPagoEnLinea" (cerrar)="cerrarPagoEnLinea()" (pagado)="alPagarEnLinea()"></app-cobro-tarjeta-cliente>
+<app-cobro-tarjeta [visible]="pagoEnLineaVisible" [pedidoId]="pagoEnLineaPedido?.pedido?.id ?? null"
+    [total]="totalPagoEnLinea" (cerrar)="cerrarPagoEnLinea()" (pagado)="alPagarEnLinea()"></app-cobro-tarjeta>
 
 <!-- Diálogo de cobro -->
 <p-dialog header="Cobrar pedido" [(visible)]="mostrarDialogoCobro"

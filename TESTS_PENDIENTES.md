@@ -411,3 +411,17 @@ Formato de cada entrada:
 
 ## 2026-10-29 · Pago en línea con Mercado Pago (Checkout Pro)
 - Cliente: Generar pedido → Pagar ahora → llega a Mercado Pago (prueba), paga con tarjeta de prueba → regresa a «Confirmando tu pago…» → «¡Pago aprobado!». Tarjeta rechazada → «No se pudo cobrar». Cerrar la pestaña de pago y volver → el pedido sigue Pendiente. Entrar a `pedidos/pago-resultado` sin parámetros o con un id ajeno → «No encontramos ese pago». Con la pasarela simulada el flujo es el de siempre.
+
+## 2026-11-01 · Revisión de ventas (pestaña nueva en Reportes)
+- Admin: Reportes → «🔎 Revisión» (si no aparece: correr `migration_accion_reporte_revision.sql` en la base y volver a iniciar sesión). Debe cargar sola al abrir la pestaña y mostrar «Todo en orden» o «N cosa(s) por revisar».
+- Lo grave sale abierto con sus casos; lo que está bien sale en «Sin problemas». Cambiar «Desde/Hasta» y pulsar «Revisar» recalcula; fechas al revés → mensaje de error.
+- Caso conocido para ver una alerta real en QA: «Great Jeans talla 14 AZUL MARINO» (artículo con stock y modelo en 0) debe salir en «Se ve con stock en la tienda pero el pedido lo rechaza».
+- Un empleado (sin la acción) NO debe ver la pestaña; llamar el endpoint sin ser admin → 403.
+- Noche y día: leerse bien, sin colores fijos; celular: sin scroll horizontal.
+
+## 2026-11-01 · Gráficas del Dashboard
+- Admin: Dashboard → debajo de las tarjetas deben salir «Cómo te pagan» y «Ventas, gastos y ganancia — últimos 12 meses». Con ventas: dona con colores del diseño y la tabla al lado (Forma de pago, Ventas, Total, %, Comisión); con tarjeta, la comisión sale en pesos; la fila Total coincide con «Ventas del mes» de la tarjeta de arriba cuando el periodo es «Este mes».
+- Cambiar «Este mes / Mes anterior / 90 días» redibuja la dona y la tabla. Sin ventas en el periodo: mensaje «No hubo ventas …» (no gráfica vacía).
+- Mes a mes: 12 barras de ventas y gastos + línea de ganancia neta; el mes actual coincide con las tarjetas «Ventas del mes», «Gastos mes» y «Ganancia neta». Mes sin movimiento = barra en cero (no hueco).
+- Noche y día: textos y colores se leen bien; celular: tabla con scroll horizontal dentro de su caja, sin scroll horizontal de toda la página.
+- Una venta «Devuelta» NO debe sumar en ninguna de las dos.

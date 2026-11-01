@@ -14,6 +14,7 @@
     <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    *ngIf="authService.tieneAccion('reportes', 'reporte-cliente')" (click)="setTab('cliente')">👤 Por cliente</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" *ngIf="authService.tieneAccion('reportes', 'reporte-mas-vendidos')" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" *ngIf="authService.tieneAccion('reportes', 'reporte-promociones')" (click)="setTab('promociones')">🎁 Promociones</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'revision'"    *ngIf="authService.tieneAccion('reportes', 'reporte-revision')" (click)="setTab('revision')">🔎 Revisión</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
@@ -279,6 +280,73 @@
     </div>
 
     <p *ngIf="promociones.length === 0 && !cargandoPromociones" class="rp-empty">No hay promociones registradas todavía.</p>
+  </div>
+
+  <!-- ── REVISIÓN DE VENTAS (solo administrador) ─────────────────────────── -->
+  <div *ngIf="tab === 'revision'" class="rp-panel">
+    <div class="rp-filtros rp-filtros--row">
+      <div class="rp-filtro-group">
+        <label class="rp-label">Desde (opcional)</label>
+        <app-selector-fecha [(ngModel)]="desdeRevision" placeholder="Desde"></app-selector-fecha>
+      </div>
+      <div class="rp-filtro-group">
+        <label class="rp-label">Hasta (opcional)</label>
+        <app-selector-fecha [(ngModel)]="hastaRevision" placeholder="Hasta"></app-selector-fecha>
+      </div>
+      <button class="rp-btn--primary" [disabled]="cargandoRevision" (click)="buscarRevision()">Revisar</button>
+    </div>
+
+    <p class="rp-hint">
+      Avisa de pedidos, ventas, abonos y stock que no cuadran. <b>Solo avisa: no cambia nada.</b>
+      Sin fechas revisa los últimos 90 días; el stock y los cobros con tarjeta se revisan siempre completos.
+    </p>
+
+    <div *ngIf="cargandoRevision" class="rp-loading">Revisando…</div>
+    <p *ngIf="errorRevision && !cargandoRevision" class="rp-empty">{{ errorRevision }}</p>
+
+    <ng-container *ngIf="revision && !cargandoRevision">
+
+      <div class="rp-rev-resumen" [class.rp-rev-resumen--ok]="revision.todoEnOrden" [class.rp-rev-resumen--mal]="!revision.todoEnOrden">
+        <span class="rp-rev-resumen__icono">{{ revision.todoEnOrden ? '✅' : '⚠️' }}</span>
+        <div>
+          <strong *ngIf="revision.todoEnOrden">Todo en orden</strong>
+          <strong *ngIf="!revision.todoEnOrden">{{ revision.totalHallazgos }} cosa(s) por revisar</strong>
+          <span class="rp-rev-resumen__sub">Del {{ formatFecha(revision.desde) }} al {{ formatFecha(revision.hasta) }}</span>
+        </div>
+      </div>
+
+      <!-- Lo que tiene casos -->
+      <div *ngFor="let t of tiposConCasos" class="rp-rev-tipo" [class.rp-rev-tipo--alta]="t.gravedad === 'ALTA'">
+        <button type="button" class="rp-rev-tipo__cabeza" (click)="alternarTipo(t.codigo)" [attr.aria-expanded]="tiposAbiertos.has(t.codigo)">
+          <span class="rp-rev-chip" [class.rp-rev-chip--alta]="t.gravedad === 'ALTA'">{{ t.gravedad === 'ALTA' ? 'Importante' : 'Revisar' }}</span>
+          <span class="rp-rev-tipo__titulo">{{ t.titulo }}</span>
+          <span class="rp-rev-tipo__total">{{ t.total }}</span>
+          <span class="rp-rev-tipo__flecha">{{ tiposAbiertos.has(t.codigo) ? '▾' : '▸' }}</span>
+        </button>
+        <div *ngIf="tiposAbiertos.has(t.codigo)" class="rp-rev-tipo__cuerpo">
+          <p class="rp-rev-tipo__explicacion">{{ t.explicacion }}</p>
+          <ul class="rp-rev-lista">
+            <li *ngFor="let e of t.ejemplos">{{ e.detalle }}</li>
+          </ul>
+          <p *ngIf="t.total > t.ejemplos.length" class="rp-hint">Se muestran los {{ t.ejemplos.length }} más recientes de {{ t.total }}.</p>
+        </div>
+      </div>
+
+      <!-- Lo que está bien -->
+      <div *ngIf="tiposEnOrden.length" class="rp-rev-bien">
+        <h6 class="rp-chart-title">Sin problemas</h6>
+        <ul class="rp-rev-lista rp-rev-lista--bien">
+          <li *ngFor="let t of tiposEnOrden">✅ {{ t.titulo }}</li>
+        </ul>
+      </div>
+
+      <!-- Lo que no se pudo revisar -->
+      <p *ngIf="revision.noRevisados.length" class="rp-hint">
+        No se pudo revisar en este ambiente:
+        <ng-container *ngFor="let c of revision.noRevisados; let ultimo = last">{{ tituloDeTipo(c) }}{{ ultimo ? '.' : ', ' }}</ng-container>
+      </p>
+
+    </ng-container>
   </div>
 
 </div>

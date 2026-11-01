@@ -60,6 +60,35 @@ export interface PromocionReporte {
   ultimaVenta:         string | null;
 }
 
+/** Un caso concreto que conviene revisar (Revisión de ventas). Los ids que no aplican vienen en null. */
+export interface RevisionEjemplo {
+  pedidoId:   number | null;
+  ventaId:    number | null;
+  articuloId: number | null;
+  detalle:    string;
+}
+
+/** Cada cosa que sabe buscar la revisión; `total` 0 = está bien. `ejemplos` trae hasta 50. */
+export interface RevisionTipo {
+  codigo:      string;
+  titulo:      string;
+  explicacion: string;
+  gravedad:    'ALTA' | 'MEDIA';
+  total:       number;
+  ejemplos:    RevisionEjemplo[];
+}
+
+export interface RevisionVentas {
+  desde:          string;
+  hasta:          string;
+  generadoEn:     string;
+  totalHallazgos: number;
+  todoEnOrden:    boolean;
+  tipos:          RevisionTipo[];
+  /** Tipos que no se pudieron revisar en este ambiente (p. ej. producción sin la tabla del cobro con tarjeta). */
+  noRevisados:    string[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private readonly base = `${environment.api_Url}/v1/reportes/ventas`;
@@ -100,5 +129,16 @@ export class ReportesService {
     return this.http
       .get<{ data: PromocionReporte[] }>(`${this.base}/promociones${qs}`)
       .pipe(map(r => r.data ?? []));
+  }
+
+  /** Revisión de ventas (solo administrador): sin fechas, últimos 90 días; stock y cobros se revisan siempre completos. */
+  getRevision(desde?: string, hasta?: string): Observable<RevisionVentas> {
+    const params: string[] = [];
+    if (desde) params.push(`desde=${desde}`);
+    if (hasta) params.push(`hasta=${hasta}`);
+    const qs = params.length ? `?${params.join('&')}` : '';
+    return this.http
+      .get<{ data: RevisionVentas }>(`${environment.api_Url}/v1/reportes/revision-ventas${qs}`)
+      .pipe(map(r => r.data));
   }
 }

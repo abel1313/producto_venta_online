@@ -11,6 +11,7 @@ import {
   ReporteDiario,
   ReporteMensual,
   ReportesService,
+  RevisionVentas,
 } from './service/reportes.service';
 import { ClienteService } from '../clietes/cliente.service';
 import { AuthService } from '../auth/auth.service';
@@ -29,7 +30,7 @@ function tema(token: string, alfa = 1): string {
 }
 Chart.register(...registerables);
 
-type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones';
+type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones' | 'revision';
 
 @Component({
   selector: 'app-reportes',
@@ -45,6 +46,15 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   private barChart:          Chart | null = null;
   private masVendidosChart:  Chart | null = null;
   private clienteChart:      Chart | null = null;
+
+  // — Revisión de ventas (solo administrador) —
+  desdeRevision = '';
+  hastaRevision = '';
+  revision: RevisionVentas | null = null;
+  cargandoRevision = false;
+  errorRevision: string | null = null;
+  /** Tipos con la lista de casos abierta. */
+  tiposAbiertos = new Set<string>();
 
   // — Diario —
   fechaDiario: string = this.hoy();
@@ -135,6 +145,50 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (t === 'promociones' && !this.promocionesCargadas) {
       this.buscarPromociones();
     }
+    if (t === 'revision' && !this.revision && !this.cargandoRevision) {
+      this.buscarRevision();
+    }
+  }
+
+  // ── REVISIÓN DE VENTAS ─────────────────────────────────────────────────────
+
+  buscarRevision(): void {
+    this.cargandoRevision = true;
+    this.errorRevision = null;
+    this.svc.getRevision(this.desdeRevision || undefined, this.hastaRevision || undefined).subscribe({
+      next: r => {
+        this.revision = r;
+        this.cargandoRevision = false;
+        // Lo que tiene casos graves se muestra abierto para no tener que buscarlo.
+        this.tiposAbiertos = new Set(r.tipos.filter(t => t.total > 0 && t.gravedad === 'ALTA').map(t => t.codigo));
+      },
+      error: err => {
+        this.cargandoRevision = false;
+        this.errorRevision = err?.error?.mensaje ?? 'No se pudo hacer la revisión. Intenta de nuevo.';
+      }
+    });
+  }
+
+  alternarTipo(codigo: string): void {
+    if (this.tiposAbiertos.has(codigo)) this.tiposAbiertos.delete(codigo);
+    else this.tiposAbiertos.add(codigo);
+  }
+
+  /** Lo que tiene casos primero (graves antes que medias); lo que está bien se muestra aparte. */
+  get tiposConCasos() {
+    return (this.revision?.tipos ?? []).filter(t => t.total > 0);
+  }
+
+  get tiposEnOrden() {
+    return (this.revision?.tipos ?? []).filter(t => t.total === 0);
+  }
+
+  /** Nombre en palabras del dueño de un tipo que no se pudo revisar. */
+  tituloDeTipo(codigo: string): string {
+    const nombres: Record<string, string> = {
+      COBRO_TARJETA_SIN_APLICAR: 'Cobros con tarjeta sin aplicar',
+    };
+    return nombres[codigo] ?? codigo;
   }
 
   // ── DIARIO ─────────────────────────────────────────────────────────────────

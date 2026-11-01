@@ -144,6 +144,94 @@
 .db-card--red    { border-top: 4px solid var(--pk-danger); }
 
 /* ── Dark mode ──────────────────────────────────────────────────── */
+/* ── Gráficas ───────────────────────────────────────────────────── */
+.db-graficas {
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.db-graficas__error {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: var(--card-radius, 14px);
+  border: 1px solid var(--pk-danger);
+  color: var(--app-text);
+}
+
+.db-panel {
+  padding: 18px;
+  background: var(--card-bg, var(--card-body-bg));
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  color: var(--app-text);
+
+  &__cabeza { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  &__titulo { margin: 0; font-size: 1rem; font-weight: 700; }
+  &__vacio { margin: 0; padding: 24px 0; text-align: center; color: var(--app-text-muted); }
+  &__nota { margin: 10px 0 0; font-size: .78rem; color: var(--app-text-muted); }
+}
+
+.db-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.db-chip {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: .82rem;
+  cursor: pointer;
+
+  &--on {
+    background: var(--btn-primary-bg);
+    color: var(--btn-primary-text);
+    border-color: var(--btn-primary-border, var(--app-accent));
+  }
+}
+
+.db-forma {
+  display: grid;
+  grid-template-columns: minmax(0, 280px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: center;
+
+  &__grafica { position: relative; height: 260px; min-width: 0; }
+  &__tabla { min-width: 0; overflow-x: auto; }
+}
+
+.db-mensual { position: relative; height: 320px; min-width: 0; }
+
+.db-tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .86rem;
+
+  th, td { padding: 8px 10px; border-bottom: 1px solid var(--app-hairline, var(--app-border)); text-align: left; white-space: nowrap; }
+  th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--app-text-muted); font-weight: 600; }
+  tfoot td { font-weight: 700; border-bottom: 0; }
+  &__num { text-align: right; font-variant-numeric: tabular-nums; }
+}
+
+.db-punto {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border-radius: 50%;
+}
+
+@media (max-width: 760px) {
+  .db-forma { grid-template-columns: minmax(0, 1fr); }
+  .db-forma__grafica { height: 220px; }
+  .db-mensual { height: 260px; }
+}
+
 :host-context(body.theme-dark) {
   .db-page { background: var(--page-bg); }
 

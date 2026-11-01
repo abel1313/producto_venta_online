@@ -109,4 +109,69 @@
 
   </div>
 
+  <!-- ── Gráficas ───────────────────────────────────────────────────── -->
+  <div class="db-graficas">
+
+    <p *ngIf="errorGraficas" class="db-graficas__error">{{ errorGraficas }}</p>
+
+    <!-- Cómo te pagan -->
+    <section class="db-panel">
+      <div class="db-panel__cabeza">
+        <h5 class="db-panel__titulo">💳 Cómo te pagan</h5>
+        <div class="db-chips" role="group" aria-label="Periodo">
+          <button type="button" class="db-chip" [class.db-chip--on]="periodo === 'mes'" (click)="cambiarPeriodo('mes')">Este mes</button>
+          <button type="button" class="db-chip" [class.db-chip--on]="periodo === 'mesAnterior'" (click)="cambiarPeriodo('mesAnterior')">Mes anterior</button>
+          <button type="button" class="db-chip" [class.db-chip--on]="periodo === 'noventa'" (click)="cambiarPeriodo('noventa')">90 días</button>
+        </div>
+      </div>
+
+      <div class="db-forma">
+        <div class="db-forma__grafica" [hidden]="!hayVentasEnElPeriodo">
+          <canvas #formaCanvas aria-label="Ventas por forma de pago"></canvas>
+        </div>
+
+        <div class="db-forma__tabla">
+          <p *ngIf="cargandoGraficas && !porForma" class="db-panel__vacio">Cargando…</p>
+          <p *ngIf="porForma && !hayVentasEnElPeriodo" class="db-panel__vacio">No hubo ventas {{ tituloDelPeriodo }}.</p>
+
+          <table *ngIf="porForma && hayVentasEnElPeriodo" class="db-tabla">
+            <thead>
+              <tr><th>Forma de pago</th><th class="db-tabla__num">Ventas</th><th class="db-tabla__num">Total</th><th class="db-tabla__num">%</th><th class="db-tabla__num">Comisión</th></tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let f of porForma.formas; let i = index">
+                <td><span class="db-punto" [style.background]="colorDeLaForma(i)"></span>{{ f.forma }}</td>
+                <td class="db-tabla__num">{{ f.ventas }}</td>
+                <td class="db-tabla__num">{{ formatPeso(f.total) }}</td>
+                <td class="db-tabla__num">{{ f.porcentaje | number:'1.0-1' }}%</td>
+                <td class="db-tabla__num">{{ f.comision > 0 ? formatPeso(f.comision) : '—' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr><td colspan="2">Total {{ tituloDelPeriodo }}</td><td class="db-tabla__num">{{ formatPeso(porForma.total) }}</td><td></td>
+                  <td class="db-tabla__num">{{ porForma.comisionTotal > 0 ? formatPeso(porForma.comisionTotal) : '—' }}</td></tr>
+            </tfoot>
+          </table>
+          <p *ngIf="porForma && porForma.comisionTotal > 0" class="db-panel__nota">
+            La comisión es lo que se queda la terminal de lo cobrado con tarjeta (tarifa + IVA de la terminal).
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ventas, gastos y ganancia por mes -->
+    <section class="db-panel">
+      <div class="db-panel__cabeza">
+        <h5 class="db-panel__titulo">📈 Ventas, gastos y ganancia — últimos 12 meses</h5>
+      </div>
+      <div class="db-mensual" [hidden]="!hayMovimientoEnLosMeses">
+        <canvas #mensualCanvas aria-label="Ventas, gastos y ganancia neta por mes"></canvas>
+      </div>
+      <p *ngIf="cargandoGraficas && !meses.length" class="db-panel__vacio">Cargando…</p>
+      <p *ngIf="meses.length && !hayMovimientoEnLosMeses" class="db-panel__vacio">Todavía no hay ventas ni gastos en estos meses.</p>
+      <p class="db-panel__nota">Ganancia neta = ganancia de las ventas − gastos del mes (la misma cuenta que la tarjeta «Ganancia neta»). Las ventas devueltas no cuentan.</p>
+    </section>
+
+  </div>
+
 </div>

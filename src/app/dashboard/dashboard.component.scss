@@ -232,6 +232,68 @@
   .db-mensual { height: 260px; }
 }
 
+/* ── Paneles de operación (por cobrar, mercancía parada, pedidos) ─── */
+.go-resumen { font-weight: 700; color: var(--app-text); }
+.go-sub { margin: 0 0 8px; font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; color: var(--app-text-muted); }
+.go-id { color: var(--app-text-muted); }
+
+.go-dos {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.go-grafica { position: relative; height: 240px; min-width: 0; &--alta { height: 340px; margin-top: 12px; } }
+
+.go-dias {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: .05rem .5rem;
+  text-align: center;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+
+  &--ok   { color: var(--pk-success); border-color: var(--pk-success); }
+  &--ojo  { color: var(--pk-warning); border-color: var(--pk-warning); }
+  &--mal  { color: var(--pk-danger);  border-color: var(--pk-danger); }
+}
+
+.go-kpis { display: flex; flex-wrap: wrap; gap: 12px; }
+
+.go-kpi {
+  flex: 1;
+  min-width: 140px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--app-border);
+  border-radius: var(--card-radius, 14px);
+
+  &__val { font-size: 1.35rem; font-weight: 700; color: var(--app-text); }
+  &__etq { font-size: .75rem; color: var(--app-text-muted); }
+}
+
+.go-etiquetas { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.go-etiqueta {
+  padding: .15rem .65rem;
+  font-size: .8rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--app-border);
+  color: var(--app-text-muted);
+
+  &--mal { color: var(--pk-danger); border-color: var(--pk-danger); }
+}
+
+@media (max-width: 760px) {
+  .go-dos { grid-template-columns: minmax(0, 1fr); }
+  .go-grafica { height: 210px; &--alta { height: 300px; } }
+}
+
 :host-context(body.theme-dark) {
   .db-page { background: var(--page-bg); }
 

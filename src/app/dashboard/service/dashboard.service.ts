@@ -44,6 +44,56 @@ export interface MesDeVentas {
   gananciaNeta: number;
 }
 
+export interface TramoPorCobrar { etiqueta: string; pedidos: number; saldo: number; }
+
+export interface CasoPorCobrar {
+  pedidoId: number;
+  cliente:  string;
+  /** Ya viene en palabras del dueño: «Apartado» o «Ir pagando». */
+  tipo:     string;
+  saldo:    number;
+  dias:     number;
+}
+
+/** Lo que te deben (Apartados e Ir pagando). `total` es el de la tarjeta «Por cobrar». Siempre 3 tramos. */
+export interface DineroPorCobrar {
+  total:       number;
+  pedidos:     number;
+  tramos:      TramoPorCobrar[];
+  masAntiguos: CasoPorCobrar[];
+}
+
+export interface ArticuloQuieto {
+  articuloId:    number;
+  nombre:        string;
+  stock:         number;
+  costo:         number;
+  capital:       number;
+  /** null = nunca se ha vendido. */
+  ultimaVenta:   string | null;
+  diasSinVender: number | null;
+}
+
+/** Mercancía con stock sin ventas en `dias` días, a costo. `mayores` = hasta 10 con más capital. */
+export interface CapitalParado {
+  dias:      number;
+  articulos: number;
+  piezas:    number;
+  capital:   number;
+  mayores:   ArticuloQuieto[];
+}
+
+export interface ConteoPedidos { codigo: string; etiqueta: string; activo: boolean; pedidos: number; }
+
+/** Siempre las 6 categorías en orden. Los abiertos (`activo`) se cuentan todos; Entregado y Cancelado solo los del periodo. */
+export interface PedidosPorEstado {
+  desde:     string;
+  hasta:     string;
+  activos:   number;
+  atrasados: number;
+  estados:   ConteoPedidos[];
+}
+
 interface ResponseGeneric<T> { data: T; }
 
 @Injectable({ providedIn: 'root' })
@@ -74,5 +124,17 @@ export class DashboardService {
     return this.http
       .get<ResponseGeneric<MesDeVentas[]>>(`${this.url}/graficas/ventas-gastos-mensual?meses=${meses}`)
       .pipe(map(r => r.data ?? []));
+  }
+
+  getPorCobrar(): Observable<DineroPorCobrar> {
+    return this.http.get<ResponseGeneric<DineroPorCobrar>>(`${this.url}/graficas/por-cobrar`).pipe(map(r => r.data));
+  }
+
+  getCapitalParado(dias = 60): Observable<CapitalParado> {
+    return this.http.get<ResponseGeneric<CapitalParado>>(`${this.url}/graficas/capital-parado?dias=${dias}`).pipe(map(r => r.data));
+  }
+
+  getPedidosPorEstado(dias = 90): Observable<PedidosPorEstado> {
+    return this.http.get<ResponseGeneric<PedidosPorEstado>>(`${this.url}/graficas/pedidos-por-estado?dias=${dias}`).pipe(map(r => r.data));
   }
 }

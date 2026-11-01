@@ -23,6 +23,9 @@ export class DashboardComponent implements OnInit, OnDestroy {
   @ViewChild('formaCanvas')  formaCanvasRef?:  ElementRef<HTMLCanvasElement>;
   @ViewChild('mensualCanvas') mensualCanvasRef?: ElementRef<HTMLCanvasElement>;
 
+  /** Cuando cambia, los paneles de operación (por cobrar, mercancía parada, pedidos) se vuelven a cargar. */
+  version = 0;
+
   periodo: Periodo = 'mes';
   porForma: VentasPorFormaDePago | null = null;
   meses: MesDeVentas[] = [];
@@ -48,6 +51,7 @@ export class DashboardComponent implements OnInit, OnDestroy {
   }
 
   cargar(): void {
+    this.version++;
     this.cargarGraficas();
     this.cargando = true;
     this.svc.getResumen().subscribe({

@@ -1,0 +1,75 @@
+<div class="db-graficas">
+
+  <!-- Lo que te deben, por antigüedad -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">🗂️ Lo que te deben, por antigüedad</h5>
+      <span *ngIf="porCobrar" class="go-resumen">{{ peso(porCobrar.total) }} en {{ porCobrar.pedidos }} pedido(s)</span>
+    </div>
+    <p *ngIf="errorCobrar" class="db-graficas__error">{{ errorCobrar }}</p>
+    <p *ngIf="!porCobrar && !errorCobrar" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="porCobrar && !hayPorCobrar" class="db-panel__vacio">Nadie te debe nada ahora. ✅</p>
+
+    <div class="go-dos" [hidden]="!hayPorCobrar">
+      <div class="go-grafica"><canvas #cobrarCanvas aria-label="Dinero por cobrar por antigüedad"></canvas></div>
+
+      <div class="db-forma__tabla" *ngIf="porCobrar && hayPorCobrar">
+        <h6 class="go-sub">A quién cobrarle primero</h6>
+        <table class="db-tabla">
+          <thead><tr><th>Cliente</th><th>Tipo</th><th class="db-tabla__num">Debe</th><th class="db-tabla__num">Días</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let c of porCobrar.masAntiguos">
+              <td>{{ c.cliente }} <small class="go-id">#{{ c.pedidoId }}</small></td>
+              <td>{{ c.tipo }}</td>
+              <td class="db-tabla__num">{{ peso(c.saldo) }}</td>
+              <td class="db-tabla__num"><span class="go-dias" [ngClass]="claseDeDias(c.dias)">{{ c.dias }}</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="db-panel__nota">Apartados e Ir pagando con saldo. La antigüedad cuenta desde la fecha del pedido. El total es el de la tarjeta «Por cobrar».</p>
+  </section>
+
+  <!-- Mercancía parada -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">🧊 Mercancía que no se mueve</h5>
+      <div class="db-chips" role="group" aria-label="Días sin venderse">
+        <button type="button" class="db-chip" [class.db-chip--on]="diasParado === 30" (click)="cambiarDiasParado(30)">30 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasParado === 60" (click)="cambiarDiasParado(60)">60 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasParado === 90" (click)="cambiarDiasParado(90)">90 días</button>
+      </div>
+    </div>
+    <p *ngIf="errorParado" class="db-graficas__error">{{ errorParado }}</p>
+    <p *ngIf="!parado && !errorParado" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="parado && !hayParado" class="db-panel__vacio">Todo lo que tienes en bodega se ha vendido en los últimos {{ parado.dias }} días. ✅</p>
+
+    <ng-container *ngIf="parado && hayParado">
+      <div class="go-kpis">
+        <div class="go-kpi"><span class="go-kpi__val">{{ peso(parado.capital) }}</span><span class="go-kpi__etq">guardado a costo</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ parado.piezas }}</span><span class="go-kpi__etq">piezas</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ parado.articulos }}</span><span class="go-kpi__etq">artículos sin venderse en {{ parado.dias }} días</span></div>
+      </div>
+    </ng-container>
+    <div class="go-grafica go-grafica--alta" [hidden]="!hayParado"><canvas #paradoCanvas aria-label="Artículos con más capital parado"></canvas></div>
+    <p class="db-panel__nota">Solo artículos habilitados con stock, con más de {{ diasParado }} días en el catálogo. «Capital» = piezas × costo del modelo. Se muestran los 10 que más dinero tienen guardado.</p>
+  </section>
+
+  <!-- Pedidos por estado -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">📦 En qué punto están los pedidos</h5>
+      <div *ngIf="estados" class="go-etiquetas">
+        <span class="go-etiqueta">{{ estados.activos }} abierto(s)</span>
+        <span class="go-etiqueta" [class.go-etiqueta--mal]="estados.atrasados > 0">{{ estados.atrasados }} atrasado(s)</span>
+      </div>
+    </div>
+    <p *ngIf="errorEstados" class="db-graficas__error">{{ errorEstados }}</p>
+    <p *ngIf="!estados && !errorEstados" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="estados && !hayPedidos" class="db-panel__vacio">Todavía no hay pedidos.</p>
+    <div class="go-grafica" [hidden]="!hayPedidos"><canvas #estadoCanvas aria-label="Pedidos por estado"></canvas></div>
+    <p class="db-panel__nota">Los pedidos abiertos se cuentan todos; Entregado y Cancelado, solo los de los últimos 90 días. «Atrasado» = sin entregar y con la fecha de recogida ya pasada.</p>
+  </section>
+
+</div>

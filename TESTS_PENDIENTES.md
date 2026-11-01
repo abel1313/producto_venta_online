@@ -425,3 +425,10 @@ Formato de cada entrada:
 - Mes a mes: 12 barras de ventas y gastos + línea de ganancia neta; el mes actual coincide con las tarjetas «Ventas del mes», «Gastos mes» y «Ganancia neta». Mes sin movimiento = barra en cero (no hueco).
 - Noche y día: textos y colores se leen bien; celular: tabla con scroll horizontal dentro de su caja, sin scroll horizontal de toda la página.
 - Una venta «Devuelta» NO debe sumar en ninguna de las dos.
+
+## 2026-11-01 · Más paneles del Dashboard (por cobrar, mercancía parada, pedidos)
+- Admin: Dashboard → después de las dos gráficas anteriores deben salir «Lo que te deben, por antigüedad», «Mercancía que no se mueve» y «En qué punto están los pedidos».
+- Por cobrar: el total que dice arriba a la derecha coincide con la tarjeta «Por cobrar»; las 3 barras suman ese total; la tabla «A quién cobrarle primero» va del más viejo al más nuevo y los días salen en verde (≤7), ámbar (≤30) o rojo.
+- Mercancía parada: cambiar 30/60/90 días recarga; un artículo vendido hace poco NO debe salir; uno recién dado de alta (menos de esos días) NO debe salir; pasar el mouse/dedo sobre una barra dice cuántas piezas, a cuánto y hace cuántos días no se vende (o «Nunca se ha vendido»).
+- Pedidos: salen las 6 categorías; «Pagado, falta entregar» y los «atrasados» deben coincidir con lo que se ve en Mis pedidos. ⚠️ Si salen muchos «falta entregar»/«atrasados» de pedidos viejos que ya se entregaron, son pedidos anteriores a la columna `entregado` (ver README de `graficasventas`).
+- Noche y día; celular (las tablas con scroll dentro de su caja, sin scroll horizontal de toda la página).

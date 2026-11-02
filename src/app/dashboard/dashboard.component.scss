@@ -226,6 +226,42 @@
   border-radius: 50%;
 }
 
+/* ── Mapa de calor: ventas por día de la semana y hora ─────────────── */
+.go-calor {
+  margin-top: 14px;
+  overflow-x: auto;
+  min-width: 0;
+
+  &__fila { display: flex; gap: 3px; margin-bottom: 3px; }
+  &__dia {
+    flex: 0 0 38px;
+    display: flex;
+    align-items: center;
+    font-size: .72rem;
+    color: var(--app-text-muted);
+  }
+  &__hora {
+    flex: 1 0 28px;
+    text-align: center;
+    font-size: .68rem;
+    color: var(--app-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  &__celda {
+    flex: 1 0 28px;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    font-weight: 600;
+    border-radius: 5px;
+    border: 1px solid var(--app-hairline, var(--app-border));
+    color: var(--app-text);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
 @media (max-width: 760px) {
   .db-forma { grid-template-columns: minmax(0, 1fr); }
   .db-forma__grafica { height: 220px; }

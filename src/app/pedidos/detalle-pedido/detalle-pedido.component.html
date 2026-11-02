@@ -194,9 +194,12 @@
   <div class="dp-art-buscador" *ngIf="mostrarBuscadorArticulo">
     <h4 class="dp-art-buscador__titulo">{{ tituloBuscador }}</h4>
 
-    <input class="dp-art-buscador__input" type="text"
-           [(ngModel)]="terminoArticulo" (input)="buscarArticulo()"
-           placeholder="Buscar artículo por nombre o código de barras (mínimo 3 letras)" appUppercase />
+    <div style="display:flex; gap:8px; align-items:stretch;">
+      <input class="dp-art-buscador__input" style="flex:1; min-width:0;" type="text"
+             [(ngModel)]="terminoArticulo" (input)="buscarArticulo()"
+             placeholder="Buscar artículo por nombre o código de barras (mínimo 3 letras)" appUppercase />
+      <app-escaner-celular (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
+    </div>
 
     <p class="dp-art-buscador__estado" *ngIf="buscandoArticulo">Buscando…</p>
     <p class="dp-art-buscador__estado"

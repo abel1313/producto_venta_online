@@ -16,6 +16,8 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
 import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
 import { DialogModule } from 'primeng/dialog';
+import { QRCodeModule } from 'angularx-qrcode';
+import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
 import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarjeta.component';
 
 @NgModule({
@@ -33,9 +35,10 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    CobroTarjetaComponent
+    CobroTarjetaComponent,
+    EscanerCelularComponent
   ],
-  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule],
+  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,
@@ -50,7 +53,8 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    CobroTarjetaComponent
+    CobroTarjetaComponent,
+    EscanerCelularComponent
   ]
 })
 export class SharedModule {}

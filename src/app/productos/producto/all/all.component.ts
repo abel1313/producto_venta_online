@@ -972,6 +972,16 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     }
   }
 
+  /** El código llegó del celular (botón «📱»): se busca igual que si se hubiera escaneado con la cámara. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.buscarProd = codigo;
+    if (this.hayFiltrosAdminActivos) {
+      this.aplicarFiltrosAdmin(1);
+    } else {
+      this.buscarProductoSinKey(1, codigo);
+    }
+  }
+
   detenerEscaner() {
     this.controlesEscaner?.stop();
     this.controlesEscaner = null;

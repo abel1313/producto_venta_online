@@ -282,7 +282,10 @@
       <div class="dv-indep-row">
         <div class="dv-indep-field dv-indep-field--full">
           <label class="dv-indep-label">Código de barras nuevo <span class="dv-indep-req">*</span></label>
-          <input class="dv-indep-input" type="text" [(ngModel)]="indepForm.codigoBarras" placeholder="Código de barras (diferente al actual)" appUppercase />
+          <div style="display:flex; gap:8px; align-items:stretch;">
+            <input class="dv-indep-input" style="flex:1; min-width:0;" type="text" [(ngModel)]="indepForm.codigoBarras" placeholder="Código de barras (diferente al actual)" appUppercase />
+            <app-escaner-celular (codigo)="indepForm.codigoBarras = $event.toUpperCase()"></app-escaner-celular>
+          </div>
           <span class="dv-indep-hint">Actual: {{ (varianteSeleccionada?.codigoBarras || '—') | uppercase }}</span>
         </div>
       </div>

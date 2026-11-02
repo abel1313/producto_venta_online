@@ -32,6 +32,7 @@
       <button *ngIf="puedeEscanear" class="pl-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
         📷
       </button>
+      <app-escaner-celular *ngIf="puedeEscanear" (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
     </div>
 
     <!-- Filtros admin: cada checkbox es independiente (no excluyente). Se pueden marcar varios

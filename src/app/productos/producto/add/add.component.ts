@@ -610,6 +610,11 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     }
   }
 
+  /** El código llegó del celular (botón «📱»): igual que si se hubiera escaneado con la cámara de esta pantalla. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.formProductos.patchValue({ sinCodigoBarra: false, codigoBarras: codigo });
+  }
+
   detenerEscanerCodigo(): void {
     this.controlesEscanerCodigo?.stop();
     this.controlesEscanerCodigo = null;

@@ -44,6 +44,7 @@
     <button *ngIf="isAnonymous || puedeEscanear" class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
     </button>
+    <app-escaner-celular *ngIf="isAnonymous || puedeEscanear" (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
   </div>
 
   <!-- Scanner overlay -->

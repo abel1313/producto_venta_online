@@ -432,3 +432,10 @@ Formato de cada entrada:
 - Mercancía parada: cambiar 30/60/90 días recarga; un artículo vendido hace poco NO debe salir; uno recién dado de alta (menos de esos días) NO debe salir; pasar el mouse/dedo sobre una barra dice cuántas piezas, a cuánto y hace cuántos días no se vende (o «Nunca se ha vendido»).
 - Pedidos: salen las 6 categorías; «Pagado, falta entregar» y los «atrasados» deben coincidir con lo que se ve en Mis pedidos. ⚠️ Si salen muchos «falta entregar»/«atrasados» de pedidos viejos que ya se entregaron, son pedidos anteriores a la columna `entregado` (ver README de `graficasventas`).
 - Noche y día; celular (las tablas con scroll dentro de su caja, sin scroll horizontal de toda la página).
+
+## 2026-11-02 · Paneles para conocer el negocio (cuándo se vende, clientes, zonas)
+- Admin: Dashboard → al final deben salir «Cuándo se vende», «Quién te compra» y «A dónde van los pedidos».
+- Cuándo se vende: mapa con 7 filas (Lun–Dom) y columnas de hora; los cuadros más oscuros son donde más se vendió; el número del cuadro es cuántas ventas; pasar el mouse/dedo dice «Lunes a las 10 a. m.: 2 venta(s), $300». «El día que más vendes» y «la hora que más vendes» deben coincidir con lo que se ve oscuro. Cambiar 30/90/180 días recarga. En celular el mapa se desplaza dentro de su caja (sin scroll de toda la página). El número debe leerse también en los cuadros más oscuros, de día y de noche.
+- Quién te compra: «clientes compraron» no cuenta ventas sin cliente ni las de mostrador (si vendes sin cliente, esa venta NO suma aquí); un cliente que compra por primera vez este mes sale en «Nuevos» y el mes siguiente en «Recurrentes». Los totales de la tabla «Los que más compraron» deben coincidir con lo que ves en Reportes → Por cliente.
+- Entregas: la suma de pedidos coincide con Mis pedidos del periodo sin contar cancelados; «Recoger en tienda» sale con otro color.
+- Una venta/pedido cancelado o devuelto NO debe sumar en ninguno.

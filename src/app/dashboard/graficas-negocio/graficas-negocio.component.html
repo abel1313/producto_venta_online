@@ -1,0 +1,115 @@
+<div class="db-graficas">
+
+  <!-- Cuándo se vende -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">🕒 Cuándo se vende</h5>
+      <div class="db-chips" role="group" aria-label="Periodo">
+        <button type="button" class="db-chip" [class.db-chip--on]="diasVenta === 30" (click)="cambiarDiasVenta(30)">30 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasVenta === 90" (click)="cambiarDiasVenta(90)">90 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasVenta === 180" (click)="cambiarDiasVenta(180)">180 días</button>
+      </div>
+    </div>
+    <p *ngIf="errorCuando" class="db-graficas__error">{{ errorCuando }}</p>
+    <p *ngIf="!cuando && !errorCuando" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="cuando && !hayVentas" class="db-panel__vacio">No hubo ventas en los últimos {{ diasVenta }} días.</p>
+
+    <ng-container *ngIf="cuando && hayVentas">
+      <div class="go-kpis">
+        <div class="go-kpi"><span class="go-kpi__val">{{ nombreDelDia(cuando.mejorDia) }}</span><span class="go-kpi__etq">el día que más vendes</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ horaLarga(cuando.mejorHora) }}</span><span class="go-kpi__etq">la hora que más vendes</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ cuando.ventas }}</span><span class="go-kpi__etq">ventas por {{ peso(cuando.total) }}</span></div>
+      </div>
+
+      <div class="go-calor" role="table" aria-label="Ventas por día de la semana y hora">
+        <div class="go-calor__fila go-calor__fila--horas" role="row">
+          <span class="go-calor__dia"></span>
+          <span *ngFor="let h of horas" class="go-calor__hora" role="columnheader">{{ h }}</span>
+        </div>
+        <div *ngFor="let d of diasDeLaSemana" class="go-calor__fila" role="row">
+          <span class="go-calor__dia" role="rowheader">{{ nombreCorto(d) }}</span>
+          <span *ngFor="let h of horas" class="go-calor__celda" role="cell"
+                [style.background]="colorDeCelda(d, h)" [style.color]="colorDelNumero(d, h)" [attr.title]="textoDeCelda(d, h)" [attr.aria-label]="textoDeCelda(d, h)">
+            {{ ventasDeCelda(d, h) || '' }}
+          </span>
+        </div>
+      </div>
+      <p class="db-panel__nota">Cada cuadro es un día de la semana a cierta hora (24 h); mientras más oscuro, más dinero se vendió ahí. El número es cuántas ventas. Suma todas las semanas del periodo; las devueltas no cuentan.</p>
+    </ng-container>
+  </section>
+
+  <!-- Tus clientes -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">👥 Quién te compra</h5>
+      <div class="db-chips" role="group" aria-label="Meses">
+        <button type="button" class="db-chip" [class.db-chip--on]="mesesClientes === 3" (click)="cambiarMesesClientes(3)">3 meses</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="mesesClientes === 6" (click)="cambiarMesesClientes(6)">6 meses</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="mesesClientes === 12" (click)="cambiarMesesClientes(12)">12 meses</button>
+      </div>
+    </div>
+    <p *ngIf="errorClientes" class="db-graficas__error">{{ errorClientes }}</p>
+    <p *ngIf="!clientes && !errorClientes" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="clientes && !hayClientes" class="db-panel__vacio">No hubo compras de clientes registrados en estos meses.</p>
+
+    <ng-container *ngIf="clientes && hayClientes">
+      <div class="go-kpis">
+        <div class="go-kpi"><span class="go-kpi__val">{{ clientes.clientes }}</span><span class="go-kpi__etq">clientes compraron</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ clientes.nuevos }}</span><span class="go-kpi__etq">compraron por primera vez</span></div>
+        <div class="go-kpi"><span class="go-kpi__val">{{ clientes.recurrentes }}</span><span class="go-kpi__etq">ya habían comprado antes</span></div>
+      </div>
+      <div class="go-dos">
+        <div class="go-grafica"><canvas #clientesCanvas aria-label="Clientes nuevos y recurrentes por mes"></canvas></div>
+        <div class="db-forma__tabla">
+          <h6 class="go-sub">Los que más compraron</h6>
+          <table class="db-tabla">
+            <thead><tr><th>Cliente</th><th class="db-tabla__num">Compras</th><th class="db-tabla__num">Total</th></tr></thead>
+            <tbody>
+              <tr *ngFor="let c of clientes.mejores">
+                <td>{{ c.nombre }}</td>
+                <td class="db-tabla__num">{{ c.ventas }}</td>
+                <td class="db-tabla__num">{{ peso(c.total) }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </ng-container>
+    <p class="db-panel__nota">Solo clientes registrados. No cuentan las ventas sin cliente (mostrador) ni las devueltas. «Nuevo» es el mes de su primera compra; después es recurrente.</p>
+  </section>
+
+  <!-- Entregas por zona -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">🚚 A dónde van los pedidos</h5>
+      <div class="db-chips" role="group" aria-label="Periodo">
+        <button type="button" class="db-chip" [class.db-chip--on]="diasZonas === 30" (click)="cambiarDiasZonas(30)">30 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasZonas === 90" (click)="cambiarDiasZonas(90)">90 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasZonas === 180" (click)="cambiarDiasZonas(180)">180 días</button>
+      </div>
+    </div>
+    <p *ngIf="errorZonas" class="db-graficas__error">{{ errorZonas }}</p>
+    <p *ngIf="!zonas && !errorZonas" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="zonas && !hayZonas" class="db-panel__vacio">No hubo pedidos en los últimos {{ diasZonas }} días.</p>
+
+    <div class="go-dos" [hidden]="!hayZonas">
+      <div class="go-grafica"><canvas #zonasCanvas aria-label="Pedidos por lugar de entrega"></canvas></div>
+      <div class="db-forma__tabla" *ngIf="zonas && hayZonas">
+        <table class="db-tabla">
+          <thead><tr><th>Lugar</th><th class="db-tabla__num">Pedidos</th><th class="db-tabla__num">%</th><th class="db-tabla__num">Total</th></tr></thead>
+          <tbody>
+            <tr *ngFor="let z of zonas.zonas">
+              <td>{{ z.zona }} <small *ngIf="z.recogerEnTienda" class="go-id">(pasan por él)</small></td>
+              <td class="db-tabla__num">{{ z.pedidos }}</td>
+              <td class="db-tabla__num">{{ z.porcentaje | number:'1.0-1' }}%</td>
+              <td class="db-tabla__num">{{ peso(z.total) }}</td>
+            </tr>
+          </tbody>
+          <tfoot><tr><td>Total</td><td class="db-tabla__num">{{ zonas.pedidos }}</td><td></td><td class="db-tabla__num">{{ peso(zonas.total) }}</td></tr></tfoot>
+        </table>
+      </div>
+    </div>
+    <p class="db-panel__nota">Pedidos no cancelados, sin importar si ya se entregaron. «Recoger en tienda» va con otro color porque no es una entrega.</p>
+  </section>
+
+</div>

@@ -94,6 +94,46 @@ export interface PedidosPorEstado {
   estados:   ConteoPedidos[];
 }
 
+export interface CeldaDeCalor { diaSemana: number; hora: number; ventas: number; total: number; }
+export interface TotalDeDia { diaSemana: number; nombre: string; ventas: number; total: number; }
+
+/** Cuándo se vende. `diaSemana`: 1 = lunes … 7 = domingo; `hora` 0–23. `celdas` solo trae lo que tuvo ventas. `mejorDia`/`mejorHora` null = sin ventas. */
+export interface CuandoSeVende {
+  desde:      string;
+  hasta:      string;
+  ventas:     number;
+  total:      number;
+  mejorDia:   number | null;
+  mejorHora:  number | null;
+  porDia:     TotalDeDia[];
+  celdas:     CeldaDeCalor[];
+}
+
+export interface MesDeClientes { mes: string; nuevos: number; recurrentes: number; totalNuevos: number; totalRecurrentes: number; }
+export interface MejorCliente { clienteId: number; nombre: string; ventas: number; total: number; }
+
+/** Quién te compra (solo clientes registrados, sin ventas de mostrador). `porMes` trae todos los meses seguidos. */
+export interface ClientesDelNegocio {
+  meses:       number;
+  clientes:    number;
+  nuevos:      number;
+  recurrentes: number;
+  total:       number;
+  porMes:      MesDeClientes[];
+  mejores:     MejorCliente[];
+}
+
+export interface ZonaDeEntrega { zona: string; recogerEnTienda: boolean; pedidos: number; total: number; porcentaje: number; }
+
+/** A dónde van los pedidos no cancelados del periodo, del lugar con más pedidos al que menos. */
+export interface EntregasPorZona {
+  desde:   string;
+  hasta:   string;
+  pedidos: number;
+  total:   number;
+  zonas:   ZonaDeEntrega[];
+}
+
 interface ResponseGeneric<T> { data: T; }
 
 @Injectable({ providedIn: 'root' })
@@ -136,5 +176,17 @@ export class DashboardService {
 
   getPedidosPorEstado(dias = 90): Observable<PedidosPorEstado> {
     return this.http.get<ResponseGeneric<PedidosPorEstado>>(`${this.url}/graficas/pedidos-por-estado?dias=${dias}`).pipe(map(r => r.data));
+  }
+
+  getCuandoSeVende(dias = 90): Observable<CuandoSeVende> {
+    return this.http.get<ResponseGeneric<CuandoSeVende>>(`${this.url}/graficas/cuando-se-vende?dias=${dias}`).pipe(map(r => r.data));
+  }
+
+  getClientes(meses = 6): Observable<ClientesDelNegocio> {
+    return this.http.get<ResponseGeneric<ClientesDelNegocio>>(`${this.url}/graficas/clientes?meses=${meses}`).pipe(map(r => r.data));
+  }
+
+  getEntregasPorZona(dias = 90): Observable<EntregasPorZona> {
+    return this.http.get<ResponseGeneric<EntregasPorZona>>(`${this.url}/graficas/entregas-por-zona?dias=${dias}`).pipe(map(r => r.data));
   }
 }

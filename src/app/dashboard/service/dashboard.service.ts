@@ -134,6 +134,34 @@ export interface EntregasPorZona {
   zonas:   ZonaDeEntrega[];
 }
 
+/** Un tramo de días del comparativo: ventas, ganancia, gastos y ganancia neta. */
+export interface PeriodoDeVentas {
+  desde: string; hasta: string; numeroVentas: number; ventas: number; ganancia: number; gastos: number; gananciaNeta: number;
+}
+
+/** Cambio porcentual contra el mes anterior; `null` cuando el mes anterior fue cero (no se puede comparar). */
+export interface CambiosDelMes {
+  numeroVentas: number | null; ventas: number | null; ganancia: number | null; gastos: number | null; gananciaNeta: number | null;
+}
+
+/** Este mes hasta hoy contra el mes anterior hasta el mismo día. */
+export interface ComparativoDelMes {
+  hastaElDia: number;
+  actual:     PeriodoDeVentas;
+  anterior:   PeriodoDeVentas;
+  cambio:     CambiosDelMes;
+}
+
+export interface ProductoRentable {
+  productoId: number; nombre: string; piezas: number; vendido: number; ganancia: number; margen: number;
+}
+
+/** Los productos que más ganancia dejaron. `porcentajeDeLosMejores` = qué parte de TODA la ganancia dejan los de la lista. */
+export interface GananciaPorProducto {
+  desde: string; hasta: string; gananciaTotal: number; gananciaDeLosMejores: number; porcentajeDeLosMejores: number;
+  productos: ProductoRentable[];
+}
+
 interface ResponseGeneric<T> { data: T; }
 
 @Injectable({ providedIn: 'root' })
@@ -188,5 +216,13 @@ export class DashboardService {
 
   getEntregasPorZona(dias = 90): Observable<EntregasPorZona> {
     return this.http.get<ResponseGeneric<EntregasPorZona>>(`${this.url}/graficas/entregas-por-zona?dias=${dias}`).pipe(map(r => r.data));
+  }
+
+  getComparativoDelMes(): Observable<ComparativoDelMes> {
+    return this.http.get<ResponseGeneric<ComparativoDelMes>>(`${this.url}/graficas/comparativo-mes`).pipe(map(r => r.data));
+  }
+
+  getGananciaPorProducto(dias = 90, limite = 10): Observable<GananciaPorProducto> {
+    return this.http.get<ResponseGeneric<GananciaPorProducto>>(`${this.url}/graficas/ganancia-por-producto?dias=${dias}&limite=${limite}`).pipe(map(r => r.data));
   }
 }

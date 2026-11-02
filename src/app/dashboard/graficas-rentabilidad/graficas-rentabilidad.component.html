@@ -1,0 +1,72 @@
+<div class="db-graficas">
+
+  <!-- Este mes contra el mes anterior -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">📈 Este mes contra el mes anterior</h5>
+    </div>
+    <p *ngIf="errorComparativo" class="db-graficas__error">{{ errorComparativo }}</p>
+    <p *ngIf="!comparativo && !errorComparativo" class="db-panel__vacio">Cargando…</p>
+
+    <div class="db-forma__tabla" *ngIf="comparativo">
+      <table class="db-tabla">
+        <thead>
+          <tr>
+            <th></th>
+            <th class="db-tabla__num">Este mes (1 al {{ comparativo.hastaElDia }})</th>
+            <th class="db-tabla__num">Mes anterior (1 al {{ comparativo.hastaElDia }})</th>
+            <th class="db-tabla__num">Cambio</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of filas">
+            <td>{{ f.etiqueta }}</td>
+            <td class="db-tabla__num">{{ valor(comparativo.actual, f) }}</td>
+            <td class="db-tabla__num">{{ valor(comparativo.anterior, f) }}</td>
+            <td class="db-tabla__num rent-cambio" [ngClass]="claseCambio(f)">{{ textoCambio(f) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="db-panel__nota">Se comparan los mismos días: si hoy es 15, el mes anterior también va del 1 al 15. En «Gastos», bajar es lo bueno. Las ventas devueltas no cuentan.</p>
+  </section>
+
+  <!-- Ganancia por producto -->
+  <section class="db-panel">
+    <div class="db-panel__cabeza">
+      <h5 class="db-panel__titulo">🏆 Qué productos dejan más ganancia</h5>
+      <div class="db-chips" role="group" aria-label="Periodo">
+        <button type="button" class="db-chip" [class.db-chip--on]="diasProductos === 30" (click)="cambiarDiasProductos(30)">30 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasProductos === 90" (click)="cambiarDiasProductos(90)">90 días</button>
+        <button type="button" class="db-chip" [class.db-chip--on]="diasProductos === 180" (click)="cambiarDiasProductos(180)">180 días</button>
+      </div>
+    </div>
+    <p *ngIf="errorProductos" class="db-graficas__error">{{ errorProductos }}</p>
+    <p *ngIf="!productos && !errorProductos" class="db-panel__vacio">Cargando…</p>
+    <p *ngIf="productos && !hayProductos" class="db-panel__vacio">No hubo ventas en los últimos {{ diasProductos }} días.</p>
+
+    <ng-container *ngIf="productos && hayProductos">
+      <p class="db-panel__resumen">
+        Estos {{ productos.productos.length }} productos dejan <strong>{{ peso(productos.gananciaDeLosMejores) }}</strong>,
+        el <strong>{{ productos.porcentajeDeLosMejores | number:'1.0-1' }}%</strong> de toda la ganancia ({{ peso(productos.gananciaTotal) }}).
+      </p>
+      <table class="db-tabla">
+        <thead>
+          <tr><th>Producto</th><th></th><th class="db-tabla__num">Piezas</th><th class="db-tabla__num">Vendido</th><th class="db-tabla__num">Ganancia</th><th class="db-tabla__num">Margen</th></tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let p of productos.productos">
+            <td>{{ p.nombre }}</td>
+            <td class="rent-barra-celda"><span class="rent-barra" [style.width.%]="anchoBarra(p.ganancia)"></span></td>
+            <td class="db-tabla__num">{{ p.piezas }}</td>
+            <td class="db-tabla__num">{{ peso(p.vendido) }}</td>
+            <td class="db-tabla__num">{{ peso(p.ganancia) }}</td>
+            <td class="db-tabla__num">{{ p.margen | number:'1.0-1' }}%</td>
+          </tr>
+        </tbody>
+      </table>
+    </ng-container>
+    <p class="db-panel__nota">Ganancia = lo vendido menos lo que costó, sumando todos los artículos del producto. Margen = ganancia entre lo vendido. No cuentan las ventas devueltas.</p>
+  </section>
+
+</div>

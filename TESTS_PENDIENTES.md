@@ -439,3 +439,10 @@ Formato de cada entrada:
 - Quién te compra: «clientes compraron» no cuenta ventas sin cliente ni las de mostrador (si vendes sin cliente, esa venta NO suma aquí); un cliente que compra por primera vez este mes sale en «Nuevos» y el mes siguiente en «Recurrentes». Los totales de la tabla «Los que más compraron» deben coincidir con lo que ves en Reportes → Por cliente.
 - Entregas: la suma de pedidos coincide con Mis pedidos del periodo sin contar cancelados; «Recoger en tienda» sale con otro color.
 - Una venta/pedido cancelado o devuelto NO debe sumar en ninguno.
+
+## Dashboard: comparativo del mes y ganancia por producto (2026-11-02)
+- Admin: Dashboard → debe salir «Este mes contra el mes anterior» y «Qué productos dejan más ganancia».
+- Comparativo: si hoy es día N, las dos columnas dicen «1 al N». Ventas y ganancia del mes actual deben coincidir con las tarjetas «Ventas del mes» / «Ganancia» del Dashboard; el mes anterior, con el reporte Mensual de Reportes para esos mismos días.
+- Gastos: si bajan contra el mes anterior el cambio sale en verde (▼); si suben, en rojo (▲). Si el mes anterior fue 0 sale «sin dato del mes anterior», no un porcentaje.
+- Ganancia por producto: el producto que más ganancia deja va arriba; la suma de «Piezas» de un producto incluye todos sus artículos (tallas/colores). El % de arriba dice qué parte de toda la ganancia dejan esos 10.
+- Una venta devuelta NO debe sumar en ninguno de los dos paneles.

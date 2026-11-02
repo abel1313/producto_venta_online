@@ -446,3 +446,10 @@ Formato de cada entrada:
 - Gastos: si bajan contra el mes anterior el cambio sale en verde (▼); si suben, en rojo (▲). Si el mes anterior fue 0 sale «sin dato del mes anterior», no un porcentaje.
 - Ganancia por producto: el producto que más ganancia deja va arriba; la suma de «Piezas» de un producto incluye todos sus artículos (tallas/colores). El % de arriba dice qué parte de toda la ganancia dejan esos 10.
 - Una venta devuelta NO debe sumar en ninguno de los dos paneles.
+
+## Mis pedidos: Cobrar con el componente compartido (2026-11-02)
+- Admin, QA (pasarela simulada): Mis pedidos → pedido de contado sin pagar → Cobrar → forma de pago con tarjeta → debe salir «Continuar con la tarjeta» (ya NO el panel «Terminal Mercado Pago» ni el selector de plan en este diálogo).
+- Continuar → se abre «Cobrar con la terminal» con los meses permitidos de ESE pedido (si no hay, dice «Solo de contado: …»). Total con centavos .00 → aprobado: sale «Pedido cobrado correctamente» y la card queda Pagado y Entregado.
+- Centavos .01 → rechazado con «Reintentar»; .03 → cancelado; cerrar el cobro sin pagar deja el pedido igual que antes.
+- Cobro de un GRUPO de pedidos: debe seguir saliendo el panel anterior «Terminal Mercado Pago» (sin cambios).
+- Efectivo / transferencia: igual que antes («Confirmar cobro»).

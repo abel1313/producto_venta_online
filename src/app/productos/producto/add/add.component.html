@@ -182,6 +182,8 @@
               <button type="button" class="pf-barcode-scan" (click)="iniciarEscanerCodigo()"
                       *ngIf="authService.tieneAccion('productos/agregar', 'escanear-codigo')"
                       title="Escanear código de barras con la cámara">📷</button>
+              <app-escaner-celular *ngIf="authService.tieneAccion('productos/agregar', 'escanear-codigo')"
+                                   (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
             </div>
             <small class="pf-error" *ngIf="isInvalid('codigoBarras')">Campo requerido</small>
           </div>

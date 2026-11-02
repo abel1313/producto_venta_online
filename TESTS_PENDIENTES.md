@@ -453,3 +453,15 @@ Formato de cada entrada:
 - Centavos .01 → rechazado con «Reintentar»; .03 → cancelado; cerrar el cobro sin pagar deja el pedido igual que antes.
 - Cobro de un GRUPO de pedidos: debe seguir saliendo el panel anterior «Terminal Mercado Pago» (sin cambios).
 - Efectivo / transferencia: igual que antes («Confirmar cobro»).
+
+## Escanear el código de barras con el celular (2026-11-02)
+Necesitas la PC y el celular (con cámara). QA es https, así que la cámara del celular funciona.
+- **Tienda (sin sesión):** en la PC abre Tienda → Buscar → pulsa «📱» junto al buscador. Sale un QR. Con el celular abre el QR, permite la cámara y escanea el código de barras de un producto. En la PC debe aparecer «✔ Recibido: …», el cuadro se cierra solo y el buscador muestra ese código con el artículo.
+- **Buscar producto (admin):** Productos → Buscar → «📱» → mismo resultado: el código queda en el buscador y se busca.
+- **Nuevo producto (admin):** Productos → Agregar → junto a «Código de barras» pulsa «📱» → el código llega al campo (y se apaga «generar automático» si estaba prendido).
+- **Carga de imágenes, Venta directa, detalle del pedido → Agregar artículo, detalle del artículo → «Código de barras nuevo»:** «📱» llena o busca con el código.
+- **De 1 en 1:** después de recibir un código el cuadro se cierra; para otro código hay que volver a pulsar «📱». En el celular, después de «✔ Enviado» no hay botón para escanear otro: se pulsa «📱» otra vez en la computadora y se abre el QR nuevo.
+- ⛔ No puede pasar: que llegue el mismo código dos veces; que el celular siga con la cámara prendida después de enviar; que la PC se quede esperando para siempre (a los 30 minutos dice «venció»); que se pueda abrir una conexión de otra PC con un enlace inventado (da «La conexión terminó»).
+- Sin permiso de cámara en el celular: la página debe decir «No se pudo abrir la cámara» con el botón «Intentar de nuevo».
+- Dejar el cuadro «Escanear con mi celular» abierto y NO escanear: a los 2 minutos de cerrar/recargar la pestaña la conexión se libera sola (el celular que abra el QR viejo dice «La conexión terminó»). Recargar la pestaña con el cuadro abierto no debe dejar la conexión ocupando cupo.
+- Venta directa: escanear dos veces seguidas el mismo artículo (con ✕ entre las dos) debe buscarlo las dos veces. Los códigos entran en MAYÚSCULAS.

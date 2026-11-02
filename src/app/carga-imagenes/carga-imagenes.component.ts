@@ -360,6 +360,11 @@ export class CargaImagenesComponent implements OnInit, OnDestroy {
   // Escanea el código de barras real con la cámara (mismo patrón que
   // variante/buscar/buscar.component.ts → iniciarEscaner()) y lo escribe
   // directo en el campo del formulario de completar borrador.
+  /** El código llegó del celular (botón «📱»): igual que si se hubiera escaneado con la cámara de esta pantalla. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.form.codigoBarras = codigo;
+  }
+
   async iniciarEscaner(): Promise<void> {
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));

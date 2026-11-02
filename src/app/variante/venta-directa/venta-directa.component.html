@@ -42,6 +42,7 @@
                (input)="onInputVariante()"
                autocomplete="off"
                appUppercase>
+        <app-escaner-celular (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
         <button *ngIf="terminoVariante" class="vd-search__clear"
                 (click)="terminoVariante = ''; resultados = []">✕</button>
       </div>

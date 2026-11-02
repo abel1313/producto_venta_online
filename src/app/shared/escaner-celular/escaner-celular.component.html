@@ -1,0 +1,38 @@
+<button type="button" class="ec-boton" (click)="abrir()" title="Escanear el código de barras con mi celular">
+  📱<span *ngIf="etiqueta" class="ec-boton__texto"> {{ etiqueta }}</span>
+</button>
+
+<!-- appendTo="body": el botón vive dentro de barras con efecto de cristal (backdrop-filter), que hacen que un cuadro «fijo» se encoja al tamaño de la barra. -->
+<p-dialog header="Escanear con mi celular" appendTo="body" [visible]="visible" [modal]="true" [closable]="true" [draggable]="false"
+          [style]="{ width: '380px', maxWidth: '95vw' }" (visibleChange)="!$event && cerrar()" (onHide)="cerrar()">
+  <div class="ec-cuerpo" aria-live="polite">
+
+    <p class="ec-texto" *ngIf="fase === 'abriendo'">Preparando la conexión…</p>
+
+    <ng-container *ngIf="fase === 'esperando'">
+      <ol class="ec-pasos">
+        <li>Abre la cámara de tu celular y apunta a este código QR.</li>
+        <li>Toca el enlace y permite el uso de la cámara.</li>
+        <li>Escanea el código de barras del producto. Llegará aquí solo.</li>
+      </ol>
+      <div class="ec-qr">
+        <qrcode [qrdata]="direccion" [width]="200" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
+      </div>
+      <p class="ec-estado"><span class="ec-punto"></span> Esperando el código del celular…</p>
+      <p class="ec-nota">¿No puedes leer el QR? Escribe esta dirección en el navegador del celular:<br><span class="ec-enlace">{{ direccion }}</span></p>
+    </ng-container>
+
+    <p class="ec-ok" *ngIf="fase === 'recibido'">✔ Recibido: <strong>{{ recibido }}</strong></p>
+
+    <ng-container *ngIf="fase === 'vencida'">
+      <p class="ec-texto">La conexión con el celular venció (dura 30 minutos).</p>
+      <button type="button" class="ec-accion" (click)="abrir()">Generar otro código QR</button>
+    </ng-container>
+
+    <ng-container *ngIf="fase === 'error'">
+      <p class="ec-error">{{ mensaje }}</p>
+      <button type="button" class="ec-accion" (click)="abrir()">Intentar de nuevo</button>
+    </ng-container>
+
+  </div>
+</p-dialog>

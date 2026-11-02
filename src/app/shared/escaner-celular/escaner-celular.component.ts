@@ -1,14 +1,18 @@
-import { Component, EventEmitter, Input, OnDestroy, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import Swal from 'sweetalert2';
+import { AuthService } from 'src/app/auth/auth.service';
+import { EscanerReceptorService } from './escaner-receptor.service';
 import { EscanerCelularService, LecturaEscaner } from './escaner-celular.service';
 
 /**
  * - abriendo: preguntando si ya hay un celular enlazado
  * - qr: hay conexión pero el celular aún no está (se muestra el QR; solo la primera vez)
  * - listo: el celular está conectado: «escanea ahora» (lo normal después de la primera vez, sin QR)
+ * - cuenta: con sesión iniciada; informa si el celular de la cuenta está conectado (los códigos llegan solos, sin pulsar nada)
  */
-type Fase = 'cerrado' | 'abriendo' | 'qr' | 'listo' | 'recibido' | 'error';
+type Fase = 'cerrado' | 'abriendo' | 'qr' | 'listo' | 'recibido' | 'error' | 'cuenta';
 
 /**
  * Botón «📱» que se pone junto a cualquier campo de código de barras. La PRIMERA vez sale un QR: se abre con el celular y queda una página
@@ -20,7 +24,7 @@ type Fase = 'cerrado' | 'abriendo' | 'qr' | 'listo' | 'recibido' | 'error';
   templateUrl: './escaner-celular.component.html',
   styleUrls: ['./escaner-celular.component.scss']
 })
-export class EscanerCelularComponent implements OnDestroy {
+export class EscanerCelularComponent implements OnInit, OnDestroy {
   /** Texto del botón; sin él solo sale el ícono (para ponerlo junto al 📷). */
   @Input() etiqueta = '';
   /** Lo que llegó del celular, tal cual (el campo que lo recibe decide si lo pasa a mayúsculas). */
@@ -41,11 +45,40 @@ export class EscanerCelularComponent implements OnDestroy {
   /** Cuenta las aperturas: una respuesta tardía de una apertura anterior se descarta. */
   private intento = 0;
 
-  constructor(private readonly svc: EscanerCelularService) {}
+  /** ¿El celular de la cuenta está conectado? (solo con sesión iniciada). */
+  conectado = false;
+  /** Dirección de la página del celular de la cuenta (para el QR). */
+  direccionDeLaCuenta = '';
+  private desregistrar: (() => void) | null = null;
+  private suscripcionConectado: Subscription | null = null;
+
+  constructor(
+    private readonly svc: EscanerCelularService,
+    private readonly receptor: EscanerReceptorService,
+    private readonly authService: AuthService
+  ) {}
+
+  /**
+   * Con sesión iniciada (el personal) NO hay QR por escaneo: la PC y el celular de la misma cuenta se encuentran solos. Mientras este botón
+   * existe la pantalla está lista para recibir: el celular escanea y el código llega aquí, sin pulsar nada. Sin sesión (visitante de la
+   * tienda) se usa el QR de siempre.
+   */
+  get modoCuenta(): boolean { return this.authService.rolesValue.length > 0; }
+
+  ngOnInit(): void {
+    if (!this.modoCuenta) return;
+    this.direccionDeLaCuenta = this.svc.direccionDelEscanerDeLaCuenta();
+    this.suscripcionConectado = this.receptor.conectado$.subscribe(c => { this.conectado = c; });
+    this.desregistrar = this.receptor.registrar(codigo => {
+      this.codigo.emit(codigo);
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `Código recibido: ${codigo}`, showConfirmButton: false, timer: 1800 });
+    });
+  }
 
   get visible(): boolean { return this.fase !== 'cerrado'; }
 
   abrir(): void {
+    if (this.modoCuenta) { this.fase = 'cuenta'; return; }    // solo informa: los códigos ya llegan solos
     if (this.fase === 'abriendo') return;           // doble clic
     this.detenerEspera();
     const miIntento = ++this.intento;
@@ -90,6 +123,8 @@ export class EscanerCelularComponent implements OnDestroy {
   ngOnDestroy(): void {
     this.intento++;
     this.detenerEspera();
+    this.desregistrar?.();
+    this.suscripcionConectado?.unsubscribe();
   }
 
   private esActual(miIntento: number): boolean {

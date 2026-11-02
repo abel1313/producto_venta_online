@@ -51,6 +51,14 @@
       <span class="sb-label">Tienda</span>
     </a>
 
+    <!-- Escáner del celular: el celular de TU cuenta escanea y el código llega a la pantalla que tengas abierta en la computadora -->
+    <a class="sb-item" *ngIf="puedeEscanerCelular"
+       routerLink="escaner-celular" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">📱</span>
+      <span class="sb-label">Escáner</span>
+    </a>
+
     <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
          "Artículo" es lo que se vende (Blusa Zara / M / Negro).
          Los title= repiten esa distinción en pantalla: el usuario ya no distinguía

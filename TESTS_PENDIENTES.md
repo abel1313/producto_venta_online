@@ -469,3 +469,16 @@ Necesitas la PC y el celular (con cámara). QA es https, así que la cámara del
 - Escanear sin haber pulsado «📱» en la PC: el celular dice «La computadora no lo está pidiendo: pulsa «📱» y vuelve a escanear» (no «Enviado»), y ese código NO debe aparecer luego en la PC.
 - Bloquea el celular 10 segundos y desbloquéalo: la cámara debe volver a funcionar sola (si se ve negra, avísame con el modelo del celular).
 - Si el celular apunta al QR de la pantalla de la PC (el de enlace), no debe mandarlo como código.
+
+## Escáner por CUENTA: el celular escanea y llega a la pantalla de la PC (2026-11-02) — LA PRUEBA PRINCIPAL
+Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) en QA.
+1. En la PC abre **Productos → Agregar** (el campo «Código de barras» vacío). Junto al campo hay un «📱» con un puntito gris (celular no conectado).
+2. En el celular entra a la tienda con tu usuario y abre el menú → **📱 Escáner**. Permite la cámara. Debe decir «Listo: apunta al código de barras».
+3. En la PC el puntito del «📱» debe ponerse **verde** (celular conectado).
+4. Apunta el celular a un código de barras de producto. En la PC el código debe aparecer **solo** en el campo «Código de barras» (sale un aviso «Código recibido»), sin pulsar nada. El celular dice «✔ Enviado» y vibra.
+5. Cambia la PC a **Productos → Buscar** (o la tienda → Buscar): escanea otro producto con el celular (sin tocar nada en él): se llena el buscador y busca.
+6. Prueba también Carga de imágenes, Venta directa, detalle del pedido → Agregar artículo, detalle del artículo → «Código de barras nuevo».
+7. Cambia la PC a una pantalla SIN campo de código (Dashboard) y escanea: el celular debe avisar «La computadora no tiene abierta una pantalla con código de barras» (y no pasa nada en la PC).
+8. Cierra el escáner del celular unos minutos y vuelve a abrirlo: debe reconectarse SOLO (sin QR) y el punto de la PC volver a verde.
+- ⛔ No puede pasar: que el código llegue dos veces; que llegue a otra cuenta; que pida QR teniendo sesión; que con la PC en otra pestaña oculta se llene un campo.
+- Pruebas aparte: dos PCs con la misma cuenta (solo debe recibir la que tengas a la vista), y un visitante sin sesión en la tienda (sigue usando el QR de «📱»).

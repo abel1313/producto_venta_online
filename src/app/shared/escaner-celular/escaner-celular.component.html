@@ -1,5 +1,6 @@
-<button type="button" class="ec-boton" (click)="abrir()" title="Escanear el código de barras con mi celular">
-  📱<span *ngIf="etiqueta" class="ec-boton__texto"> {{ etiqueta }}</span>
+<button type="button" class="ec-boton" [class.ec-boton--conectado]="modoCuenta && conectado" (click)="abrir()"
+        [title]="modoCuenta ? (conectado ? 'Celular conectado: escanea y el código llega aquí' : 'Conectar mi celular para escanear códigos de barras') : 'Escanear el código de barras con mi celular'">
+  📱<span *ngIf="modoCuenta" class="ec-punto-estado" [class.ec-punto-estado--ok]="conectado"></span><span *ngIf="etiqueta" class="ec-boton__texto"> {{ etiqueta }}</span>
 </button>
 
 <!-- appendTo="body": el botón vive dentro de barras con efecto de cristal (backdrop-filter), que hacen que un cuadro «fijo» se encoja al tamaño de la barra. -->
@@ -8,6 +9,25 @@
   <div class="ec-cuerpo" aria-live="polite">
 
     <p class="ec-texto" *ngIf="fase === 'abriendo'">Preparando…</p>
+
+    <!-- Con sesión iniciada: el celular de TU cuenta, sin QR por escaneo -->
+    <ng-container *ngIf="fase === 'cuenta'">
+      <ng-container *ngIf="conectado">
+        <p class="ec-grande">📱 Escanea ahora</p>
+        <p class="ec-estado"><span class="ec-punto ec-punto--ok"></span> Celular conectado. Lo que escanees llega a esta pantalla.</p>
+      </ng-container>
+      <ng-container *ngIf="!conectado">
+        <p class="ec-estado"><span class="ec-punto"></span> Celular no conectado</p>
+        <ol class="ec-pasos">
+          <li>En tu celular entra a la tienda con <strong>tu usuario</strong> (el mismo de esta computadora).</li>
+          <li>Abre <strong>📱 Escáner</strong> en el menú (o lee este QR) y permite la cámara.</li>
+          <li>Deja esa pantalla abierta: lo que escanees llega a la pantalla que tengas aquí.</li>
+        </ol>
+        <div class="ec-qr">
+          <qrcode [qrdata]="direccionDeLaCuenta" [width]="170" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
+        </div>
+      </ng-container>
+    </ng-container>
 
     <!-- El celular ya está enlazado: se escanea directo, sin QR -->
     <ng-container *ngIf="fase === 'listo'">

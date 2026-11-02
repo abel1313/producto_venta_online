@@ -37,6 +37,16 @@
                 "glob": "_redirects",
                 "input": "src/assets",
                 "output": "/"
+              },
+              {
+                "glob": "escaner.html",
+                "input": "src/assets/escaner",
+                "output": "/"
+              },
+              {
+                "glob": "zxing-browser.min.js",
+                "input": "node_modules/@zxing/browser/umd",
+                "output": "/escaner-lib/0.1.5"
               }
             ],
             "styles": [

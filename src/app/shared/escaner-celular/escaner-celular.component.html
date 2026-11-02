@@ -7,27 +7,28 @@
           [style]="{ width: '380px', maxWidth: '95vw' }" (visibleChange)="!$event && cerrar()" (onHide)="cerrar()">
   <div class="ec-cuerpo" aria-live="polite">
 
-    <p class="ec-texto" *ngIf="fase === 'abriendo'">Preparando la conexión…</p>
+    <p class="ec-texto" *ngIf="fase === 'abriendo'">Preparando…</p>
 
-    <ng-container *ngIf="fase === 'esperando'">
+    <!-- El celular ya está enlazado: se escanea directo, sin QR -->
+    <ng-container *ngIf="fase === 'listo'">
+      <p class="ec-grande">📱 Escanea ahora</p>
+      <p class="ec-estado"><span class="ec-punto ec-punto--ok"></span> Celular conectado. Apunta al código de barras.</p>
+      <button type="button" class="ec-enlace-boton" (click)="desvincular()">Usar otro celular</button>
+    </ng-container>
+
+    <!-- Primera vez (o el celular se desconectó): QR para enlazarlo -->
+    <ng-container *ngIf="fase === 'qr'">
       <ol class="ec-pasos">
-        <li>Abre la cámara de tu celular y apunta a este código QR.</li>
-        <li>Toca el enlace y permite el uso de la cámara.</li>
-        <li>Escanea el código de barras del producto. Llegará aquí solo.</li>
+        <li>Apunta la cámara de tu celular a este QR y toca el enlace.</li>
+        <li>Permite la cámara y <strong>deja esa página abierta</strong>: queda lista para todos tus códigos.</li>
       </ol>
       <div class="ec-qr">
-        <qrcode [qrdata]="direccion" [width]="200" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
+        <qrcode [qrdata]="direccion" [width]="190" [errorCorrectionLevel]="'M'" [margin]="2"></qrcode>
       </div>
-      <p class="ec-estado"><span class="ec-punto"></span> Esperando el código del celular…</p>
-      <p class="ec-nota">¿No puedes leer el QR? Escribe esta dirección en el navegador del celular:<br><span class="ec-enlace">{{ direccion }}</span></p>
+      <p class="ec-estado"><span class="ec-punto"></span> Esperando que el celular se conecte…</p>
     </ng-container>
 
     <p class="ec-ok" *ngIf="fase === 'recibido'">✔ Recibido: <strong>{{ recibido }}</strong></p>
-
-    <ng-container *ngIf="fase === 'vencida'">
-      <p class="ec-texto">La conexión con el celular venció (dura 30 minutos).</p>
-      <button type="button" class="ec-accion" (click)="abrir()">Generar otro código QR</button>
-    </ng-container>
 
     <ng-container *ngIf="fase === 'error'">
       <p class="ec-error">{{ mensaje }}</p>

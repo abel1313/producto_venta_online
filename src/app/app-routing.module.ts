@@ -154,12 +154,6 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
-    // PÚBLICA a propósito — la abre el CELULAR desde el QR de la PC (escanear un código de barras y mandárselo a la PC).
-    // Sin AuthGuard ni CarritoGuard: el celular normalmente no tiene sesión; la conexión se protege con su id aleatorio.
-    path: 'escaner',
-    loadChildren: () => import('./escaner-celular/escaner-celular.module').then(m => m.EscanerCelularModule)
-  },
-  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

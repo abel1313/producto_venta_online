@@ -454,14 +454,18 @@ Formato de cada entrada:
 - Cobro de un GRUPO de pedidos: debe seguir saliendo el panel anterior «Terminal Mercado Pago» (sin cambios).
 - Efectivo / transferencia: igual que antes («Confirmar cobro»).
 
-## Escanear el código de barras con el celular (2026-11-02)
+## Escanear el código de barras con el celular (2026-11-02, versión rápida)
 Necesitas la PC y el celular (con cámara). QA es https, así que la cámara del celular funciona.
-- **Tienda (sin sesión):** en la PC abre Tienda → Buscar → pulsa «📱» junto al buscador. Sale un QR. Con el celular abre el QR, permite la cámara y escanea el código de barras de un producto. En la PC debe aparecer «✔ Recibido: …», el cuadro se cierra solo y el buscador muestra ese código con el artículo.
-- **Buscar producto (admin):** Productos → Buscar → «📱» → mismo resultado: el código queda en el buscador y se busca.
-- **Nuevo producto (admin):** Productos → Agregar → junto a «Código de barras» pulsa «📱» → el código llega al campo (y se apaga «generar automático» si estaba prendido).
-- **Carga de imágenes, Venta directa, detalle del pedido → Agregar artículo, detalle del artículo → «Código de barras nuevo»:** «📱» llena o busca con el código.
-- **De 1 en 1:** después de recibir un código el cuadro se cierra; para otro código hay que volver a pulsar «📱». En el celular, después de «✔ Enviado» no hay botón para escanear otro: se pulsa «📱» otra vez en la computadora y se abre el QR nuevo.
-- ⛔ No puede pasar: que llegue el mismo código dos veces; que el celular siga con la cámara prendida después de enviar; que la PC se quede esperando para siempre (a los 30 minutos dice «venció»); que se pueda abrir una conexión de otra PC con un enlace inventado (da «La conexión terminó»).
-- Sin permiso de cámara en el celular: la página debe decir «No se pudo abrir la cámara» con el botón «Intentar de nuevo».
-- Dejar el cuadro «Escanear con mi celular» abierto y NO escanear: a los 2 minutos de cerrar/recargar la pestaña la conexión se libera sola (el celular que abra el QR viejo dice «La conexión terminó»). Recargar la pestaña con el cuadro abierto no debe dejar la conexión ocupando cupo.
-- Venta directa: escanear dos veces seguidas el mismo artículo (con ✕ entre las dos) debe buscarlo las dos veces. Los códigos entran en MAYÚSCULAS.
+- **Primera vez (QR):** en la PC abre Tienda → Buscar → pulsa «📱» junto al buscador. Sale un QR. Con la cámara del celular ábrelo, toca el enlace y permite la cámara. Debe abrir **al instante** una página oscura con la cámara y «Listo: apunta al código de barras». En la PC el cuadro cambia solo de «QR» a «📱 Escanea ahora».
+- **Escanear:** apunta el celular a un código de barras de producto. En la PC debe aparecer «✔ Recibido: …» casi al instante, el cuadro se cierra y el buscador muestra ese código con el artículo. El celular dice «✔ Enviado» y vibra.
+- **Segunda vez (sin QR):** deja el celular abierto en esa página y vuelve a pulsar «📱» en la PC (puede ser otro campo: Buscar producto, Nuevo producto, Venta directa…). Debe abrir **sin QR**, directo en «Escanea ahora»; apuntas el celular a otro producto y llega.
+- **Otras pantallas:** Productos → Agregar (campo «Código de barras»: llena el campo y apaga «generar automático»), Carga de imágenes, Venta directa, detalle del pedido → Agregar artículo, detalle del artículo → «Código de barras nuevo» (los códigos entran en MAYÚSCULAS).
+- **Usar otro celular:** en el cuadro «📱 Escanea ahora» pulsa «Usar otro celular»: la próxima vez sale el QR.
+- ⛔ No puede pasar: que llegue el mismo código dos veces seguidas a la PC; que la PC pida QR cada vez teniendo el celular conectado; que el celular muestre «La conexión terminó» si la PC sigue pidiendo (solo debe pasar si la PC cerró/olvidó la conexión o pasaron 5 minutos sin actividad).
+- Si cierras la página del celular o se apaga la pantalla más de 45 s, la PC vuelve a mostrar el QR (el celular se reconecta abriendo el mismo enlace o escaneando el QR otra vez).
+- Sin permiso de cámara: la página debe decir «No se pudo abrir la cámara» con «Intentar de nuevo».
+- Venta directa: escanear dos veces seguidas el mismo artículo (con ✕ entre las dos) debe buscarlo las dos veces.
+- Un solo escaneo por código: deja el celular apuntando a un producto: a la PC debe llegar UNA vez (no se repite). Retíralo (1 s) y vuelve a acercarlo: llega otra vez (así puedes agregar dos piezas iguales).
+- Escanear sin haber pulsado «📱» en la PC: el celular dice «La computadora no lo está pidiendo: pulsa «📱» y vuelve a escanear» (no «Enviado»), y ese código NO debe aparecer luego en la PC.
+- Bloquea el celular 10 segundos y desbloquéalo: la cámara debe volver a funcionar sola (si se ve negra, avísame con el modelo del celular).
+- Si el celular apunta al QR de la pantalla de la PC (el de enlace), no debe mandarlo como código.

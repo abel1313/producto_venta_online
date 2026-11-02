@@ -423,6 +423,10 @@
 <app-cobro-tarjeta [visible]="pagoEnLineaVisible" [pedidoId]="pagoEnLineaPedido?.pedido?.id ?? null"
     [total]="totalPagoEnLinea" (cerrar)="cerrarPagoEnLinea()" (pagado)="alPagarEnLinea()"></app-cobro-tarjeta>
 
+<!-- Cobro con la terminal (módulo nuevo, un solo pedido): componente compartido con Venta directa -->
+<app-cobro-tarjeta canal="TERMINAL" [visible]="cobroTerminalVisible" [pedidoId]="pedidoACobrar?.pedido?.id ?? null"
+    [total]="totalPedido" (cerrar)="alCerrarCobroTerminal()" (pagado)="alAprobarseCobroTerminal()"></app-cobro-tarjeta>
+
 <!-- Diálogo de cobro -->
 <p-dialog header="Cobrar pedido" [(visible)]="mostrarDialogoCobro"
     [modal]="true" [style]="{ width: '520px' }" [closable]="true"
@@ -452,10 +456,10 @@
             </p-dropdown>
         </div>
 
-        <div class="field mb-3" *ngIf="tipoPagoActivo?.mostrarMeses">
+        <div class="field mb-3" *ngIf="tipoPagoActivo?.mostrarMeses && !usaCobroCompartido">
             <label for="meses">Plan de pago</label>
             <p-dropdown id="meses"
-                [options]="opcionesMesesVisibles"
+                [options]="tipoPagoActivo?.opciones ?? []"
                 [(ngModel)]="mesesSeleccionado"
                 optionLabel="descripcion"
                 placeholder="Seleccione un plan"
@@ -465,13 +469,22 @@
             </p-dropdown>
         </div>
 
-        <!-- Con el módulo nuevo: por qué no hay meses (artículo que no los acepta, mínimo de compra…) -->
-        <p class="cobro-grupo-nota" *ngIf="esTarjeta && motivoSinMeses">
-            Solo de contado: {{ motivoSinMeses }}
-        </p>
+        <!-- Módulo nuevo: los meses permitidos, el envío a la terminal y el estado los maneja el componente compartido -->
+        <div class="mp-terminal" *ngIf="usaCobroCompartido">
+            <div class="mp-terminal__header">
+                <i class="pi pi-credit-card mp-terminal__icon"></i>
+                <span>Cobro con la terminal</span>
+            </div>
+            <div class="mp-terminal__amount">{{ totalPedido | currency:'$' }}</div>
+            <div class="mp-terminal__actions">
+                <button class="mp-btn mp-btn--send" (click)="abrirCobroTerminal()">
+                    <i class="pi pi-credit-card"></i> Continuar con la tarjeta
+                </button>
+            </div>
+        </div>
 
         <!-- Panel terminal Mercado Pago -->
-        <div class="mp-terminal" *ngIf="esTarjeta && puedeEnviarTerminal">
+        <div class="mp-terminal" *ngIf="esTarjeta && puedeEnviarTerminal && !usaCobroCompartido">
 
             <div class="mp-terminal__header">
                 <i class="pi pi-credit-card mp-terminal__icon"></i>

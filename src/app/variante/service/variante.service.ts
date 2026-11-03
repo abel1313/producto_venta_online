@@ -171,6 +171,11 @@ export class VarianteService {
       .pipe(map(res => res.data));
   }
 
+  /** Agrega fotos a un artículo que ya existe SIN tocar nada más de él. Devuelve cuántas se agregaron. */
+  agregarImagenes(varianteId: number, imagenes: Array<{ base64: string; extension: string; nombreImagen: string }>): Observable<number> {
+    return this.http.post<{ data: number }>(`${this.url}/${varianteId}/imagenes`, imagenes).pipe(map(r => r.data));
+  }
+
   /** Crea/actualiza una o varias variantes en una sola petición. */
   save(data: IVarianteRequest[]): Observable<{ data: IVariante[] }> {
     return this.http.post<{ data: IVariante[] }>(`${this.url}/guardarConImagenes`, data);

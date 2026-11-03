@@ -663,6 +663,20 @@ export class BuscarComponent implements OnInit, OnDestroy {
     else this.aplicarFiltros(p);
   }
 
+  /** Artículo al que se le está agregando una foto (cuadro «Agregar foto»); `null` = cerrado. */
+  articuloParaFoto: { id: number; nombre: string } | null = null;
+
+  abrirAgregarFoto(v: IVarianteResumen): void {
+    const detalle = [v.talla, v.color].filter(Boolean).join(' · ');
+    this.articuloParaFoto = { id: v.id, nombre: [v.nombreProducto || 'Artículo', detalle].filter(Boolean).join(' — ') };
+  }
+
+  /** La foto ya quedó: se vuelve a cargar la página para que la tarjeta la muestre. */
+  alAgregarseFoto(): void {
+    this.imagenesFallidas.clear();
+    this.recargarPagina();
+  }
+
   private recargarPagina(): void {
     const p = this.paginaActual || 1;
     if (this.productoId > 0) this.cargarResumen(p);

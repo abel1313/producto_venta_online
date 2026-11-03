@@ -9,6 +9,7 @@ import { AgregarComponent } from './agregar/agregar.component';
 import { UpdateVarianteComponent } from './update-variante/update-variante.component';
 import { ListarVariantesComponent } from './listar-variantes/listar-variantes.component';
 import { BuscarComponent } from './buscar/buscar.component';
+import { FotoArticuloComponent } from './foto-articulo/foto-articulo.component';
 import { VentaVarianteComponent } from './venta-variante/venta-variante.component';
 import { DetalleVarianteComponent } from './detalle-variante/detalle-variante.component';
 import { CargaArchivoComponent } from '../documentos/carga-archivo/carga-archivo.component';
@@ -25,6 +26,7 @@ import { SharedModule } from '../shared/shared.module';
     UpdateVarianteComponent,
     ListarVariantesComponent,
     BuscarComponent,
+    FotoArticuloComponent,
     VentaVarianteComponent,
     DetalleVarianteComponent,
     CargaArchivoComponent,

@@ -11,6 +11,10 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 .vb-header {
   padding: 16px 20px 0;  // breathing room en los lados — el fondo NO toca los bordes
   margin-bottom: 28px;
+  // Por ENCIMA de las cards: la lista del filtro (Talla, Color, Marca) se abre hacia abajo, sobre las cards, y quedaba tapada por ellas
+  // (reportado 2026-11-03). Sin z-index el encabezado pintaba en su orden normal y las cards (position: relative) quedaban encima.
+  position: relative;
+  z-index: 40;
 
   &__content {
     max-width: 1120px;

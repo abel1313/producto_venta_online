@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Escáner de código de barras</title>
+<style>
+  /* Página ligera a propósito (sin Angular): abre en un instante desde el QR y la cámara queda lista. */
+  :root { --bg:#14161d; --fg:#eceef4; --muted:#9aa1b2; --ok:#35c46f; --warn:#f0b429; --bad:#f06565; --acc:#4cc2a1; }
+  @media (prefers-color-scheme: light) { :root { --bg:#f5f6f8; --fg:#1a1d27; --muted:#5d6577; --ok:#1c8d4d; --warn:#9a6b00; --bad:#c0392b; --acc:#0f8a6c; } }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font: 16px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+         display: flex; flex-direction: column; gap: 12px; padding: 14px; padding-top: calc(14px + env(safe-area-inset-top, 0px));
+         padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  h1 { margin: 0; font-size: 1.1rem; text-align: center; font-weight: 700; }
+  #estado { text-align: center; font-weight: 600; min-height: 1.4em; }
+  #estado.ok { color: var(--ok); } #estado.warn { color: var(--warn); } #estado.bad { color: var(--bad); }
+  #camara { position: relative; flex: 1; min-height: 0; border-radius: 16px; overflow: hidden; background: #000; border: 3px solid transparent; transition: border-color .15s; }
+  #camara.enviado { border-color: var(--ok); }
+  video { width: 100%; height: 100%; object-fit: cover; display: block; }
+  #mira { position: absolute; inset: 32% 8%; border: 3px solid var(--acc); border-radius: 12px; box-shadow: 0 0 0 9999px rgba(0,0,0,.35); pointer-events: none; }
+  #ultimo { text-align: center; font-family: ui-monospace, Menlo, monospace; word-break: break-all; min-height: 1.4em; color: var(--muted); }
+  #detalle { text-align: center; color: var(--muted); font-size: .9rem; }
+  #fin { display: none; flex: 1; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 8px; padding: 0 12px; }
+  #fin strong { font-size: 1.3rem; }
+  body.terminado #camara, body.terminado #ultimo { display: none; } body.terminado #fin { display: flex; }
+  button { min-height: 48px; padding: 0 22px; border-radius: 12px; border: 1px solid var(--acc); background: transparent; color: var(--fg); font-size: 1rem; font-weight: 600; }
+</style>
+</head>
+<body>
+<h1>Escáner de código de barras</h1>
+<div id="estado" class="warn">Conectando…</div>
+<div id="camara"><video id="video" playsinline muted autoplay></video><div id="mira"></div></div>
+<div id="ultimo"></div>
+<div id="detalle">Deja esta página abierta: queda lista para todos los códigos que pidas desde la computadora.</div>
+<div id="fin"><strong id="finTitulo"></strong><span id="finTexto"></span><button id="reintentar" type="button" style="display:none">Intentar de nuevo</button></div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var params = new URLSearchParams(location.hash.replace(/^#/, ''));
+  var sesion = params.get('id') || '';
+  var api = params.get('api') || '';
+
+  // El QR trae la dirección del servidor; solo se aceptan los de la tienda (o localhost si la página misma está en localhost).
+  var apiValida = /^https:\/\/[a-z0-9-]+(\.[a-z0-9-]+)*\.novedades-jade\.com\.mx(\/[a-z0-9-]+)?$/i.test(api) ||
+                  (/^(localhost|127\.0\.0\.1)$/.test(location.hostname) && /^http:\/\/(localhost|127\.0\.0\.1):\d+(\/[a-z0-9-]+)?$/i.test(api));
+  if (!/^[0-9a-f]{32}$/.test(sesion) || !apiValida) { terminar('Enlace no válido', 'Vuelve a pulsar «📱» en la computadora y abre el QR nuevo.'); return; }
+
+  var base = api.replace(/\/$/, '') + '/v1/escaner/sesiones/' + sesion;
+  var detenido = false, temporizadorEstado = 0, stream = null, motor = null, wakeLock = null, arrancando = false;
+
+  // Un código frente a la cámara cuenta como UN escaneo: se vuelve a mandar solo si salió del cuadro (≥1 s sin verlo) y regresó.
+  // Así escanear el mismo producto dos veces a propósito funciona (se retira y se acerca), y uno que se queda enfrente no se repite.
+  var visto = { texto: '', ultimaVez: 0, enviado: false, reintentoDesde: 0 };
+  var SALIDA_DEL_CUADRO_MS = 1000, REINTENTO_MS = 1500;
+
+  function estado(texto, clase) { var e = $('estado'); e.textContent = texto; e.className = clase || ''; }
+  function terminar(titulo, texto, conReintento) {
+    detenido = true; apagar();
+    clearInterval(temporizadorEstado);
+    $('finTitulo').textContent = titulo; $('finTexto').textContent = texto;
+    $('reintentar').style.display = conReintento ? '' : 'none';
+    document.body.classList.add('terminado'); estado('', '');
+  }
+  function apagar() {
+    try { stream && stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+    stream = null;
+    if (motor && motor.parar) { try { motor.parar(); } catch (e) {} }
+    motor = null;
+  }
+
+  function llamar(metodo, ruta, cuerpo) {
+    return fetch(base + ruta, { method: metodo, headers: cuerpo ? { 'Content-Type': 'application/json' } : {}, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  }
+
+  // ── Señal de vida: así la computadora sabe que ya puede pedir códigos sin QR ──
+  function latido() {
+    if (detenido) return;
+    llamar('POST', '/latido').then(function (r) {
+      if (r.status === 410) { terminar('La conexión terminó', 'La computadora la cerró o pasó mucho tiempo sin usarla. En la computadora pulsa «📱» y abre el QR nuevo.'); return; }
+      if (r.ok && !arrancando) { estado('Listo: apunta al código de barras', 'ok'); }
+    }).catch(function () { estado('Sin conexión a internet…', 'warn'); });
+  }
+
+  function listo() {
+    var c = $('camara'); c.classList.remove('enviado'); estado('Listo: apunta al código de barras', 'ok');
+  }
+
+  // ── Cada lectura: decide si es un escaneo nuevo y lo manda ──
+  function alLeer(texto) {
+    if (detenido || !texto) return;
+    // Un QR de enlace (p. ej. el de la propia pantalla de la computadora) o cualquier dirección no es un código de barras de producto.
+    if (/^https?:\/\//i.test(texto) || texto.indexOf('#id=') >= 0) return;
+    var ahora = Date.now();
+    var mismo = texto === visto.texto && ahora - visto.ultimaVez < SALIDA_DEL_CUADRO_MS;
+    visto.ultimaVez = ahora;
+    if (mismo) {
+      // Sigue enfrente: solo se reintenta si el envío anterior falló.
+      if (visto.enviado || ahora < visto.reintentoDesde) return;
+    } else {
+      visto.texto = texto; visto.enviado = false; visto.reintentoDesde = 0;
+    }
+    visto.enviado = true;                                                  // en vuelo: no se manda dos veces
+    llamar('POST', '/codigos', { codigo: texto }).then(function (r) {
+      if (r.status === 410) { terminar('La conexión terminó', 'En la computadora pulsa «📱» y abre el QR nuevo.'); return null; }
+      if (r.status === 400) { estado('Ese código no es válido', 'bad'); return null; }
+      if (r.status === 429) { visto.enviado = false; visto.reintentoDesde = Date.now() + 3000; estado('Demasiado rápido, espera un momento', 'warn'); return null; }
+      if (!r.ok) { visto.enviado = false; visto.reintentoDesde = Date.now() + REINTENTO_MS; estado('No se pudo enviar, reintentando…', 'bad'); return null; }
+      return r.json();
+    }).then(function (cuerpo) {
+      if (!cuerpo) return;
+      if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} }
+      $('ultimo').textContent = (cuerpo.data === false ? 'Sin entregar: ' : '✔ Enviado: ') + texto;
+      if (cuerpo.data === false) {
+        // Se guardó, pero la computadora no lo estaba pidiendo (no tenía abierto el cuadro «📱»).
+        estado('La computadora no lo está pidiendo: pulsa «📱» y vuelve a escanear', 'warn');
+        return;
+      }
+      estado('✔ Enviado', 'ok');
+      var c = $('camara'); c.classList.add('enviado'); setTimeout(listo, 1500);
+    }).catch(function () { visto.enviado = false; visto.reintentoDesde = Date.now() + REINTENTO_MS; estado('Sin conexión, reintentando…', 'warn'); });
+  }
+
+  // ── Lectura: el detector nativo del celular si existe (instantáneo); si no, zxing (se descarga solo en ese caso) ──
+  var FORMATOS = ['ean_13', 'ean_8', 'upc_a', 'upc_e', 'code_128', 'code_39', 'code_93', 'itf', 'codabar'];
+  function pedirCamara() {
+    return navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 },
+      advanced: [{ focusMode: 'continuous' }] } });
+  }
+  function conDetectorNativo(Detector) {
+    var detector = new Detector({ formats: FORMATOS }), video = $('video'), temporizador = 0;
+    return pedirCamara().then(function (s) {
+      stream = s; video.srcObject = s; return video.play();
+    }).then(function () {
+      (function ciclo() {
+        if (detenido || !stream) return;
+        var siguiente = function () { if (!detenido && stream) temporizador = setTimeout(ciclo, 120); };   // el siguiente ciclo espera a que termine este
+        if (video.readyState >= 2 && !video.paused) {
+          detector.detect(video).then(function (r) { if (r && r.length) alLeer(r[0].rawValue); }).catch(function () {}).then(siguiente);
+        } else { siguiente(); }
+      })();
+      motor = { parar: function () { clearTimeout(temporizador); } };
+    });
+  }
+  function conZxing() {
+    return new Promise(function (ok, mal) {
+      var s = document.createElement('script'); s.src = '/escaner-lib/0.1.5/zxing-browser.min.js'; s.onload = ok; s.onerror = mal; document.head.appendChild(s);
+    }).then(function () {
+      var lector = new ZXingBrowser.BrowserMultiFormatReader();
+      return lector.decodeFromConstraints({ video: { facingMode: { ideal: 'environment' }, advanced: [{ focusMode: 'continuous' }] } }, $('video'), function (r) { if (r) alLeer(r.getText()); })
+        .then(function (controles) { motor = { parar: function () { controles.stop(); } }; });
+    });
+  }
+  function iniciarCamara() {
+    if (arrancando) return;
+    arrancando = true;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { arrancando = false; terminar('No se pudo abrir la cámara', 'Abre este enlace con el navegador del celular (Chrome o Safari), con la dirección que empieza con https.', true); return; }
+    // getSupportedFormats() devuelve una promesa: se espera antes de decidir qué motor usar.
+    var soportados = 'BarcodeDetector' in window && window.BarcodeDetector.getSupportedFormats
+      ? Promise.resolve(window.BarcodeDetector.getSupportedFormats()).catch(function () { return null; }) : Promise.resolve(null);
+    soportados.then(function (lista) {
+      var sirve = lista && (lista.indexOf('ean_13') >= 0 || lista.indexOf('code_128') >= 0);
+      return sirve ? conDetectorNativo(window.BarcodeDetector) : conZxing();
+    }).then(function () {
+      arrancando = false;
+      estado('Listo: apunta al código de barras', 'ok');
+      latido();
+      clearInterval(temporizadorEstado); temporizadorEstado = setInterval(latido, 15000);
+      pedirPantallaEncendida();
+    }).catch(function () {
+      arrancando = false;
+      terminar('No se pudo abrir la cámara', 'Revisa que el navegador tenga permiso de cámara y que la dirección empiece con https.', true);
+    });
+  }
+  function pedirPantallaEncendida() {
+    try { if (navigator.wakeLock) navigator.wakeLock.request('screen').then(function (w) { wakeLock = w; }).catch(function () {}); } catch (e) {}
+  }
+  // Al volver de segundo plano o de la pantalla bloqueada la cámara puede haberse detenido (sobre todo en iPhone): se revisa y se reinicia.
+  function camaraViva() {
+    var pista = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+    return !!pista && pista.readyState === 'live' && !pista.muted && !$('video').paused;
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden || detenido) return;
+    pedirPantallaEncendida();
+    latido();
+    if (!camaraViva() && !arrancando) { apagar(); iniciarCamara(); }
+  });
+  $('reintentar').addEventListener('click', function () { location.reload(); });
+  iniciarCamara();
+})();
+</script>
+</body>
+</html>

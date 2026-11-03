@@ -71,3 +71,14 @@
   font-weight: 600;
   cursor: pointer;
 }
+
+.ep-acciones { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; .ep-boton { flex: 1 1 140px; } }
+.ep-previa {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  &__img { flex: 1; min-height: 0; width: 100%; object-fit: contain; border-radius: 16px; background: #000; }
+}
+.ep-boton--sec { background: transparent; }

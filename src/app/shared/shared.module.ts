@@ -19,6 +19,7 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
 import { DialogModule } from 'primeng/dialog';
 import { QRCodeModule } from 'angularx-qrcode';
 import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
+import { FotoCelularComponent } from './foto-celular/foto-celular.component';
 
 @NgModule({
   declarations: [
@@ -35,7 +36,8 @@ import { EscanerCelularComponent } from './escaner-celular/escaner-celular.compo
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    EscanerCelularComponent
+    EscanerCelularComponent,
+    FotoCelularComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
   exports:  [
@@ -52,7 +54,8 @@ import { EscanerCelularComponent } from './escaner-celular/escaner-celular.compo
     AyudaOpcionesComponent,
     AltaArticulosComponent,
     FiltroBuscableComponent,
-    EscanerCelularComponent
+    EscanerCelularComponent,
+    FotoCelularComponent
   ]
 })
 export class SharedModule {}

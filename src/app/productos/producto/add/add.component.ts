@@ -440,6 +440,11 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   private readonly DIMENSION_MAX = 1280;
   private readonly CALIDAD_JPEG = 0.8;
 
+  /** Una foto que el celular de la cuenta tomó (`<app-foto-celular>`): se agrega a las imágenes, igual que una elegida de la galería. */
+  alRecibirFotoDelCelular(file: File): void {
+    this.procesarImagen(file);
+  }
+
   private procesarImagen(file: File): void {
     if (!puedeSerImagen(file)) {
       Swal.fire({ icon: 'warning', title: 'Formato no permitido', text: mensajeNoEsImagen(file.name) });

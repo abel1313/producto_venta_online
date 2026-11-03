@@ -1,0 +1,11 @@
+<div class="fc" *ngIf="disponible">
+  <button type="button" class="fc-boton" (click)="alternarAyuda()" [attr.aria-expanded]="ayuda"
+          title="Toma la foto con el celular y llega aquí">
+    <span class="fc-punto" [class.fc-punto--on]="conectado" aria-hidden="true"></span>
+    📱 Foto del celular
+  </button>
+  <div class="fc-ayuda" *ngIf="ayuda" role="note">
+    <p *ngIf="conectado">El celular está conectado. En él abre <strong>Escáner</strong> y pulsa <strong>📷 Tomar foto</strong>: la foto llega aquí sola.</p>
+    <p *ngIf="!conectado">En tu celular inicia sesión con tu mismo usuario y abre <strong>{{ direccion }}</strong> (menú <strong>📱 Escáner</strong>). Luego pulsa <strong>📷 Tomar foto</strong>.</p>
+  </div>
+</div>

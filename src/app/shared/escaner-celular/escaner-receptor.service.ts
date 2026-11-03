@@ -4,6 +4,9 @@ import { BehaviorSubject, Subscription } from 'rxjs';
 import { EscanerCelularService, LecturaEscaner } from './escaner-celular.service';
 
 type AlRecibir = (codigo: string) => void;
+type AlRecibirFoto = (fotoDataUrl: string) => void;
+/** Una pantalla que recibe: códigos de barras, fotos o las dos. */
+interface Receptora { codigo?: AlRecibir; foto?: AlRecibirFoto; }
 
 const CLAVE_LIDER = 'escaner.pestana';
 /** Si una respuesta vacía llega antes de esto, la pregunta fue desplazada (hay otras preguntas abiertas de la cuenta): se espera antes de repetir. */
@@ -23,7 +26,9 @@ export class EscanerReceptorService implements OnDestroy {
   /** ¿El celular de esta cuenta está conectado? (lo dice cada respuesta del servidor). */
   readonly conectado$ = new BehaviorSubject<boolean>(false);
 
-  private readonly receptoras: AlRecibir[] = [];
+  private readonly receptoras: Receptora[] = [];
+  /** Lo que se pidió al servidor en la pregunta abierta actual (si cambia, se repite la pregunta). */
+  private aceptaActual = 'codigo';
   private espera: Subscription | null = null;
   private reintento: ReturnType<typeof setTimeout> | null = null;
   private desde: number | null = null;       // null = todavía no se sabe desde qué número preguntar (se pregunta el estado primero)
@@ -53,14 +58,36 @@ export class EscanerReceptorService implements OnDestroy {
 
   /** Una pantalla pide recibir códigos. Devuelve la función que la da de baja (llamarla al destruirse). */
   registrar(alRecibir: AlRecibir): () => void {
-    this.receptoras.push(alRecibir);
+    return this.agregar({ codigo: alRecibir });
+  }
+
+  /** Una pantalla pide recibir FOTOS del celular (data URL JPEG). Devuelve la función que la da de baja. */
+  registrarFotos(alRecibir: AlRecibirFoto): () => void {
+    return this.agregar({ foto: alRecibir });
+  }
+
+  private agregar(r: Receptora): () => void {
+    this.receptoras.push(r);
     if (document.visibilityState === 'visible') this.reclamarLiderazgo();      // la pantalla que acaba de abrirse y se ve es la que escucha
     this.actualizar();
     return () => {
-      const i = this.receptoras.indexOf(alRecibir);
+      const i = this.receptoras.indexOf(r);
       if (i >= 0) this.receptoras.splice(i, 1);
       this.actualizar();
     };
+  }
+
+  /** Qué hay que pedirle al servidor según las pantallas registradas: `codigo`, `foto` o `codigo,foto`. */
+  private acepta(): string {
+    const partes: string[] = [];
+    if (this.receptoras.some(r => r.codigo)) partes.push('codigo');
+    if (this.receptoras.some(r => r.foto)) partes.push('foto');
+    return partes.join(',') || 'codigo';
+  }
+
+  private ultima(tipo: 'codigo' | 'foto'): Receptora | undefined {
+    for (let i = this.receptoras.length - 1; i >= 0; i--) if (this.receptoras[i][tipo]) return this.receptoras[i];
+    return undefined;
   }
 
   private debeEscuchar(): boolean {
@@ -83,6 +110,13 @@ export class EscanerReceptorService implements OnDestroy {
   private actualizar(): void {
     if (this.debeEscuchar() && !this.espera && !this.reintento) this.arrancar();
     else if (!this.debeEscuchar()) this.detener();
+    else if (this.espera && this.desde !== null && this.acepta() !== this.aceptaActual) {
+      // Apareció (o desapareció) una pantalla que recibe fotos: la pregunta abierta se repite pidiendo lo nuevo.
+      const miCiclo = ++this.ciclo;
+      this.espera.unsubscribe();
+      this.espera = null;
+      this.preguntar(miCiclo);
+    }
   }
 
   private arrancar(): void {
@@ -98,7 +132,8 @@ export class EscanerReceptorService implements OnDestroy {
 
   private preguntar(miCiclo: number): void {
     const inicio = Date.now();
-    this.espera = this.svc.canalEsperar(this.desde ?? 0).subscribe({
+    this.aceptaActual = this.acepta();
+    this.espera = this.svc.canalEsperar(this.desde ?? 0, this.aceptaActual).subscribe({
       next: (lectura: LecturaEscaner) => {
         if (miCiclo !== this.ciclo) return;
         this.espera = null;
@@ -113,11 +148,14 @@ export class EscanerReceptorService implements OnDestroy {
         }
         this.epoca = lectura.epoca;
         this.desde = lectura.ultimaSecuencia;
-        const destino = this.receptoras[this.receptoras.length - 1];
-        // Un código por escaneo: se entrega a la pantalla que acaba de aparecer (la última registrada).
+        // Un código por escaneo: se entrega a la pantalla que acaba de aparecer (la última registrada que recibe códigos).
+        const destino = this.ultima('codigo')?.codigo;
         if (destino) lectura.codigos.forEach(c => this.zona.run(() => destino(c.codigo)));
+        const destinoFoto = this.ultima('foto')?.foto;
+        const fotos = lectura.fotos ?? [];
+        if (destinoFoto) fotos.forEach(f => this.zona.run(() => destinoFoto(f.foto)));
         if (!this.debeEscuchar()) return;
-        if (lectura.codigos.length === 0 && Date.now() - inicio < RESPUESTA_VACIA_RAPIDA_MS) {
+        if (lectura.codigos.length === 0 && fotos.length === 0 && Date.now() - inicio < RESPUESTA_VACIA_RAPIDA_MS) {
           // Contestó «nada» casi al instante: otra pregunta de la cuenta la desplazó. Se espera un poco antes de volver (evita un ir y venir sin fin).
           this.reintento = setTimeout(() => { this.reintento = null; if (miCiclo === this.ciclo && this.debeEscuchar()) this.preguntar(miCiclo); }, PAUSA_TRAS_VACIA_RAPIDA_MS);
           return;

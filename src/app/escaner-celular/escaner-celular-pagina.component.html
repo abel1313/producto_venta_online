@@ -6,9 +6,23 @@
 
   <div class="ep-estado" [ngClass]="'ep-estado--' + tono" aria-live="polite" *ngIf="!error">{{ estado }}</div>
 
-  <div class="ep-camara" [class.ep-camara--enviado]="enviadoAhora" [hidden]="!!error">
+  <div class="ep-camara" [class.ep-camara--enviado]="enviadoAhora" [hidden]="!!error || !!fotoPrevia">
     <video #video class="ep-video" playsinline muted autoplay></video>
     <div class="ep-mira"></div>
+  </div>
+  <!-- Vista previa de la foto antes de mandarla a la computadora -->
+  <section class="ep-previa" *ngIf="fotoPrevia && !error">
+    <img class="ep-previa__img" [src]="fotoPrevia" alt="Foto tomada" />
+    <div class="ep-acciones">
+      <button type="button" class="ep-boton ep-boton--sec" (click)="descartarFoto()" [disabled]="enviandoFoto">Repetir</button>
+      <button type="button" class="ep-boton" (click)="enviarFoto()" [disabled]="enviandoFoto">{{ enviandoFoto ? 'Enviando…' : 'Enviar a la computadora' }}</button>
+    </div>
+  </section>
+
+  <div class="ep-acciones" *ngIf="!error && !fotoPrevia">
+    <button type="button" class="ep-boton" (click)="tomarFoto()">📷 Tomar foto</button>
+    <button type="button" class="ep-boton ep-boton--sec" (click)="archivo.click()">📸 Cámara del celular</button>
+    <input #archivo type="file" accept="image/*" capture="environment" hidden (change)="alElegirArchivo($event)" />
   </div>
   <p class="ep-ultimo" *ngIf="ultimo && !error">{{ ultimo }}</p>
   <p class="ep-detalle" *ngIf="!error">Deja esta pantalla abierta: queda lista para todos los códigos que escanees.</p>

@@ -492,3 +492,12 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 4. Guarda el producto/artículo: ✅ la imagen se guarda como las demás.
 5. En la PC cambia a una pantalla sin imágenes (Dashboard) y manda otra: ✅ el celular dice «La computadora no tiene abierta una pantalla que reciba fotos».
 ⛔ No puede pasar: foto duplicada en la PC, error 413, la foto llega a otra cuenta.
+
+
+## Agregar foto desde Buscar (2026-11-03) 🔴 PRUEBA PENDIENTE
+**Antes de empezar:** un artículo sin imagen (Tienda → Buscar, filtro «sin imágenes») y tu usuario con permiso de actualizar artículos.
+1. En su tarjeta pulsa **📷 Agregar foto**. ✅ Sale el cuadro con el nombre del artículo.
+2. Elige una foto de la computadora. ✅ Aviso «Foto agregada», se cierra y la tarjeta ya muestra la imagen.
+3. Con otro artículo sin imagen: deja el cuadro abierto y toma la foto con el celular (📱 Escáner → 📷 Tomar foto). ✅ Se sube sola al artículo.
+4. Revisa el artículo: stock, precio y demás datos **iguales** que antes (solo cambió la imagen).
+⛔ No puede pasar: botón visible para quien no puede actualizar artículos; la foto llegando a otro artículo; el cuadro quedando abierto tras subir.

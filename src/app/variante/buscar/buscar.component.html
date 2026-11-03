@@ -343,6 +343,14 @@
           <span class="vb-btn-card__label">Precio</span>
         </button>
 
+        <button *ngIf="puedeActualizarVariante && (!v.imagenUrl || imagenFallo(v))"
+                class="vb-btn-card vb-btn-card--foto"
+                (click)="abrirAgregarFoto(v)"
+                title="Agregar una foto a este artículo (de la computadora o del celular)">
+          <span>📷</span>
+          <span class="vb-btn-card__label">Agregar foto</span>
+        </button>
+
         <button *ngIf="puedeCompartirImagen && v.imagenUrl && !imagenFallo(v)"
                 class="vb-btn-card vb-btn-card--share"
                 (click)="compartirImagen(v)"
@@ -377,3 +385,5 @@
 
 
 </div><!-- /vb-layout -->
+
+<app-foto-articulo [articulo]="articuloParaFoto" (cerrado)="articuloParaFoto = null" (agregada)="alAgregarseFoto()"></app-foto-articulo>

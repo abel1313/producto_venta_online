@@ -1,0 +1,16 @@
+<!-- appendTo="body": la tarjeta vive dentro de barras con efecto de cristal; un cuadro «fijo» ahí se encoge. -->
+<p-dialog header="Agregar foto" appendTo="body" [visible]="visible" [modal]="true" [closable]="!subiendo" [draggable]="false"
+          [style]="{ width: '380px', maxWidth: '95vw' }" (visibleChange)="!$event && cerrar()" (onHide)="cerrar()">
+  <div class="fa-cuerpo" *ngIf="articulo">
+    <p class="fa-nombre">{{ articulo.nombre }}</p>
+
+    <p class="fa-texto" *ngIf="subiendo">Subiendo la foto…</p>
+
+    <ng-container *ngIf="!subiendo">
+      <input #archivo type="file" accept="image/*" hidden (change)="alElegir($event)" />
+      <button type="button" class="fa-boton" (click)="archivo.click()">🖼️ Elegir foto de esta computadora</button>
+      <p class="fa-o">o</p>
+      <p class="fa-texto">📱 En tu celular abre <strong>Escáner</strong> y pulsa <strong>📷 Tomar foto</strong>: llega aquí sola y se agrega al artículo.</p>
+    </ng-container>
+  </div>
+</p-dialog>

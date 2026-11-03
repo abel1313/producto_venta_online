@@ -501,3 +501,11 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 3. Con otro artículo sin imagen: deja el cuadro abierto y toma la foto con el celular (📱 Escáner → 📷 Tomar foto). ✅ Se sube sola al artículo.
 4. Revisa el artículo: stock, precio y demás datos **iguales** que antes (solo cambió la imagen).
 ⛔ No puede pasar: botón visible para quien no puede actualizar artículos; la foto llegando a otro artículo; el cuadro quedando abierto tras subir.
+
+
+## Seguridad, segunda tanda (2026-11-03 noche) 🔴 PRUEBA PENDIENTE (QA)
+1. **Token solo a lo nuestro:** usa el mapa de ubicación (Nominatim) y la tienda normal; en F12 → Red, las llamadas a otros sitios NO llevan `Authorization`.
+2. **CSP en modo reporte:** abre la tienda y recorre Tienda, Carrito, Pedidos, Chat, Escáner; en F12 → Consola busca avisos «[Report Only] Refused to…». Pásamelos para ajustar la CSP antes de activarla.
+3. **Cerrar sesión borra el enlace del escáner:** después de salir, en F12 → Aplicación → Almacenamiento local no debe estar `escaner.sesion`.
+4. **Refresh/logout con header obligatorio (solo QA):** iniciar sesión, esperar >15 min o forzar un refresh: la sesión se renueva sola; cerrar sesión funciona.
+5. **Swagger apagado en QA:** `/swagger-ui.html` ya no abre.

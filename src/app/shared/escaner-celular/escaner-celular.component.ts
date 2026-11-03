@@ -71,7 +71,7 @@ export class EscanerCelularComponent implements OnInit, OnDestroy {
     this.suscripcionConectado = this.receptor.conectado$.subscribe(c => { this.conectado = c; });
     this.desregistrar = this.receptor.registrar(codigo => {
       this.codigo.emit(codigo);
-      Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: `Código recibido: ${codigo}`, showConfirmButton: false, timer: 1800 });
+      Swal.fire({ toast: true, position: 'top-end', icon: 'success', titleText: `Código recibido: ${codigo}`, showConfirmButton: false, timer: 1800 });
     });
   }
 

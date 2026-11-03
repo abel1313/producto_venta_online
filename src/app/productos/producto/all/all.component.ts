@@ -18,6 +18,7 @@ import { ProductoService } from '../../service/producto.service';
 import { IProductoDTO, IProductoPaginable } from '../models';
 import { CompartirService } from 'src/app/shared/compartir.service';
 import { PreferenciaFiltroService } from 'src/app/shared/preferencia-filtro.service';
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 @Component({
   selector: 'app-all',
   templateUrl: './all.component.html',
@@ -224,7 +225,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         // El back hace baja LOGICA (deja el producto en habilitado=0 y le borra las fotos), no
         // borra la fila -- decia "no se puede deshacer", que no es cierto: se puede volver a
         // habilitar. Lo unico que no vuelve son las fotos.
-        title: `¿Dar de baja ${item.nombre}?`,
+        title: `¿Dar de baja ${escaparHtml(item.nombre)}?`,
         html: 'Deja de mostrarse en la tienda y <b>pierde sus fotos</b>.<br>'
             + 'El historial de ventas y pedidos se conserva, y se puede volver a habilitar.',
         icon: 'warning',

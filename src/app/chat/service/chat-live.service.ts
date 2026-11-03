@@ -4,6 +4,7 @@ import { Client, StompSubscription } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { HttpClient } from '@angular/common/http';
 import { environment } from 'src/environments/environment';
+import { AuthenticateService } from 'src/app/auth.service';
 import { ApiResponse, EstadoConexion, EventoUsuario, HistorialPaginado, MensajeUI, nowLocalIso } from '../models/chat.models';
 
 const SESION_KEY = 'chatSesionId';
@@ -39,7 +40,7 @@ export class ChatLiveService implements OnDestroy {
   private onOffline = () => this.estadoConexion$.next('sin-internet');
   private onOnline  = () => this.estadoConexion$.next('reconectando');
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthenticateService) {}
 
   conectar(nombre: string, usuarioId?: number | null): void {
     if (this.client?.active) return;
@@ -95,6 +96,12 @@ export class ChatLiveService implements OnDestroy {
         { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }
       ),
       reconnectDelay: 15000,
+      // El back identifica a quien escribe por el token del CONNECT (ya NO por el usuarioId del mensaje, que lo podia inventar cualquiera). Se
+      // toma el vigente en cada (re)conexion: el access token dura 15 min. Sin sesion se entra como visitante anonimo.
+      beforeConnect: () => {
+        const token = this.auth.getAccessToken();
+        this.client.connectHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      },
       onConnect:        () => this.onConnect(),
       onDisconnect:     () => { this.conectado$.next(false); },
       onWebSocketClose: () => {

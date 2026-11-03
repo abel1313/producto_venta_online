@@ -15,6 +15,7 @@ import { VarianteService } from '../service/variante.service';
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../shared/imagen-comprimir.util';
 
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 interface TallaNumeral {
   num: number;
   checked: boolean;
@@ -229,7 +230,7 @@ export class AgregarComponent implements OnInit, OnDestroy {
     if (!p || this.habilitando) return;
     Swal.fire({
       icon: 'question',
-      title: `¿Habilitar "${p.nombre}"?`,
+      title: `¿Habilitar "${escaparHtml(p.nombre)}"?`,
       html: 'Vuelve a salir en la tienda y en ventas, junto con sus artículos que tengan stock y foto. '
         + 'Sus artículos dados de baja siguen de baja.',
       showCancelButton: true,

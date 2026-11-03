@@ -1287,6 +1287,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** El código llegó del celular (botón «📱»): se busca como si se hubiera escrito en el buscador. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.terminoArticulo = codigo.toUpperCase();
+    this.buscarArticulo();
+  }
+
   buscarArticulo(): void {
     const termino = (this.terminoArticulo ?? '').trim();
     // Vacío y corto se atienden aquí mismo: esperar los 400 ms dejaría en pantalla la lista anterior.

@@ -440,6 +440,13 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   // ── Búsqueda de variantes ──────────────────────────────────────────
 
+  /** El código llegó del celular (botón «📱»): se busca como si se hubiera escrito en el buscador. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.terminoVariante = codigo.toUpperCase();
+    // Directo, sin el debounce/distinct del tecleo: escanear dos veces el mismo artículo seguido es lo normal en el mostrador.
+    this.buscarVariantes(this.terminoVariante);
+  }
+
   onInputVariante(): void {
     if (!this.terminoVariante.trim()) { this.resultados = []; return; }
     this.varSub$.next(this.terminoVariante);

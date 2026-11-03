@@ -16,6 +16,10 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
 import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
 
+import { DialogModule } from 'primeng/dialog';
+import { QRCodeModule } from 'angularx-qrcode';
+import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
+
 @NgModule({
   declarations: [
     ImagenSrcPipe,
@@ -30,9 +34,10 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
     AyudaPantallaComponent,
     AyudaOpcionesComponent,
     AltaArticulosComponent,
-    FiltroBuscableComponent
+    FiltroBuscableComponent,
+    EscanerCelularComponent
   ],
-  imports:  [CommonModule, FormsModule, OverlayModule],
+  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,
@@ -46,7 +51,8 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
     AyudaPantallaComponent,
     AyudaOpcionesComponent,
     AltaArticulosComponent,
-    FiltroBuscableComponent
+    FiltroBuscableComponent,
+    EscanerCelularComponent
   ]
 })
 export class SharedModule {}

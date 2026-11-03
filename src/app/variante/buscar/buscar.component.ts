@@ -835,6 +835,12 @@ export class BuscarComponent implements OnInit, OnDestroy {
     }
   }
 
+  /** El código llegó del celular (botón «📱»): se busca igual que si se hubiera escaneado con la cámara. */
+  alRecibirCodigoDelCelular(codigo: string): void {
+    this.terminoBusqueda = codigo;
+    this.aplicarFiltros(1);
+  }
+
   detenerEscaner(): void {
     this.controlesEscaner?.stop();
     this.controlesEscaner = null;

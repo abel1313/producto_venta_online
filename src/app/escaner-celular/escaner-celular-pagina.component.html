@@ -1,0 +1,21 @@
+<main class="ep">
+  <header class="ep-cabeza">
+    <h1 class="ep-titulo">Escáner de código de barras</h1>
+    <p class="ep-sub">Lo que escanees llega a la pantalla que tengas abierta en tu computadora (con tu mismo usuario).</p>
+  </header>
+
+  <div class="ep-estado" [ngClass]="'ep-estado--' + tono" aria-live="polite" *ngIf="!error">{{ estado }}</div>
+
+  <div class="ep-camara" [class.ep-camara--enviado]="enviadoAhora" [hidden]="!!error">
+    <video #video class="ep-video" playsinline muted autoplay></video>
+    <div class="ep-mira"></div>
+  </div>
+  <p class="ep-ultimo" *ngIf="ultimo && !error">{{ ultimo }}</p>
+  <p class="ep-detalle" *ngIf="!error">Deja esta pantalla abierta: queda lista para todos los códigos que escanees.</p>
+
+  <section class="ep-error" *ngIf="error">
+    <strong>{{ error.titulo }}</strong>
+    <span>{{ error.texto }}</span>
+    <button type="button" class="ep-boton" (click)="reintentar()">Intentar de nuevo</button>
+  </section>
+</main>

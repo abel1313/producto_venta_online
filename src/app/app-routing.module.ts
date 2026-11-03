@@ -154,6 +154,12 @@ const routes: Routes = [
     canActivate: [AuthGuard, CarritoGuard]
   },
   {
+    // El CELULAR de la cuenta: cámara siempre lista que manda los códigos de barras a la computadora (mismo usuario). Solo con sesión.
+    path: 'escaner-celular',
+    loadChildren: () => import('./escaner-celular/escaner-celular.module').then(m => m.EscanerCelularModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

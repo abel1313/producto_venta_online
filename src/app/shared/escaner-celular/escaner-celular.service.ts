@@ -48,6 +48,34 @@ export class EscanerCelularService {
     return this.http.delete<ResponseGeneric<boolean>>(`${this.url}/${id}`).pipe(map(() => undefined));
   }
 
+  // ── Canal de la CUENTA (con sesión iniciada): la PC y el celular de la misma persona se encuentran solos, sin QR ni id ──
+  private readonly canal = `${environment.api_Url}/v1/escaner/canal`;
+
+  canalEstado(): Observable<EstadoEscaner> {
+    return this.http.get<ResponseGeneric<EstadoEscaner>>(this.canal).pipe(map(r => r.data));
+  }
+
+  /** La PC deja la pregunta abierta (ver `esperar`); el servidor sabe de qué cuenta es por la sesión. */
+  canalEsperar(desde: number): Observable<LecturaEscaner> {
+    return this.http.get<ResponseGeneric<LecturaEscaner>>(`${this.canal}/codigos?desde=${desde}&esperar=true`)
+      .pipe(timeout(35000), map(r => r.data));
+  }
+
+  /** El celular avisa que sigue conectado (cada ~15 s). */
+  canalLatido(): Observable<void> {
+    return this.http.post<ResponseGeneric<boolean>>(`${this.canal}/latido`, {}).pipe(map(() => undefined));
+  }
+
+  /** El celular manda un código. `true` = la PC lo estaba esperando; `false` = se guardó pero ninguna pantalla lo pedía. */
+  canalEnviar(codigo: string): Observable<boolean> {
+    return this.http.post<ResponseGeneric<boolean>>(`${this.canal}/codigos`, { codigo }).pipe(map(r => r.data));
+  }
+
+  /** La página del celular de la cuenta (el QR de la PC lleva aquí; el celular debe tener la sesión iniciada). */
+  direccionDelEscanerDeLaCuenta(): string {
+    return `${window.location.origin}/escaner-celular`;
+  }
+
   /** La conexión que esta PC ya tenía enlazada con un celular, si la hay. */
   sesionGuardada(): string | null {
     try { return localStorage.getItem(CLAVE_SESION); } catch { return null; }

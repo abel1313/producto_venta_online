@@ -161,6 +161,13 @@ export class NavbarComponent implements OnInit {
   // ── Pantallas (permisos) ──────────────────────────────────────────
   // ¿El usuario tiene esta ruta puntual (item suelto dentro de un grupo mixto,
   // ej. "pedidos/historial-mp")?
+  /** El Escáner del celular lo ve quien tiene sesión y puede escanear códigos (administrador, o la acción «escanear-codigo» de alguna pantalla). */
+  get puedeEscanerCelular(): boolean {
+    if (this.isAnonymous) return false;
+    return this.authService.isAdminService
+      || ['productos/agregar', 'productos/buscar', 'carga-imagenes'].some(ruta => this.authService.tieneAccion(ruta, 'escanear-codigo'));
+  }
+
   tienePantalla(ruta: string): boolean {
     return this.pantallas.includes(ruta);
   }

@@ -26,6 +26,7 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
@@ -689,9 +690,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       title: '⚠️ Correo sin verificar',
       html: `
         <p style="font-size:0.9rem;margin-bottom:6px">
-          El correo de <strong>${c.nombrePersona} ${c.apeidoPaterno ?? ''}</strong> no está verificado:
+          El correo de <strong>${escaparHtml(c.nombrePersona)} ${escaparHtml(c.apeidoPaterno)}</strong> no está verificado:
         </p>
-        <p style="font-size:0.9rem;margin:0"><strong>${c.correoElectronico}</strong></p>
+        <p style="font-size:0.9rem;margin:0"><strong>${escaparHtml(c.correoElectronico)}</strong></p>
         <p style="font-size:0.8rem;color:#64748b;margin-top:10px">
           Verificarlo permite enviarle el ticket y que participe en las rifas.
         </p>
@@ -973,7 +974,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           Swal.fire({
             icon: 'warning',
             title: 'Precio desactualizado',
-            html: `<p>${msg}</p><p>El precio de uno o más artículos cambió. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
+            html: `<p>${escaparHtml(msg)}</p><p>El precio de uno o más artículos cambió. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
             confirmButtonText: '🔄 Ir al catálogo',
             showCancelButton: true,
             cancelButtonText: 'Cerrar'

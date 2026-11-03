@@ -4,6 +4,7 @@ import { BehaviorSubject, Subject } from 'rxjs';
 import { Client } from '@stomp/stompjs';
 import * as SockJS from 'sockjs-client';
 import { environment } from 'src/environments/environment';
+import { AuthenticateService } from 'src/app/auth.service';
 import {
   ApiResponse,
   EventoAdmin,
@@ -31,7 +32,7 @@ export class ChatAdminService implements OnDestroy {
 
   private baseUrl = `${environment.api_Url}/v1/chat/admin`;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private auth: AuthenticateService) {}
 
   conectar(token: string): void {
     if (this.client?.active) return;
@@ -43,6 +44,11 @@ export class ChatAdminService implements OnDestroy {
         { transports: ['websocket', 'xhr-streaming', 'xhr-polling'] }
       ),
       connectHeaders: { Authorization: `Bearer ${token}` },
+      // En cada reconexion se manda el token vigente (el access token dura 15 min y el del primer CONNECT ya habria vencido).
+      beforeConnect: () => {
+        const vigente = this.auth.getAccessToken() ?? token;
+        this.client.connectHeaders = { Authorization: `Bearer ${vigente}` };
+      },
       reconnectDelay: 5000,
       onConnect: () => this.onConnect(),
       onDisconnect: () => this.conectado$.next(false),

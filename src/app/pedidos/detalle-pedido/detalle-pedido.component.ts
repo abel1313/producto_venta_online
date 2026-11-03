@@ -26,13 +26,10 @@ import {
 } from '../models/editar-pedido.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { escaparHtml } from '../../shared/escapar-html.util';
 import { preguntarYEntregar } from '../entrega/entrega';
 import { GrupoPedidos } from '../models/grupo-pedido.model';
 
-function escaparHtml(texto: string | null | undefined): string {
-  return (texto ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
 
 /** Un pedido del mismo grupo, para mostrar sus artículos debajo de los de este. */
 interface OtroPedidoDelGrupo {
@@ -1428,15 +1425,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
     const detalleCombo = lineas.length
       ? `<ul style="text-align:left;margin:.6rem 0 0;padding-left:1.1rem">${
-          lineas.map(l => `<li>${l.cantidad} × ${l.nombre}</li>`).join('')
+          lineas.map(l => `<li>${escaparHtml(l.cantidad)} × ${escaparHtml(l.nombre)}</li>`).join('')
         }</ul>`
       : '';
 
     Swal.fire({
       icon: 'question',
       title: 'Ese artículo rompe la promoción',
-      html: `<p><b>${articulo.nombreProducto ?? 'El artículo nuevo'}</b> no es parte de `
-          + `<b>${promo}</b>.</p>`
+      html: `<p><b>${escaparHtml(articulo.nombreProducto ?? 'El artículo nuevo')}</b> no es parte de `
+          + `<b>${escaparHtml(promo)}</b>.</p>`
           + `<p style="margin-top:.5rem">Si se queda, el combo ya no se cumple `
           + `(${importe.toFixed(2)} en total):</p>${detalleCombo}`,
       showDenyButton:   true,
@@ -1506,7 +1503,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     Swal.fire({
       icon: 'warning',
       title: 'Es parte de una promoción',
-      html: `<p>"<b>${this.nombreVisible(item.productoNombre)}</b>" viene dentro de <b>${promo}</b>.</p>`
+      html: `<p>"<b>${escaparHtml(this.nombreVisible(item.productoNombre))}</b>" viene dentro de <b>${escaparHtml(promo)}</b>.</p>`
           + '<p style="margin-top:.5rem">Quitarlo solo dejaría el resto del combo a precio de '
           + 'promoción sin que se cumpla la condición. Hay que quitar <b>la promoción completa</b>.</p>',
       showCancelButton: true,

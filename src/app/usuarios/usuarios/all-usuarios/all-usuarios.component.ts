@@ -8,6 +8,7 @@ import Swal from 'sweetalert2';
 import { AccederService } from 'src/app/login/acceder.service';
 import { AuthService } from 'src/app/auth/auth.service';
 
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 @Component({
   selector: 'app-all-usuarios',
   templateUrl: './all-usuarios.component.html',
@@ -111,7 +112,7 @@ export class AllUsuariosComponent implements OnInit {
 
   resetearPassword(item: IUsuarioDto): void {
     Swal.fire({
-      title: `¿Resetear contraseña de ${item.username}?`,
+      title: `¿Resetear contraseña de ${escaparHtml(item.username)}?`,
       text: 'Se generará una contraseña temporal que deberás compartir con el usuario.',
       icon: 'warning',
       showCancelButton: true,
@@ -127,7 +128,7 @@ export class AllUsuariosComponent implements OnInit {
             icon: 'success',
             title: 'Contraseña reseteada',
             html: `
-              <p>La contraseña temporal de <strong>${item.username}</strong> es:</p>
+              <p>La contraseña temporal de <strong>${escaparHtml(item.username)}</strong> es:</p>
               <div style="font-size:1.7rem;font-weight:800;letter-spacing:5px;
                           padding:12px 16px;background:rgba(0,0,0,0.06);
                           border-radius:10px;margin:10px 0;font-family:monospace">
@@ -161,10 +162,10 @@ export class AllUsuariosComponent implements OnInit {
 
   private mostrarSwalCodigoAdmin(item: IUsuarioDto): void {
     Swal.fire({
-      title: `Verificar correo — ${item.username}`,
+      title: `Verificar correo — ${escaparHtml(item.username)}`,
       html: `
         <p style="margin-bottom:10px;font-size:0.88rem">
-          Se envió un código al correo de <strong>${item.username}</strong>.<br>
+          Se envió un código al correo de <strong>${escaparHtml(item.username)}</strong>.<br>
           Pídele que te dicte el código de 6 dígitos por teléfono.
         </p>
         <input id="swal-codigo-admin" type="text" inputmode="numeric" maxlength="6"
@@ -220,7 +221,7 @@ export class AllUsuariosComponent implements OnInit {
 
   activarUsuario(item: IUsuarioDto): void {
     Swal.fire({
-      title: `¿Reactivar a ${item.username}?`,
+      title: `¿Reactivar a ${escaparHtml(item.username)}?`,
       text: 'Podrá volver a iniciar sesión normalmente.',
       icon: 'question',
       showCancelButton: true,

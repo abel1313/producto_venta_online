@@ -1,3 +1,4 @@
+import { escaparHtml } from './escapar-html.util';
 export interface ITicketArticulo {
   cantidad:       number;
   productoNombre: string;
@@ -55,8 +56,7 @@ export function fijarDatosNegocioTicket(d: ITicketNegocio | null): void {
   negocioTicket = d;
 }
 
-const esc = (t: string): string =>
-  t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const esc = (t: unknown): string => escaparHtml(t);
 
 function encabezadoNegocio(): string {
   const n = negocioTicket;
@@ -94,13 +94,13 @@ export function generarHtmlTicket(d: ITicketData): string {
   if (d.tipo === 'cancelacion') encabezado = 'CANCELACIÓN DE PEDIDO';
 
   const filasArticulos = d.articulos.map(a =>
-    `<div class="fila"><span>${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''}</span><span>${fmt(a.subTotal)}</span></div>`
+    `<div class="fila"><span>${esc(a.cantidad)}x ${esc(a.productoNombre)}${a.talla ? ' ' + esc(a.talla) : ''}</span><span>${fmt(a.subTotal)}</span></div>`
   ).join('');
 
   const filaPago = (d.metodoPago ?? '').toUpperCase() === 'EFECTIVO'
     ? `<div class="fila"><span>ENTREGÓ:</span><span>${fmt(d.montoDado)}</span></div>
        <div class="fila"><span>CAMBIO:</span><span>${fmt(d.cambio)}</span></div>`
-    : `<div class="fila"><span>MÉTODO:</span><span>${(d.metodoPago || 'N/A').toUpperCase()}</span></div>`;
+    : `<div class="fila"><span>MÉTODO:</span><span>${esc((d.metodoPago || 'N/A').toUpperCase())}</span></div>`;
 
   const filaTotal = d.total != null ? `<div class="fila total"><span>TOTAL:</span><span>${fmt(d.total)}</span></div>` : '';
 
@@ -123,7 +123,7 @@ export function generarHtmlTicket(d: ITicketData): string {
   const filaSaldo       = d.saldoPendiente != null && d.saldoPendiente > 0
     ? `<div class="fila"><span>Saldo pendiente:</span><span>${fmt(d.saldoPendiente)}</span></div>` : '';
   const filaLiquidado   = d.tipo === 'liquidado' ? `<div class="centro bold">✅ PAGADO COMPLETAMENTE</div>` : '';
-  const filaMotivo      = d.motivo ? `<div>Motivo: ${d.motivo}</div>` : '';
+  const filaMotivo      = d.motivo ? `<div>Motivo: ${esc(d.motivo)}</div>` : '';
   // LFPC art. 66: en Apartado e Ir pagando no se cobran intereses; el comprobante lo dice.
   const filaSinIntereses = (d.tipo === 'abono' || d.tipo === 'liquidado')
     ? `<div class="centro" style="font-size:9px">Abonos sin intereses (CAT 0%)</div>` : '';
@@ -147,7 +147,7 @@ export function generarHtmlTicket(d: ITicketData): string {
     <div class="subtitulo">${encabezado}</div>
     <div class="linea"></div>
     <div class="fila"><span>Folio #${d.numero}</span><span>${hoy}</span></div>
-    <div class="cliente">Cliente: ${d.cliente}</div>
+    <div class="cliente">Cliente: ${esc(d.cliente)}</div>
     <div class="linea"></div>
     ${filasArticulos}
     <div class="linea"></div>

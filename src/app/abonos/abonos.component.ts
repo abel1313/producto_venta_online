@@ -20,6 +20,7 @@ import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } fro
 
 import { hoyIso } from '../shared/fecha.util';
 import { Constants } from 'src/app/Constants';
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 type Tab = 'cuenta' | 'pagados' | 'cancelados';
 
 @Component({
@@ -472,7 +473,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
           const txtCambio = cambioSnap > 0 ? ` Cambio al cliente: $${cambioSnap.toFixed(2)}.` : '';
           const titulo = esLiquidado ? '¡Pedido liquidado!' : 'Abono registrado';
           const texto  = esLiquidado
-            ? `El pedido #${pedidoSnap.pedidoId} de ${pedidoSnap.cliente} ha sido liquidado.${txtCambio}`
+            ? `El pedido #${pedidoSnap.pedidoId} de ${escaparHtml(pedidoSnap.cliente)} ha sido liquidado.${txtCambio}`
             : `Saldo restante: $${pedidoSnap.saldo.toFixed(2)}.${txtCambio}`;
 
           // Envío de correo/WhatsApp — mostrar resultado si el back lo confirmó
@@ -484,7 +485,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
           Swal.fire({
             icon:               'success',
             title:              titulo,
-            html:               `<p style="margin:0 0 8px">${texto}</p>${lineasEnvio.map(l => `<p style="margin:0">${l}</p>`).join('')}`,
+            html:               `<p style="margin:0 0 8px">${texto}</p>${lineasEnvio.map(l => `<p style="margin:0">${escaparHtml(l)}</p>`).join('')}`,
             showConfirmButton:  !!htmlTicket,
             confirmButtonText:  '🖨️ Imprimir ticket',
             showCancelButton:   !!htmlTicket,

@@ -6,6 +6,7 @@ import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-producto
 import Swal from 'sweetalert2';
 import { AuthService } from 'src/app/auth/auth.service';
 
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 @Component({
   selector: 'app-clientes-buscar',
   templateUrl: './clientes-buscar.component.html',
@@ -63,7 +64,7 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
     Swal.fire({
       icon: 'warning',
       title: '¿Resetear verificación?',
-      html: `El correo de <strong>${c.nombrePersona} ${c.apeidoPaterno}</strong> quedará como <em>no verificado</em>. Útil para re-probar el flujo.`,
+      html: `El correo de <strong>${escaparHtml(c.nombrePersona)} ${escaparHtml(c.apeidoPaterno)}</strong> quedará como <em>no verificado</em>. Útil para re-probar el flujo.`,
       showCancelButton: true,
       confirmButtonText: 'Resetear',
       cancelButtonText: 'Cancelar',
@@ -89,7 +90,7 @@ export class ClientesBuscarComponent implements OnInit, OnDestroy {
 
   private mostrarSwalCodigo(c: IClienteBusquedaDto): void {
     Swal.fire({
-      title: `Verificar correo — ${c.nombrePersona} ${c.apeidoPaterno}`,
+      title: `Verificar correo — ${escaparHtml(c.nombrePersona)} ${escaparHtml(c.apeidoPaterno)}`,
       html: `
         <p style="margin-bottom:10px;font-size:0.88rem">
           Se envió un código a <strong>${c.correoElectronico}</strong>.<br>

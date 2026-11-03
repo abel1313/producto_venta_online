@@ -19,6 +19,7 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 import { hoyIso, hoyMasDiasIso } from '../../shared/fecha.util';
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 @Component({
   selector: 'app-venta-variante',
   templateUrl: './venta-variante.component.html',
@@ -433,7 +434,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
             Swal.fire({
               icon: 'warning',
               title: 'Precio desactualizado',
-              html: `<p>${msg}</p><p>El precio de uno o más productos cambió mientras tenías el carrito abierto. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
+              html: `<p>${escaparHtml(msg)}</p><p>El precio de uno o más productos cambió mientras tenías el carrito abierto. <strong>Actualiza el catálogo y vuelve a intentarlo.</strong></p>`,
               confirmButtonText: '🔄 Ir al catálogo',
               showCancelButton: true,
               cancelButtonText: 'Cerrar'

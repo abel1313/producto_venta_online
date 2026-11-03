@@ -4,6 +4,7 @@ import Swal from 'sweetalert2';
 import { IFrasePendiente } from '../models/flores.model';
 import { FloresService } from '../service/flores.service';
 
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 /**
  * Bandeja de frases de listón por aprobar — ADMIN.
  *
@@ -110,7 +111,7 @@ export class BandejaFrasesComponent implements OnInit {
     Swal.fire({
       icon: 'warning',
       title: '¿Rechazar esta frase?',
-      html: `<p style="font-style:italic">«${f.fraseTexto}»</p>
+      html: `<p style="font-style:italic">«${escaparHtml(f.fraseTexto)}»</p>
              <p>El ramo del pedido #${f.pedidoId} sigue en pie — solo se descarta la frase del listón.</p>`,
       showCancelButton: true,
       confirmButtonText: 'Sí, rechazar',

@@ -16,6 +16,7 @@ import { IMenu, ISubmenu } from 'src/app/menu-admin/models/menu.model';
 import { ThemeService } from 'src/app/services/theme/theme.service';
 import { NegocioService, IContactosPublicos } from 'src/app/negocio/negocio.service';
 
+import { escaparHtml } from 'src/app/shared/escapar-html.util';
 interface GrupoSubmenusExcepcion {
   menu: IMenu | null;
   submenus: ISubmenu[];
@@ -298,7 +299,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
       if (registrado != null) {
         this.formRegistro.reset();
         Swal.fire({
-          title: `Se restablecio la contrasena de ${userName}`,
+          title: `Se restablecio la contrasena de ${escaparHtml(userName)}`,
           icon: "success",
           draggable: true
         }).then(() => this.router.navigate(['/login']));
@@ -326,7 +327,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
       if (registrado != null) {
         this.formRegistro.reset();
         Swal.fire({
-          title: `Se restablecio la contrasena de ${userName}`,
+          title: `Se restablecio la contrasena de ${escaparHtml(userName)}`,
           icon: "success",
           draggable: true
         }).then(() => this.router.navigate(['/login']));
@@ -363,7 +364,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
     if (!this.updateUser.id) return;
     const esMiPropiaCuenta = this.updateUser.id === this.authService.userIdValue;
     Swal.fire({
-      title: `¿Resetear contraseña de ${this.updateUser.username}?`,
+      title: `¿Resetear contraseña de ${escaparHtml(this.updateUser.username)}?`,
       text: esMiPropiaCuenta
         ? 'Es tu propia cuenta: se cerrará tu sesión y tendrás que entrar de nuevo con la contraseña temporal.'
         : 'Se generará una contraseña temporal que deberás compartir con el usuario.',
@@ -381,7 +382,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
             icon: 'success',
             title: 'Contraseña reseteada',
             html: `
-              <p>La contraseña temporal de <strong>${this.updateUser.username}</strong> es:</p>
+              <p>La contraseña temporal de <strong>${escaparHtml(this.updateUser.username)}</strong> es:</p>
               <div style="font-size:1.7rem;font-weight:800;letter-spacing:5px;
                           padding:12px 16px;background:rgba(0,0,0,0.06);
                           border-radius:10px;margin:10px 0;font-family:monospace">
@@ -416,7 +417,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private mostrarSwalCodigoAdmin(): void {
     Swal.fire({
-      title: `Verificar correo — ${this.updateUser.username}`,
+      title: `Verificar correo — ${escaparHtml(this.updateUser.username)}`,
       html: `
         <p style="margin-bottom:10px;font-size:0.88rem">
           Se envió un código al correo de <strong>${this.updateUser.username}</strong>.<br>
@@ -611,7 +612,7 @@ export class AddUsuariosComponent implements OnInit, AfterViewInit, OnDestroy {
 
   private mostrarSwalCambioCorreo(correoNuevo: string, id: number): void {
     Swal.fire({
-      title: `Verificar nuevo correo — ${this.updateUser.username}`,
+      title: `Verificar nuevo correo — ${escaparHtml(this.updateUser.username)}`,
       html: `
         <p style="margin-bottom:10px;font-size:0.88rem">
           Se envió un código a <strong>${correoNuevo}</strong>.<br>

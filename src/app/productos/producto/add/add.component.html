@@ -207,7 +207,8 @@
                     (click)="abrirCamara()">
               📷 Tomar foto
             </button>
-          </div>
+          <app-foto-celular (foto)="alRecibirFotoDelCelular($event)"></app-foto-celular>
+        </div>
 
           <div class="pf-drop"
                (dragover)="onDragOver($event)"

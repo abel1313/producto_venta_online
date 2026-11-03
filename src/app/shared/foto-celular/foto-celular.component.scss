@@ -1,0 +1,29 @@
+.fc { display: inline-flex; flex-direction: column; gap: 6px; }
+.fc-boton {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+  font: inherit;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border);
+  &:hover { background: var(--btn-primary-hover-bg); color: var(--btn-primary-hover-text); }
+}
+.fc-punto {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--app-text-faint);
+  &--on { background: var(--pk-success); }
+}
+.fc-ayuda {
+  max-width: 340px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: .85rem;
+  color: var(--app-text-muted);
+  background: var(--app-tint);
+  border: 1px solid var(--app-border);
+  p { margin: 0; overflow-wrap: anywhere; }
+}

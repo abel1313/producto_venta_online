@@ -8,7 +8,8 @@ export interface SesionEscaner { id: string; venceEn: string; }
 export interface EstadoEscaner { vigente: boolean; celularConectado: boolean; ultimaSecuencia: number; venceEn: string; epoca: number; }
 export interface CodigoRecibido { secuencia: number; codigo: string; }
 /** `epoca` cambia cuando la conexión se rehace en el servidor: hay que pedir desde el principio de la nueva. */
-export interface LecturaEscaner { ultimaSecuencia: number; celularConectado: boolean; epoca: number; codigos: CodigoRecibido[]; }
+export interface FotoDelCelular { secuencia: number; foto: string; }
+export interface LecturaEscaner { ultimaSecuencia: number; celularConectado: boolean; epoca: number; codigos: CodigoRecibido[]; fotos?: FotoDelCelular[]; }
 
 interface ResponseGeneric<T> { data: T; }
 
@@ -57,8 +58,8 @@ export class EscanerCelularService {
   }
 
   /** La PC deja la pregunta abierta (ver `esperar`); el servidor sabe de qué cuenta es por la sesión. */
-  canalEsperar(desde: number): Observable<LecturaEscaner> {
-    return this.http.get<ResponseGeneric<LecturaEscaner>>(`${this.canal}/codigos?desde=${desde}&esperar=true`)
+  canalEsperar(desde: number, acepta = 'codigo'): Observable<LecturaEscaner> {
+    return this.http.get<ResponseGeneric<LecturaEscaner>>(`${this.canal}/codigos?desde=${desde}&esperar=true&acepta=${acepta}`)
       .pipe(timeout(35000), map(r => r.data));
   }
 
@@ -70,6 +71,11 @@ export class EscanerCelularService {
   /** El celular manda un código. `true` = la PC lo estaba esperando; `false` = se guardó pero ninguna pantalla lo pedía. */
   canalEnviar(codigo: string): Observable<boolean> {
     return this.http.post<ResponseGeneric<boolean>>(`${this.canal}/codigos`, { codigo }).pipe(map(r => r.data));
+  }
+
+  /** El celular manda una FOTO (data URL JPEG). `true` = alguna pantalla de la PC la estaba esperando. */
+  canalEnviarFoto(foto: string): Observable<boolean> {
+    return this.http.post<ResponseGeneric<boolean>>(`${this.canal}/fotos`, { foto }).pipe(map(r => r.data));
   }
 
   /** La página del celular de la cuenta (el QR de la PC lleva aquí; el celular debe tener la sesión iniciada). */

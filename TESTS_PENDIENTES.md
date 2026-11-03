@@ -482,3 +482,13 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 8. Cierra el escáner del celular unos minutos y vuelve a abrirlo: debe reconectarse SOLO (sin QR) y el punto de la PC volver a verde.
 - ⛔ No puede pasar: que el código llegue dos veces; que llegue a otra cuenta; que pida QR teniendo sesión; que con la PC en otra pestaña oculta se llene un campo.
 - Pruebas aparte: dos PCs con la misma cuenta (solo debe recibir la que tengas a la vista), y un visitante sin sesión en la tienda (sigue usando el QR de «📱»).
+
+
+## Foto del celular → PC (2026-11-03) 🔴 PRUEBA PENDIENTE (con celular real)
+**Antes de empezar:** celular con tu usuario abierto en **📱 Escáner**; PC con tu mismo usuario en **Productos → Agregar** (o Agregar artículo / Actualizar artículo).
+1. En la PC pulsa **📱 Foto del celular**: debe decir «El celular está conectado…».
+2. En el celular pulsa **📷 Tomar foto** → aparece la vista previa → **Enviar a la computadora**. ✅ La foto aparece en las imágenes de la PC y sale aviso «Foto recibida del celular».
+3. Repite: se **agrega** otra (no reemplaza). Prueba también **📸 Cámara del celular** (cámara nativa del iPhone/Android).
+4. Guarda el producto/artículo: ✅ la imagen se guarda como las demás.
+5. En la PC cambia a una pantalla sin imágenes (Dashboard) y manda otra: ✅ el celular dice «La computadora no tiene abierta una pantalla que reciba fotos».
+⛔ No puede pasar: foto duplicada en la PC, error 413, la foto llega a otra cuenta.

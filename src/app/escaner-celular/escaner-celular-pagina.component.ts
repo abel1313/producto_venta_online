@@ -28,6 +28,9 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   ultimo = '';
   enviadoAhora = false;
   error: { titulo: string; texto: string } | null = null;
+  /** Foto tomada, esperando que se confirme el envío (data URL JPEG). */
+  fotoPrevia: string | null = null;
+  enviandoFoto = false;
 
   private stream: MediaStream | null = null;
   private controlesZxing: IScannerControls | null = null;
@@ -140,7 +143,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
 
   // ── Cada lectura: decide si es un escaneo nuevo y lo manda ──
   private alLeer(texto: string): void {
-    if (this.destruido || !texto) return;
+    if (this.destruido || !texto || this.fotoPrevia) return;   // mientras se fotografía, no se mandan códigos (se colaría la etiqueta del producto)
     // Una dirección (p. ej. un QR de enlace) no es un código de barras de producto.
     if (/^https?:\/\//i.test(texto)) return;
     const ahora = Date.now();
@@ -174,6 +177,73 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
         this.mostrar('No se pudo enviar, reintentando…', 'bad');
       }
     });
+  }
+
+  // ── Fotos: se toman aquí y llegan al campo de imagen de la pantalla que esté abierta en la computadora ──
+  /** Foto instantánea de lo que ve la cámara (sin salir del escáner). */
+  tomarFoto(): void {
+    const v = this.video.nativeElement;
+    if (!v.videoWidth || !v.videoHeight || !this.camaraViva()) { this.mostrar('La cámara no está lista todavía', 'warn'); return; }
+    this.fotoPrevia = this.comprimir(v, v.videoWidth, v.videoHeight);
+    if (!this.fotoPrevia) this.mostrar('No se pudo tomar la foto', 'bad');
+  }
+
+  /** Foto de la cámara nativa del celular (mejor calidad, enfoque y flash) o de la galería. */
+  alElegirArchivo(e: Event): void {
+    const input = e.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    // La cámara nativa pudo dejar la del escáner sin imagen (sobre todo en iPhone): se revisa y se reinicia.
+    setTimeout(() => { if (!this.destruido && !this.error && !this.camaraViva() && !this.arrancando) { this.apagar(); void this.iniciar(); } }, 300);
+    if (!archivo) return;
+    const url = URL.createObjectURL(archivo);
+    const img = new Image();
+    img.onload = () => {
+      this.fotoPrevia = this.comprimir(img, img.naturalWidth, img.naturalHeight);
+      URL.revokeObjectURL(url);
+      if (!this.fotoPrevia) this.mostrar('No se pudo preparar la foto', 'bad');
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); this.mostrar('No se pudo abrir esa foto', 'bad'); };
+    img.src = url;
+  }
+
+  descartarFoto(): void { if (!this.enviandoFoto) this.fotoPrevia = null; }
+
+  enviarFoto(): void {
+    if (!this.fotoPrevia || this.enviandoFoto) return;
+    this.enviandoFoto = true;
+    this.svc.canalEnviarFoto(this.fotoPrevia).subscribe({
+      next: entregada => {
+        this.enviandoFoto = false;
+        this.fotoPrevia = null;
+        if (navigator.vibrate) { try { navigator.vibrate(60); } catch { /* sin vibración */ } }
+        if (entregada) { this.ultimo = '✔ Foto enviada'; this.mostrar('✔ Foto enviada', 'ok'); }
+        else { this.ultimo = 'Foto sin entregar'; this.mostrar('La computadora no tiene abierta una pantalla que reciba fotos (Nuevo producto o Agregar artículo)', 'warn'); }
+      },
+      error: (err: HttpErrorResponse) => {
+        this.enviandoFoto = false;               // la foto previa se conserva para reintentar
+        if (err.status === 401 || err.status === 403) { this.fallar('La sesión terminó', 'Vuelve a iniciar sesión en la tienda y abre el Escáner otra vez.'); return; }
+        if (err.status === 429) { this.mostrar('Demasiadas fotos seguidas, espera un momento', 'warn'); return; }
+        if (err.status === 400 || err.status === 413) { this.fotoPrevia = null; this.mostrar('La foto es demasiado grande o no es válida. Toma otra.', 'bad'); return; }
+        this.mostrar('No se pudo enviar la foto, intenta de nuevo', 'bad');
+      }
+    });
+  }
+
+  /** Reduce a 1280 px y baja la calidad hasta que quepa (el servidor acepta ~700 000 caracteres y el ingreso de la tienda ~1 MB). */
+  private comprimir(fuente: CanvasImageSource, ancho: number, alto: number): string | null {
+    const escala = Math.min(1, 1280 / Math.max(ancho, alto));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(ancho * escala);
+    canvas.height = Math.round(alto * escala);
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(fuente, 0, 0, canvas.width, canvas.height);
+    for (const calidad of [0.82, 0.7, 0.58, 0.46, 0.34]) {
+      const url = canvas.toDataURL('image/jpeg', calidad);
+      if (url.length <= 640000) return url;
+    }
+    return null;
   }
 
   private pedirPantallaEncendida(): void {

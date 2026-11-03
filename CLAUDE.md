@@ -12478,3 +12478,5 @@ rebaja en automático porque la card la mostraba como precio final. No volver a 
 - El back acepta la rebaja en `savePedido` **solo** con token `ROLE_ADMIN`.
 - Cualquier pantalla nueva que agregue artículos: precio normal por default, la rebaja solo con
   una acción explícita del admin y sin enseñar el monto.
+
+- **Agregar artículos con 1 libre (2026-11-03, hotfix):** `shared/alta-articulos/alta-articulos.component.ts` — si al modelo solo le queda **1** de stock libre, el artículo nuevo ya viene con stock 1 (antes había que escribir 1 en «Mismo stock para todos», pulsar Aplicar y guardar). Con más libres sigue vacío.

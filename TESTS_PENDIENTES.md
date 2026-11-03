@@ -509,3 +509,9 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 3. **Cerrar sesión borra el enlace del escáner:** después de salir, en F12 → Aplicación → Almacenamiento local no debe estar `escaner.sesion`.
 4. **Refresh/logout con header obligatorio (solo QA):** iniciar sesión, esperar >15 min o forzar un refresh: la sesión se renueva sola; cerrar sesión funciona.
 5. **Swagger apagado en QA:** `/swagger-ui.html` ya no abre.
+
+
+## Agregar artículos con stock 1 (2026-11-03) 🔴 PRUEBA PENDIENTE
+1. Un modelo con **1** de stock y sin artículos → «🧩 Agregar artículos». ✅ El Artículo 1 ya trae **Stock 1** y «Guardar 1 artículo» está activo, sin pulsar Aplicar.
+2. Un modelo con 5 de stock → el stock del artículo sigue **vacío** (hay que elegirlo).
+3. Guarda el de stock 1: el artículo queda con stock 1 y al modelo le quedan 0 libres.

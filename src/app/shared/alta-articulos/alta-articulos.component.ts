@@ -186,7 +186,8 @@ export class AltaArticulosComponent implements OnInit {
       abierto,
       talla: '',
       presentacion: '',
-      stock: this.mismoStock,
+      // Si al producto solo le queda 1 libre, el artículo es de 1: ya viene puesto (antes había que escribir 1, pulsar Aplicar y guardar).
+      stock: this.mismoStock ?? (this.libre === 1 ? 1 : null),
       aceptaMsi: 'igual',
       cambia: { foto: false, descripcion: false, color: false, marca: false, contenidoNeto: false, categoria: false },
       color: '',

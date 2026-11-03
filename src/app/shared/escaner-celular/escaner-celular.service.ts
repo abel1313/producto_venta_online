@@ -5,9 +5,10 @@ import { map, timeout } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 export interface SesionEscaner { id: string; venceEn: string; }
-export interface EstadoEscaner { vigente: boolean; celularConectado: boolean; ultimaSecuencia: number; venceEn: string; }
+export interface EstadoEscaner { vigente: boolean; celularConectado: boolean; ultimaSecuencia: number; venceEn: string; epoca: number; }
 export interface CodigoRecibido { secuencia: number; codigo: string; }
-export interface LecturaEscaner { ultimaSecuencia: number; celularConectado: boolean; codigos: CodigoRecibido[]; }
+/** `epoca` cambia cuando la conexión se rehace en el servidor: hay que pedir desde el principio de la nueva. */
+export interface LecturaEscaner { ultimaSecuencia: number; celularConectado: boolean; epoca: number; codigos: CodigoRecibido[]; }
 
 interface ResponseGeneric<T> { data: T; }
 

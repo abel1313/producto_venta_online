@@ -1,5 +1,7 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import { EscanerCelularService } from '../shared/escaner-celular/escaner-celular.service';
@@ -42,7 +44,20 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   /** Un código frente a la cámara cuenta como UN escaneo: se vuelve a mandar solo si salió del cuadro ≥1 s y regresó. */
   private visto = { texto: '', ultimaVez: 0, enviado: false, reintentoDesde: 0 };
 
-  constructor(private readonly svc: EscanerCelularService) {}
+  constructor(
+    private readonly svc: EscanerCelularService,
+    private readonly location: Location,
+    private readonly router: Router
+  ) {}
+
+  /** La página cubre toda la pantalla (es del celular) y tapaba el menú: sin este botón, en la computadora no había cómo salir. */
+  volver(): void {
+    if (window.history.length > 1) {
+      this.location.back();
+    } else {
+      void this.router.navigate(['/home']);
+    }
+  }
 
   ngOnInit(): void {
     void this.iniciar();

@@ -13,6 +13,16 @@
   color: var(--app-text);
 }
 
+.ep-volver {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px solid var(--app-border);
+  color: var(--app-text);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
 .ep-cabeza { text-align: center; }
 .ep-titulo { margin: 0; font-size: 1.1rem; font-weight: 700; text-wrap: balance; }
 .ep-sub { margin: 4px 0 0; font-size: .85rem; color: var(--app-text-muted); }

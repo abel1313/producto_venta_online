@@ -16,7 +16,9 @@ export interface IChatbotProducto {
   talla:        string | null;
   color:        string | null;
   precio:       number;
-  stock:        number;
+  /** Solo llega para el administrador; al cliente se le manda solo `disponible` (no se le dice cuántas piezas hay). */
+  stock?:       number;
+  disponible?:  boolean;
   descripcion?: string | null;
   codigoBarras?: string | null;
 }

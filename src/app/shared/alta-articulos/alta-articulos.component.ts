@@ -201,11 +201,10 @@ export class AltaArticulosComponent implements OnInit {
   }
 
   /**
-   * "Mismo stock para todos": el stock libre se reparte en artículos de ese tamaño, así que la
-   * cantidad de artículos se calcula sola (libre ÷ mismo stock, hacia abajo) y lo que sobra queda
-   * libre para hacer más artículos después. Ej. con 5 libres: 1 → 5 artículos; 2 → 2 (sobra 1);
-   * 3 → 1 (sobran 2); 5 → 1; 6 o más → aviso. Antes solo copiaba el número a los formularios ya
-   * abiertos y 5 artículos de 5 pedían 25 piezas.
+   * "Mismo stock para todos": pone ese stock en los artículos que la persona pidió. La cantidad
+   * que escribió manda; solo se recorta si no caben (libre ÷ stock, hacia abajo). Lo que sobra
+   * queda libre para hacer más artículos después. Ej. con 1000 libres, 1 artículo de 5 → 1 artículo
+   * (quedan 995). Con 5 libres, 3 artículos de 2 → se recorta a 2 (sobra 1).
    */
   aplicarMismoStock(): void {
     this.avisoMismoStock = '';
@@ -215,13 +214,18 @@ export class AltaArticulosComponent implements OnInit {
       this.avisoMismoStock = `Solo hay ${this.libre} libres: un artículo de ${s} no cabe.`;
       return;
     }
-    this.cantidad = Math.floor(this.libre / s);
+    // La cantidad que escribió la persona manda (antes se pisaba con libre ÷ s: 1000 libres y stock 5
+    // creaba 200 artículos aunque hubiera pedido 1). Solo se recorta si no cabe en lo libre.
+    const maxQueCaben = Math.floor(this.libre / s);
+    const pedida = Math.floor(Number(this.cantidad) || 1);
+    const recortada = pedida > maxQueCaben;
+    this.cantidad = Math.max(1, Math.min(pedida, maxQueCaben));
     this.ajustarFormularios();
     this.formularios.forEach(f => f.stock = s);
     const sobran = this.libre - this.cantidad * s;
-    this.avisoMismoStock = sobran > 0
-      ? `${this.cantidad} ${this.cantidad === 1 ? 'artículo' : 'artículos'} de ${s}. Sobran ${sobran} libres para hacer más artículos después.`
-      : '';
+    this.avisoMismoStock = recortada
+      ? `Solo caben ${this.cantidad} ${this.cantidad === 1 ? 'artículo' : 'artículos'} de ${s} con ${this.libre} libres.`
+      : `${this.cantidad} ${this.cantidad === 1 ? 'artículo' : 'artículos'} de ${s}. Quedan ${sobran} libres para hacer más artículos después.`;
   }
 
   // ── Lo que cambia en cada artículo ───────────────────────────────────

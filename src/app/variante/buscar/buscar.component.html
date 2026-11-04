@@ -41,10 +41,10 @@
           class="vb-search__hint">
       {{ 3 - terminoBusqueda.length }} caracteres más
     </span>
-    <button *ngIf="isAnonymous || puedeEscanear" class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
+    <button *ngIf="soloAdminPorAhora" class="vb-search__scan" (click)="iniciarEscaner()" title="Escanear código de barras">
       📷
     </button>
-    <app-escaner-celular *ngIf="isAnonymous || puedeEscanear" (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
+    <app-escaner-celular *ngIf="soloAdminPorAhora" (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
   </div>
 
   <!-- Scanner overlay -->
@@ -347,7 +347,7 @@
           <span class="vb-btn-card__label">Precio</span>
         </button>
 
-        <button *ngIf="puedeActualizarVariante && (!v.imagenUrl || imagenFallo(v))"
+        <button *ngIf="soloAdminPorAhora && puedeActualizarVariante && (!v.imagenUrl || imagenFallo(v))"
                 class="vb-btn-card vb-btn-card--foto"
                 (click)="abrirAgregarFoto(v)"
                 title="Agregar una foto a este artículo (de la computadora o del celular)">

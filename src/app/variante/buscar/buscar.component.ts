@@ -827,6 +827,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
   // ── Escáner de código de barras ────────────────────────────────────
 
+  /**
+   * Escáner (📷 y 📱) y «Agregar foto» desde las tarjetas: por ahora SOLO el administrador (pedido del dueño 2026-11-04; más adelante se
+   * abren por permiso desde Gestión de roles). Antes el escáner lo veía hasta un visitante sin sesión.
+   */
+  get soloAdminPorAhora(): boolean {
+    return this.authService.isAdminService;
+  }
+
   async iniciarEscaner(): Promise<void> {
     this.escaneando = true;
     await new Promise(r => setTimeout(r, 150));

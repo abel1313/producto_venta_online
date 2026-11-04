@@ -267,6 +267,12 @@
       <div class="vb-card__body">
         <div class="vb-card__detail">
 
+          <!-- El artículo no tiene nombre propio: hereda el del producto (modelo). -->
+          <div class="vb-card__detail-row" *ngIf="v.nombreProducto">
+            <span class="vb-card__detail-label">Nombre</span>
+            <span class="vb-card__detail-val">{{ v.nombreProducto }}</span>
+          </div>
+
                     <div class="vb-card__detail-row" *ngIf="v.codigoBarras">
             <span class="vb-card__detail-label">Código de barras</span>
             <span class="vb-card__detail-val">{{ v.codigoBarras | uppercase }}</span>

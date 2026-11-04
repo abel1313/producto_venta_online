@@ -250,6 +250,43 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
     this.carritoService.agregar(variante);
   }
 
+  /** Código de barras que se acaba de copiar (para mostrar «Copiado ✓» un momento). */
+  copiado = '';
+  private readonly cachePartes = new Map<string, { texto: string; codigo: boolean }[]>();
+
+  /** Parte el texto de una respuesta: los números de 8 a 14 dígitos (códigos de barras) salen aparte, para copiarlos con un clic. */
+  partes(contenido: string): { texto: string; codigo: boolean }[] {
+    const texto = contenido ?? '';
+    let partes = this.cachePartes.get(texto);
+    if (!partes) {
+      partes = texto.split(/(\b\d{8,14}\b)/).filter(t => t !== '').map(t => ({ texto: t, codigo: /^\d{8,14}$/.test(t) }));
+      this.cachePartes.set(texto, partes);
+    }
+    return partes;
+  }
+
+  copiar(codigo: string): void {
+    const listo = () => {
+      this.copiado = codigo;
+      setTimeout(() => { if (this.copiado === codigo) this.copiado = ''; }, 1500);
+    };
+    const alternativa = () => {
+      const area = document.createElement('textarea');
+      area.value = codigo;
+      area.style.position = 'fixed';
+      area.style.opacity = '0';
+      document.body.appendChild(area);
+      area.select();
+      try { document.execCommand('copy'); listo(); } catch { /* sin permiso: se puede seleccionar a mano */ }
+      document.body.removeChild(area);
+    };
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(codigo).then(listo, alternativa);
+    } else {
+      alternativa();
+    }
+  }
+
   hayDisponible(p: IChatbotProducto): boolean {
     return p.disponible ?? (p.stock ?? 0) > 0;
   }

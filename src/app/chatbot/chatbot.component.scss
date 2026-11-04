@@ -777,3 +777,17 @@ $radius: 18px;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
+
+
+// Código de barras copiable con un clic (solo lo ve el administrador).
+.cb-codigo {
+  font: inherit;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  background: var(--app-tint);
+  color: var(--app-accent-text);
+  border: 1px dashed var(--app-border);
+  border-radius: 6px;
+  padding: 0 6px;
+  cursor: copy;
+  user-select: all;
+}

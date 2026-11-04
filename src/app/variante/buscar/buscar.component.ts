@@ -398,6 +398,14 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // admin), Tienda es publica: un visitante SIN sesion sigue viendo el boton siempre (isAnonymous
   // en la plantilla) -- este permiso solo aplica a cuentas CON sesion (cualquier rol, incluido
   // ROLE_ADMIN). Ver migration_accion_tienda_escanear.sql.
+  /**
+   * Escáner (📷 y 📱), foto del celular / «Agregar foto» y el chip «MSI»: por ahora SOLO el administrador (pedido del dueño 2026-11-04; más adelante
+   * se abren por permiso desde Gestión de roles). Antes el escáner lo veía hasta un visitante sin sesión.
+   */
+  get soloAdminPorAhora(): boolean {
+    return this.authService.isAdminService;
+  }
+
   get puedeEscanear(): boolean {
     return this.authService.tieneAccion('tienda/buscar', 'escanear-codigo');
   }

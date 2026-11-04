@@ -20,6 +20,9 @@ import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.mode
 
 import { hoyIso, hoyMasDiasIso } from '../../shared/fecha.util';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
+/** El pago con tarjeta / meses sin intereses para el cliente (carrito y Mis pedidos) se apaga por ahora: solo el administrador (pedido del dueño 2026-11-04). */
+const PAGO_EN_LINEA_PARA_CLIENTES = false;
+
 @Component({
   selector: 'app-venta-variante',
   templateUrl: './venta-variante.component.html',
@@ -401,7 +404,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
               } else {
                 mostrarRegistrado();
               }
-            } else if (!this.isAdminUser) {
+            } else if (!this.isAdminUser && PAGO_EN_LINEA_PARA_CLIENTES) {
               this.ofrecerPagoConTarjeta(res.data.id, totalPedido);
             } else {
               Swal.fire({

@@ -88,7 +88,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
    * pedido no aplica, responde con el motivo y el diálogo lo muestra.
    */
   puedePagarEnLinea(item: IPedidoGenerico): boolean {
-    if (this.isAdminUser) return false;
+    // Por ahora el cliente NO paga con tarjeta en linea (pedido del dueño 2026-11-04): solo el administrador, para probarlo.
+    if (!this.isAdminUser) return false;
     const tp = item.pedido.tipoPedido;
     if (tp === 'APARTADO' || tp === 'FIADO') return false;
     if (item.pedido.grupo || this.esCancelado(item)) return false;

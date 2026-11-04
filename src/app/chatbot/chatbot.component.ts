@@ -243,10 +243,15 @@ export class ChatbotComponent implements OnInit, AfterViewChecked, OnDestroy {
       talla:     p.talla,
       color:     p.color,
       precio:    p.precio,
-      stock:     p.stock,
+      // Al cliente el back no le manda la cantidad: tope alto para el carrito (el pedido valida el stock real).
+      stock:     p.stock ?? (p.disponible ? 99 : 0),
       imagenUrl: this.imagenesVariante.get(p.varianteId) ?? null
     };
     this.carritoService.agregar(variante);
+  }
+
+  hayDisponible(p: IChatbotProducto): boolean {
+    return p.disponible ?? (p.stock ?? 0) > 0;
   }
 
   quitarDelCarrito(varianteId: number): void {

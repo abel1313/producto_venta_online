@@ -58,11 +58,11 @@
                   <p class="cb-card__precio">${{ p.precio | number:'1.2-2' }}</p>
                   <!-- Al cliente solo se le dice si hay (pedido del dueño 2026-10-14): ni el número de
                        piezas ni el código de barras. El stock sigue llegando para el tope del carrito. -->
-                  <p class="cb-card__stock">{{ p.stock > 0 ? '✅ Disponible' : 'Agotado' }}</p>
+                  <p class="cb-card__stock">{{ hayDisponible(p) ? '✅ Disponible' : 'Agotado' }}</p>
                 </div>
                 <div class="cb-card__actions">
                   <button class="cb-btn-add"
-                          [disabled]="p.stock <= 0"
+                          [disabled]="!hayDisponible(p)"
                           (click)="agregarAlCarrito(p)">
                     🛒 Agregar
                   </button>

@@ -176,6 +176,11 @@ export class CorteCajaComponent implements OnInit {
     return t > 0 ? Math.min(100, Math.round(100 * (this.corte?.totalPagado ?? 0) / t)) : 0;
   }
 
+  /** Cuánto de lo vendido en la zona ya se cobró (0 a 100). */
+  porcentajeZona(z: CorteZona): number {
+    return z.totalPedidos > 0 ? Math.min(100, Math.round(100 * z.totalPagado / z.totalPedidos)) : 0;
+  }
+
   copiar(): void {
     if (!this.corte) return;
     const dinero = (n: number) => `$${n.toFixed(2)}`;

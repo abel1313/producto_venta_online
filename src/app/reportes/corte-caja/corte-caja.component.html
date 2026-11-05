@@ -7,8 +7,10 @@
     <p class="cc-sub">Lo que falta por cobrar de tus pedidos, por zona de entrega.</p>
   </header>
 
-  <!-- Filtros: se pliegan a un resumen después de buscar -->
-  <div class="cc-filtros">
+  <div class="cc-layout">
+
+  <!-- Filtros: panel a la izquierda en PC; en el celular se pliega a un resumen -->
+  <aside class="cc-filtros" [class.cc-cerrado]="!filtrosAbiertos">
     <button type="button" class="cc-filtros__resumen" (click)="filtrosAbiertos = !filtrosAbiertos" [attr.aria-expanded]="filtrosAbiertos">
       <span class="cc-filtros__titulo">Filtros</span>
       <span class="cc-filtros__chips">
@@ -17,7 +19,7 @@
       <span class="cc-filtros__flecha" aria-hidden="true">{{ filtrosAbiertos ? '▾' : '▸' }}</span>
     </button>
 
-    <div class="cc-filtros__cuerpo" *ngIf="filtrosAbiertos">
+    <div class="cc-filtros__cuerpo">
 
       <!-- Zonas: se escribe, se elige y queda como etiqueta -->
       <div class="cc-campo cc-campo--ancho">
@@ -61,7 +63,9 @@
         <button type="button" class="cc-btn cc-btn--suave" (click)="limpiar()">Limpiar</button>
       </div>
     </div>
-  </div>
+  </aside>
+
+  <div class="cc-resultados">
 
   <!-- Estados -->
   <p *ngIf="!corte && !cargando && !error" class="cc-pista">
@@ -77,26 +81,18 @@
 
     <ng-container *ngIf="corte.zonas.length">
 
-      <!-- Resumen -->
       <p class="cc-aplicados"><span>Mostrando:</span> <span class="cc-chip" *ngFor="let c of filtrosAplicados">{{ c }}</span></p>
 
-      <div class="cc-kpis">
-        <div class="cc-kpi cc-kpi--hero">
-          <span class="cc-kpi__etiqueta">Por cobrar</span>
-          <span class="cc-kpi__valor">${{ corte.total | number:'1.2-2' }}</span>
-          <span class="cc-kpi__nota">{{ corte.cantidadPedidos }} pedido(s) · {{ corte.articulos }} artículo(s)</span>
+      <!-- Total general -->
+      <div class="cc-total">
+        <div class="cc-total__principal">
+          <small>Por cobrar</small>
+          <strong>${{ corte.total | number:'1.2-2' }}</strong>
+          <span class="cc-total__nota">{{ corte.cantidadPedidos }} pedido(s) · {{ corte.articulos }} artículo(s)</span>
         </div>
-        <div class="cc-kpi">
-          <span class="cc-kpi__etiqueta">Total de pedidos</span>
-          <span class="cc-kpi__valor">${{ corte.totalPedidos | number:'1.2-2' }}</span>
-          <span class="cc-kpi__nota">de todo lo filtrado</span>
-        </div>
-        <div class="cc-kpi">
-          <span class="cc-kpi__etiqueta">Ya cobrado</span>
-          <span class="cc-kpi__valor">${{ corte.totalPagado | number:'1.2-2' }}</span>
-          <span class="cc-barra" role="progressbar" [attr.aria-valuenow]="porcentajeCobrado" aria-valuemin="0" aria-valuemax="100"><span [style.width.%]="porcentajeCobrado"></span></span>
-          <span class="cc-kpi__nota">{{ porcentajeCobrado }}% cobrado</span>
-        </div>
+        <div class="cc-total__dato"><small>Total de pedidos</small><strong>${{ corte.totalPedidos | number:'1.2-2' }}</strong></div>
+        <div class="cc-total__dato"><small>Ya cobrado</small><strong>${{ corte.totalPagado | number:'1.2-2' }}</strong></div>
+        <div class="cc-total__dato"><small>Avance</small><strong>{{ porcentajeCobrado }}%</strong></div>
       </div>
 
       <!-- Acciones -->
@@ -106,7 +102,7 @@
                 [title]="todaLaGananciaVisible ? 'Ocultar costo y ganancia de todo' : 'Ver costo y ganancia de todo (solo administrador)'">
           {{ todaLaGananciaVisible ? '🙈 Ocultar todo' : '👁 Ver costo y ganancia' }}
         </button>
-        <label class="cc-porpagina">Filas por página
+        <label class="cc-porpagina">Pedidos por zona
           <select class="cc-select" [ngModel]="porPagina" (ngModelChange)="cambiarPorPagina($event)">
             <option *ngFor="let n of opcionesPorPagina" [ngValue]="n">{{ n }}</option>
           </select>
@@ -114,98 +110,74 @@
       </div>
 
       <!-- Una tarjeta por zona -->
-      <article class="cc-zona" *ngFor="let z of corte.zonas; trackBy: trackZona; let i = index" [style.animation-delay.ms]="i * 70">
+      <div class="cc-zonas-grid">
+        <article class="cc-zona" *ngFor="let z of corte.zonas; trackBy: trackZona; let i = index" [style.animation-delay.ms]="i * 70">
 
-        <header class="cc-zona__cabeza">
-          <div class="cc-zona__titulo">
-            <h3>{{ z.zona }}</h3>
-            <span class="cc-chip">{{ z.cantidad }} pedido(s) · {{ z.articulos }} artículo(s)</span>
+          <header class="cc-zona__cabeza">
+            <div class="cc-anillo" [style.--p]="porcentajeZona(z)" [attr.aria-label]="porcentajeZona(z) + '% cobrado'"><span>{{ porcentajeZona(z) }}%</span></div>
+            <div class="cc-zona__titulo">
+              <h3>{{ z.zona }}</h3>
+              <small>{{ z.cantidad }} pedido(s) · {{ z.articulos }} artículo(s)</small>
+            </div>
+            <div class="cc-zona__cobrar">
+              <small>Por cobrar</small>
+              <strong>${{ z.subtotal | number:'1.2-2' }}</strong>
+            </div>
+          </header>
+
+          <div class="cc-pedidos">
+            <div class="cc-pedido-card" *ngFor="let p of pedidosDePagina(z); trackBy: trackPedido">
+              <div class="cc-pedido-card__fila">
+                <span class="cc-pedido">#{{ p.pedidoId }}</span>
+                <div class="cc-pedido-card__quien">
+                  <b>{{ p.cliente }}</b>
+                  <small>{{ p.fechaPedido | date:'dd MMM' }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
+                </div>
+                <div class="cc-pedido-card__monto">
+                  <span class="cc-estado" [ngClass]="claseEstado(p)">{{ p.estado }}<span *ngIf="p.entregado" title="Entregado"> 📦</span></span>
+                  <b class="cc-por-cobrar">${{ p.saldo | number:'1.2-2' }}</b>
+                  <small>de ${{ p.total | number:'1.2-2' }}</small>
+                </div>
+              </div>
+              <div class="cc-pedido-card__ganancia">
+                <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarFila(p)"
+                        [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'"
+                        [attr.aria-label]="filaVisible(p) ? 'Ocultar costo y ganancia' : 'Ver costo y ganancia'">{{ filaVisible(p) ? '🙈' : '👁' }}</button>
+                <ng-container *ngIf="!filaVisible(p)"><span class="cc-oculto">Costo ••••</span><span class="cc-oculto">Ganancia ••••</span></ng-container>
+                <ng-container *ngIf="filaVisible(p)">
+                  <span class="cc-dato">Costo <b>${{ p.ganancia.costo | number:'1.2-2' }}</b></span>
+                  <span class="cc-gana" [class.cc-pierde]="p.ganancia.gananciaNormal < 0">Ganancia <b>${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</b></span>
+                  <span *ngIf="corte.ganancia.hayDescuento" class="cc-gana" [class.cc-pierde]="p.ganancia.gananciaConDescuento < 0">c/ desc. <b>${{ p.ganancia.gananciaConDescuento | number:'1.2-2' }}</b></span>
+                </ng-container>
+              </div>
+            </div>
           </div>
-          <div class="cc-zona__cobrar">
-            <span class="cc-zona__cobrar-etiqueta">Por cobrar</span>
-            <strong>${{ z.subtotal | number:'1.2-2' }}</strong>
+
+          <div *ngIf="totalPaginas(z) > 1" class="cc-paginas">
+            <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === 1" (click)="irAPagina(z, paginaActual(z) - 1)">‹</button>
+            <span>{{ rangoDePagina(z) }} · página {{ paginaActual(z) }}/{{ totalPaginas(z) }}</span>
+            <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === totalPaginas(z)" (click)="irAPagina(z, paginaActual(z) + 1)">›</button>
           </div>
-          <button type="button" class="cc-ojo" (click)="alternarZonaTodo(z)"
-                  [title]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de toda esta zona' : 'Ver costo y ganancia de toda esta zona'"
-                  [attr.aria-label]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de la zona' : 'Ver costo y ganancia de la zona'">
-            {{ zonaTodaVisible(z) ? '🙈' : '👁' }}
-          </button>
-        </header>
 
-        <div class="cc-tabla-wrap">
-          <table class="cc-tabla">
-            <thead>
-              <tr>
-                <th>Pedido</th>
-                <th class="cc-num">Artículos</th>
-                <th class="cc-num">Total</th>
-                <th>Pagos</th>
-                <th class="cc-num">Por cobrar</th>
-                <th>Estado</th>
-                <th class="cc-ojo-col"></th>
-                <th class="cc-num">Costo</th>
-                <th class="cc-num">Ganancia</th>
-                <th class="cc-num" *ngIf="corte.ganancia.hayDescuento">Gan. c/ desc.</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr *ngFor="let p of pedidosDePagina(z); trackBy: trackPedido">
-                <td class="cc-celda-pedido">
-                  <span class="cc-pedido">#{{ p.pedidoId }}</span>
-                  <span class="cc-cliente">{{ p.cliente }}</span>
-                  <span class="cc-fecha">{{ p.fechaPedido | date:'dd MMM yyyy' }}</span>
-                </td>
-                <td class="cc-num" data-label="Artículos">{{ p.articulos }}</td>
-                <td class="cc-num" data-label="Total">${{ p.total | number:'1.2-2' }}</td>
-                <td data-label="Pagos"><span class="cc-pago" [class.cc-pago--hay]="p.pagos > 0">{{ textoPagos(p) }}</span></td>
-                <td class="cc-num cc-por-cobrar" data-label="Por cobrar">${{ p.saldo | number:'1.2-2' }}</td>
-                <td data-label="Estado"><span class="cc-estado" [ngClass]="claseEstado(p)">{{ p.estado }}</span><span *ngIf="p.entregado" class="cc-entregado" title="Entregado"> 📦</span></td>
-                <td class="cc-ojo-col">
-                  <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarFila(p)"
-                          [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'"
-                          [attr.aria-label]="filaVisible(p) ? 'Ocultar costo y ganancia' : 'Ver costo y ganancia'">{{ filaVisible(p) ? '🙈' : '👁' }}</button>
-                </td>
-                <td class="cc-num cc-dato" data-label="Costo"><span [class.cc-oculto]="!filaVisible(p)">{{ filaVisible(p) ? ('$' + (p.ganancia.costo | number:'1.2-2')) : '••••' }}</span></td>
-                <td class="cc-num cc-dato" data-label="Ganancia" [title]="filaVisible(p) ? 'A precio de venta: $' + (p.ganancia.ventaNormal | number:'1.2-2') : ''">
-                  <span *ngIf="filaVisible(p)" [class.cc-pierde]="p.ganancia.gananciaNormal < 0" class="cc-gana">${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</span>
-                  <span *ngIf="!filaVisible(p)" class="cc-oculto">••••</span>
-                </td>
-                <td class="cc-num cc-dato" data-label="Gan. c/ desc." *ngIf="corte.ganancia.hayDescuento">
-                  <span *ngIf="filaVisible(p)" [class.cc-pierde]="p.ganancia.gananciaConDescuento < 0" class="cc-gana">${{ p.ganancia.gananciaConDescuento | number:'1.2-2' }}</span>
-                  <span *ngIf="!filaVisible(p)" class="cc-oculto">••••</span>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- Totales de la zona: siempre de TODOS sus pedidos, no solo de la página -->
-        <footer class="cc-zona__pie">
-          <div class="cc-pie-dato"><span>Total de pedidos</span><strong>${{ z.totalPedidos | number:'1.2-2' }}</strong></div>
-          <div class="cc-pie-dato"><span>Cobrado</span><strong>${{ z.totalPagado | number:'1.2-2' }}</strong></div>
-          <div class="cc-pie-dato cc-pie-dato--fuerte"><span>Por cobrar</span><strong>${{ z.subtotal | number:'1.2-2' }}</strong></div>
-          <div class="cc-pie-dato cc-pie-ganancia">
-            <span>Costo y ganancia de la zona</span>
-            <strong>
-              <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarTotalDeZona(z)"
-                      [title]="totalDeZonaVisible(z) ? 'Ocultar el total de la zona' : 'Ver el total de costo y ganancia de la zona'"
-                      [attr.aria-label]="totalDeZonaVisible(z) ? 'Ocultar el total de la zona' : 'Ver el total de la zona'">{{ totalDeZonaVisible(z) ? '🙈' : '👁' }}</button>
+          <!-- Totales de la zona: siempre de TODOS sus pedidos, no solo de la página -->
+          <footer class="cc-zona__pie">
+            <div class="cc-pie-dato"><span>Total</span><strong>${{ z.totalPedidos | number:'1.2-2' }}</strong></div>
+            <div class="cc-pie-dato"><span>Cobrado</span><strong>${{ z.totalPagado | number:'1.2-2' }}</strong></div>
+            <div class="cc-pie-ganancia">
+              <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarZonaTodo(z)"
+                      [title]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de toda esta zona' : 'Ver costo y ganancia de toda esta zona'"
+                      [attr.aria-label]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de la zona' : 'Ver costo y ganancia de la zona'">{{ zonaTodaVisible(z) ? '🙈' : '👁' }}</button>
+              <span class="cc-pie-ganancia__txt">Costo y ganancia de la zona</span>
               <ng-container *ngIf="!totalDeZonaVisible(z)"><span class="cc-oculto">••••</span></ng-container>
               <ng-container *ngIf="totalDeZonaVisible(z)">
-                <span class="cc-dato">costo ${{ z.ganancia.costo | number:'1.2-2' }}</span>
-                <span class="cc-gana">ganancia ${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</span>
-                <span *ngIf="z.ganancia.hayDescuento" class="cc-gana">c/ desc. ${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }}</span>
+                <span class="cc-dato">costo <b>${{ z.ganancia.costo | number:'1.2-2' }}</b></span>
+                <span class="cc-gana">ganancia <b>${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</b></span>
+                <span *ngIf="z.ganancia.hayDescuento" class="cc-gana">c/ desc. <b>${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }}</b></span>
               </ng-container>
-            </strong>
-          </div>
-        </footer>
-
-        <div *ngIf="totalPaginas(z) > 1" class="cc-paginas">
-          <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === 1" (click)="irAPagina(z, paginaActual(z) - 1)">‹</button>
-          <span>{{ rangoDePagina(z) }} · página {{ paginaActual(z) }}/{{ totalPaginas(z) }}</span>
-          <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === totalPaginas(z)" (click)="irAPagina(z, paginaActual(z) + 1)">›</button>
-        </div>
-      </article>
+            </div>
+          </footer>
+        </article>
+      </div>
 
       <!-- Total de la ganancia de todo lo filtrado -->
       <div class="cc-gran-total">
@@ -228,4 +200,7 @@
 
     </ng-container>
   </ng-container>
+
+  </div><!-- /cc-resultados -->
+  </div><!-- /cc-layout -->
 </section>

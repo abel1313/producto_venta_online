@@ -1,0 +1,209 @@
+<section class="cc" *ngIf="authService.isAdminService">
+
+  <!-- Encabezado -->
+  <header class="cc-hero">
+    <p class="pk-kicker">Reportes · solo administrador</p>
+    <h2 class="cc-titulo">Corte de caja</h2>
+    <p class="cc-sub">Lo que falta por cobrar de tus pedidos, por zona de entrega.</p>
+  </header>
+
+  <div class="cc-layout">
+
+  <!-- Filtros: panel a la izquierda en PC; en el celular se pliega a un resumen -->
+  <aside class="cc-filtros" [class.cc-cerrado]="!filtrosAbiertos">
+    <button type="button" class="cc-filtros__resumen" (click)="filtrosAbiertos = !filtrosAbiertos" [attr.aria-expanded]="filtrosAbiertos">
+      <span class="cc-filtros__titulo">Filtros</span>
+      <span class="cc-filtros__chips">
+        <span class="cc-chip" *ngFor="let c of resumenFiltros">{{ c }}</span>
+      </span>
+      <span class="cc-filtros__flecha" aria-hidden="true">{{ filtrosAbiertos ? '▾' : '▸' }}</span>
+    </button>
+
+    <div class="cc-filtros__cuerpo">
+
+      <!-- Zonas: se escribe, se elige y queda como etiqueta -->
+      <div class="cc-campo cc-campo--ancho">
+        <label class="cc-label">Zonas <span class="cc-label__ayuda">(sin elegir = todas)</span></label>
+        <div class="cc-zonas">
+          <span *ngFor="let z of zonasElegidas" class="cc-zona-tag">
+            {{ z.nombre }}
+            <button type="button" class="cc-zona-tag__x" (click)="alternarZona(z.id)" [attr.aria-label]="'Quitar ' + z.nombre">✕</button>
+          </span>
+          <select class="cc-zonas__select" aria-label="Agregar zona" (change)="agregarDesdeSelect($event)">
+            <option value="">{{ zonasElegidas.length ? '＋ Agregar otra zona…' : '＋ Elegir zona…' }}</option>
+            <option *ngFor="let z of zonasParaElegir" [value]="z.id">{{ z.nombre }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="cc-campo">
+        <label class="cc-label">Pedidos desde</label>
+        <app-selector-fecha [(ngModel)]="filtros.desde" placeholder="Desde"></app-selector-fecha>
+      </div>
+      <div class="cc-campo">
+        <label class="cc-label">Hasta</label>
+        <app-selector-fecha [(ngModel)]="filtros.hasta" placeholder="Hasta"></app-selector-fecha>
+      </div>
+
+      <div class="cc-campo">
+        <label class="cc-label">Pago</label>
+        <div class="cc-seg" role="group" aria-label="Pago">
+          <button type="button" *ngFor="let p of pagos" class="cc-seg__op" [class.cc-seg__op--on]="filtros.pago === p.valor" (click)="filtros.pago = p.valor">{{ p.etiqueta }}</button>
+        </div>
+      </div>
+      <div class="cc-campo">
+        <label class="cc-label">Entrega</label>
+        <div class="cc-seg" role="group" aria-label="Entrega">
+          <button type="button" *ngFor="let e of entregas" class="cc-seg__op" [class.cc-seg__op--on]="filtros.entrega === e.valor" (click)="filtros.entrega = e.valor">{{ e.etiqueta }}</button>
+        </div>
+      </div>
+
+      <div class="cc-filtros__acciones">
+        <button type="button" class="cc-btn cc-btn--primario" [disabled]="cargando" (click)="buscar()">{{ cargando ? 'Buscando…' : '🔎 Buscar' }}</button>
+        <button type="button" class="cc-btn cc-btn--suave" (click)="limpiar()">Limpiar</button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="cc-resultados">
+
+  <!-- Estados -->
+  <p *ngIf="!corte && !cargando && !error" class="cc-pista">
+    <span class="cc-pista__icono">🧾</span>
+    Elige zonas, fechas y si quieres lo que falta por cobrar, lo pagado o todo, y pulsa <b>Buscar</b>.
+  </p>
+  <div *ngIf="cargando" class="cc-cargando" aria-live="polite"><span class="cc-cargando__punto"></span> Armando el corte…</div>
+  <p *ngIf="error && !cargando" class="cc-error" role="alert">{{ error }}</p>
+
+  <ng-container *ngIf="corte && !cargando">
+
+    <p *ngIf="!corte.zonas.length" class="cc-pista"><span class="cc-pista__icono">✨</span> No hay pedidos con esos filtros.</p>
+
+    <ng-container *ngIf="corte.zonas.length">
+
+      <p class="cc-aplicados"><span>Mostrando:</span> <span class="cc-chip" *ngFor="let c of filtrosAplicados">{{ c }}</span></p>
+
+      <!-- Total general -->
+      <div class="cc-total">
+        <div class="cc-total__principal">
+          <small>Por cobrar</small>
+          <strong>${{ corte.total | number:'1.2-2' }}</strong>
+          <span class="cc-total__nota">{{ corte.cantidadPedidos }} pedido(s) · {{ corte.articulos }} artículo(s)</span>
+        </div>
+        <div class="cc-total__dato"><small>Total de pedidos</small><strong>${{ corte.totalPedidos | number:'1.2-2' }}</strong></div>
+        <div class="cc-total__dato"><small>Ya cobrado</small><strong>${{ corte.totalPagado | number:'1.2-2' }}</strong></div>
+        <div class="cc-total__dato"><small>Avance</small><strong>{{ porcentajeCobrado }}%</strong></div>
+      </div>
+
+      <!-- Acciones -->
+      <div class="cc-barra-acciones">
+        <button type="button" class="cc-btn cc-btn--suave" (click)="copiar()">{{ copiado ? 'Copiado ✓' : '📋 Copiar corte' }}</button>
+        <button type="button" class="cc-btn cc-btn--suave" (click)="alternarTodaLaGanancia()" [attr.aria-pressed]="todaLaGananciaVisible"
+                [title]="todaLaGananciaVisible ? 'Ocultar costo y ganancia de todo' : 'Ver costo y ganancia de todo (solo administrador)'">
+          {{ todaLaGananciaVisible ? '🙈 Ocultar todo' : '👁 Ver costo y ganancia' }}
+        </button>
+        <label class="cc-porpagina">Pedidos por zona
+          <select class="cc-select" [ngModel]="porPagina" (ngModelChange)="cambiarPorPagina($event)">
+            <option *ngFor="let n of opcionesPorPagina" [ngValue]="n">{{ n }}</option>
+          </select>
+        </label>
+      </div>
+
+      <!-- Una tarjeta por zona -->
+      <div class="cc-zonas-grid">
+        <article class="cc-zona" *ngFor="let z of corte.zonas; trackBy: trackZona; let i = index" [style.animation-delay.ms]="i * 70">
+
+          <header class="cc-zona__cabeza">
+            <div class="cc-anillo" [style.--p]="porcentajeZona(z)" [attr.aria-label]="porcentajeZona(z) + '% cobrado'"><span>{{ porcentajeZona(z) }}%</span></div>
+            <div class="cc-zona__titulo">
+              <h3>{{ z.zona }}</h3>
+              <small>{{ z.cantidad }} pedido(s) · {{ z.articulos }} artículo(s)</small>
+            </div>
+            <div class="cc-zona__cobrar">
+              <small>Por cobrar</small>
+              <strong>${{ z.subtotal | number:'1.2-2' }}</strong>
+            </div>
+          </header>
+
+          <div class="cc-pedidos">
+            <div class="cc-pedido-card" *ngFor="let p of pedidosDePagina(z); trackBy: trackPedido">
+              <div class="cc-pedido-card__fila">
+                <span class="cc-pedido">#{{ p.pedidoId }}</span>
+                <div class="cc-pedido-card__quien">
+                  <b>{{ p.cliente }}</b>
+                  <small>{{ p.fechaPedido | date:'dd MMM' }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
+                </div>
+                <div class="cc-pedido-card__monto">
+                  <span class="cc-estado" [ngClass]="claseEstado(p)">{{ p.estado }}<span *ngIf="p.entregado" title="Entregado"> 📦</span></span>
+                  <b class="cc-por-cobrar">${{ p.saldo | number:'1.2-2' }}</b>
+                  <small>de ${{ p.total | number:'1.2-2' }}</small>
+                </div>
+              </div>
+              <div class="cc-pedido-card__ganancia">
+                <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarFila(p)"
+                        [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'"
+                        [attr.aria-label]="filaVisible(p) ? 'Ocultar costo y ganancia' : 'Ver costo y ganancia'">{{ filaVisible(p) ? '🙈' : '👁' }}</button>
+                <ng-container *ngIf="!filaVisible(p)"><span class="cc-oculto">Costo ••••</span><span class="cc-oculto">Ganancia ••••</span></ng-container>
+                <span *ngIf="filaVisible(p) && sinCosto(p)" class="cc-aviso" title="Este pedido no tiene costo capturado en sus productos; la ganancia no se puede calcular">⚠ Sin costo registrado</span>
+                <ng-container *ngIf="filaVisible(p) && !sinCosto(p)">
+                  <span class="cc-dato">Costo <b>${{ p.ganancia.costo | number:'1.2-2' }}</b></span>
+                  <span *ngIf="rebaja(p.ganancia.ventaNormal, p.total) > 0" class="cc-rebaja" [title]="'Valía $' + (p.ganancia.ventaNormal | number:'1.2-2') + ' a precio de lista y se cobró $' + (p.total | number:'1.2-2')">Rebaja <b>−${{ rebaja(p.ganancia.ventaNormal, p.total) | number:'1.2-2' }}</b></span>
+                  <span class="cc-gana" [class.cc-pierde]="gananciaReal(p.total, p.ganancia.costo) < 0">Ganancia real <b>${{ gananciaReal(p.total, p.ganancia.costo) | number:'1.2-2' }}</b></span>
+                </ng-container>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="totalPaginas(z) > 1" class="cc-paginas">
+            <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === 1" (click)="irAPagina(z, paginaActual(z) - 1)">‹</button>
+            <span>{{ rangoDePagina(z) }} · página {{ paginaActual(z) }}/{{ totalPaginas(z) }}</span>
+            <button type="button" class="cc-btn cc-btn--suave cc-btn--chico" [disabled]="paginaActual(z) === totalPaginas(z)" (click)="irAPagina(z, paginaActual(z) + 1)">›</button>
+          </div>
+
+          <!-- Totales de la zona: siempre de TODOS sus pedidos, no solo de la página -->
+          <footer class="cc-zona__pie">
+            <div class="cc-pie-dato"><span>Total</span><strong>${{ z.totalPedidos | number:'1.2-2' }}</strong></div>
+            <div class="cc-pie-dato"><span>Cobrado</span><strong>${{ z.totalPagado | number:'1.2-2' }}</strong></div>
+            <div class="cc-pie-ganancia">
+              <button type="button" class="cc-ojo cc-ojo--chico" (click)="alternarZonaTodo(z)"
+                      [title]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de toda esta zona' : 'Ver costo y ganancia de toda esta zona'"
+                      [attr.aria-label]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de la zona' : 'Ver costo y ganancia de la zona'">{{ zonaTodaVisible(z) ? '🙈' : '👁' }}</button>
+              <span class="cc-pie-ganancia__txt">Costo y ganancia de la zona</span>
+              <ng-container *ngIf="!totalDeZonaVisible(z)"><span class="cc-oculto">••••</span></ng-container>
+              <ng-container *ngIf="totalDeZonaVisible(z)">
+                <span class="cc-dato">costo <b>${{ z.ganancia.costo | number:'1.2-2' }}</b></span>
+                <span *ngIf="rebajaZona(z) > 0" class="cc-rebaja">rebajas <b>−${{ rebajaZona(z) | number:'1.2-2' }}</b></span>
+                <span class="cc-gana" [class.cc-pierde]="gananciaRealZona(z) < 0">ganancia real <b>${{ gananciaRealZona(z) | number:'1.2-2' }}</b></span>
+                <span *ngIf="pedidosSinCosto(z) > 0" class="cc-aviso" title="Sin el costo de sus productos no se puede calcular su ganancia, así que se dejan fuera">⚠ {{ pedidosSinCosto(z) }} pedido(s) sin costo no entran en la ganancia</span>
+              </ng-container>
+            </div>
+          </footer>
+        </article>
+      </div>
+
+      <!-- Total de la ganancia de todo lo filtrado -->
+      <div class="cc-gran-total">
+        <div>
+          <span class="cc-gran-total__etiqueta">Costo y ganancia de todo el corte</span>
+          <span class="cc-gran-total__nota">Con el costo actual de cada producto</span>
+        </div>
+        <div class="cc-gran-total__valor">
+          <button type="button" class="cc-ojo" (click)="gananciaTotalVisible = !gananciaTotalVisible"
+                  [title]="gananciaTotalVisible ? 'Ocultar el total' : 'Ver el total de costo y ganancia (solo administrador)'"
+                  [attr.aria-label]="gananciaTotalVisible ? 'Ocultar el total' : 'Ver el total'">{{ gananciaTotalVisible ? '🙈' : '👁' }}</button>
+          <span *ngIf="!gananciaTotalVisible" class="cc-oculto cc-oculto--grande">••••••</span>
+          <ng-container *ngIf="gananciaTotalVisible">
+            <span class="cc-dato">costo <b>${{ corte.ganancia.costo | number:'1.2-2' }}</b></span>
+            <span *ngIf="rebajaCorte > 0" class="cc-rebaja">rebajas <b>−${{ rebajaCorte | number:'1.2-2' }}</b></span>
+            <span class="cc-gana" [class.cc-pierde]="gananciaRealCorte < 0">ganancia real <b>${{ gananciaRealCorte | number:'1.2-2' }}</b></span>
+            <span *ngIf="totalSinCosto > 0" class="cc-aviso" title="Sin el costo de sus productos no se puede calcular su ganancia, así que se dejan fuera">⚠ {{ totalSinCosto }} pedido(s) sin costo no entran en la ganancia</span>
+          </ng-container>
+        </div>
+      </div>
+
+    </ng-container>
+  </ng-container>
+
+  </div><!-- /cc-resultados -->
+  </div><!-- /cc-layout -->
+</section>

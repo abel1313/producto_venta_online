@@ -14,6 +14,8 @@
     <button class="rp-tab" [class.rp-tab--active]="tab === 'cliente'"    *ngIf="authService.tieneAccion('reportes', 'reporte-cliente')" (click)="setTab('cliente')">👤 Por cliente</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" *ngIf="authService.tieneAccion('reportes', 'reporte-mas-vendidos')" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" *ngIf="authService.tieneAccion('reportes', 'reporte-promociones')" (click)="setTab('promociones')">🎁 Promociones</button>
+    <!-- Lleva costo y ganancia: solo administrador (el back también lo exige). -->
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'corte'"       *ngIf="authService.isAdminService" (click)="setTab('corte')">🧾 Corte de caja</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
@@ -280,5 +282,9 @@
 
     <p *ngIf="promociones.length === 0 && !cargandoPromociones" class="rp-empty">No hay promociones registradas todavía.</p>
   </div>
+
+
+  <!-- ── CORTE DE CAJA (solo administrador): su propio componente, con su propio diseño ───────── -->
+  <app-corte-caja *ngIf="tab === 'corte' && authService.isAdminService"></app-corte-caja>
 
 </div>

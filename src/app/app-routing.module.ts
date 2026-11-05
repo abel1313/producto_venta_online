@@ -46,6 +46,14 @@ const routes: Routes = [
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
   },
   {
+    // Corte de caja: pantalla propia del menú (solo administrador). Abre Reportes directo en la pestaña del corte. Va ANTES de 'reportes'
+    // para que esa ruta de prefijo no la tape. Fila en submenu: migration_submenu_corte_caja.sql.
+    path: 'reportes/corte-caja',
+    loadChildren: () => import('./reportes/reportes.module').then(m => m.ReportesModule),
+    data: { tab: 'corte' },
+    canActivate: [AuthGuard, PantallaGuard, CarritoGuard]
+  },
+  {
     path: 'reportes',
     loadChildren: () => import('./reportes/reportes.module').then(m => m.ReportesModule),
     canActivate: [AuthGuard, PantallaGuard, CarritoGuard]

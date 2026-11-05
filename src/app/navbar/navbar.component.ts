@@ -24,7 +24,7 @@ const GROUP_ROUTES: { group: string; paths: string[] }[] = [
   { group: 'envios',     paths: ['lugares-entrega', 'entregas-zona'] },
   { group: 'pedidos',    paths: ['pedidos/mis-pedidos', 'pedidos/historial-mp'] },
   { group: 'ventas',     paths: ['tienda/venta-directa', 'abonos', 'gastos/buscar'] },
-  { group: 'reportes',   paths: ['dashboard', 'reportes'] },
+  { group: 'reportes',   paths: ['dashboard', 'reportes', 'reportes/corte-caja'] },
   { group: 'rifas',      paths: ['rifas/agregar', 'rifas/mes', 'rifas/buscar', 'rifas/boletos'] },
   { group: 'flores',     paths: ['flores/ramos', 'flores/configurar', 'flores/catalogos', 'flores/entregas', 'flores/ramos-admin', 'flores/frases'] },
   { group: 'marketing',  paths: ['promociones', 'admin/promociones', 'admin/cinta', 'admin/facebook', 'admin/hashtags'] },

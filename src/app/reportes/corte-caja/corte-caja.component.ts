@@ -91,7 +91,7 @@ export class CorteCajaComponent implements OnInit {
     r.push(z.length ? (z.length > 2 ? `${z.slice(0, 2).join(', ')} +${z.length - 2}` : z.join(', ')) : 'Todas las zonas');
     r.push(this.pagos.find(p => p.valor === this.filtros.pago)?.etiqueta ?? '');
     r.push(this.entregas.find(e => e.valor === this.filtros.entrega)?.etiqueta ?? '');
-    if (this.filtros.desde || this.filtros.hasta) r.push(`${this.filtros.desde || '…'} → ${this.filtros.hasta || '…'}`);
+    if (this.filtros.desde || this.filtros.hasta) r.push(`Entrega ${this.filtros.desde || '…'} → ${this.filtros.hasta || '…'}`);
     return r.filter(x => !!x);
   }
 

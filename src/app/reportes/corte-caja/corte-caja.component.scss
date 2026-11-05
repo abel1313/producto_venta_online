@@ -214,21 +214,22 @@
 .cc-filtros__cuerpo .cc-campo:nth-of-type(4), .cc-filtros__cuerpo .cc-campo:nth-of-type(5) { grid-column: 1 / -1; }
 
 // ── Total general ────────────────────────────────────────────────────────────
+// El fondo se oscurece siempre un poco sobre el acento: así el texto blanco se lee igual con cualquier color de Personalización, de día y de noche.
 .cc-total {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 1rem 1.5rem;
   padding: 1.2rem 1.3rem;
   border-radius: 20px;
-  background: linear-gradient(135deg, var(--app-accent), var(--brand-2, var(--app-accent)));
-  color: var(--app-accent-ink);
+  background: linear-gradient(135deg, color-mix(in srgb, var(--app-accent) 62%, black), color-mix(in srgb, var(--app-accent) 38%, black));
+  color: var(--overlay-text, #fff);
   box-shadow: var(--shadow-md, var(--card-shadow));
 }
-.cc-total small { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; opacity: .85; }
-.cc-total strong { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.cc-total small { display: block; font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; color: var(--overlay-text, #fff); opacity: .85; }
+.cc-total strong { font-size: 1.3rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--overlay-text, #fff); }
 .cc-total__principal { grid-column: 1 / -1; }
 .cc-total__principal strong { display: block; font-size: clamp(2.2rem, 8vw, 3rem); line-height: 1.1; letter-spacing: -.02em; }
-.cc-total__nota { font-size: .85rem; opacity: .85; }
+.cc-total__nota { font-size: .85rem; color: var(--overlay-text, #fff); opacity: .85; }
 
 // ── Tarjetas de zona ─────────────────────────────────────────────────────────
 // Estilo mosaico: las tarjetas de distinta altura se acomodan una bajo otra, sin huecos.

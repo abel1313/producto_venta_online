@@ -438,3 +438,7 @@
 
 .rp-ojo-fila { padding: 0 .3rem; margin: 0 .35rem 0 0; font-size: .8rem; }
 .rp-table .rp-corte-gan { min-width: 5.5rem; }
+
+// Costo y ganancia: oculto o visible ocupan lo mismo, para que la tabla no se mueva.
+.rp-table .rp-ojo-celda { width: 2.4rem; min-width: 2.4rem; text-align: center; padding-left: .2rem; padding-right: .2rem; }
+.rp-table .rp-corte-gan { width: 6.8rem; min-width: 6.8rem; text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }

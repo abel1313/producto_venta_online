@@ -474,9 +474,10 @@
                   <th class="rp-table__num">Por cobrar</th>
                   <th>Estado</th>
                   <ng-container *ngIf="authService.isAdminService">
-                    <th class="rp-table__num">Costo</th>
-                    <th class="rp-table__num">Ganancia</th>
-                    <th class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">Gan. con desc.</th>
+                    <th class="rp-ojo-celda"></th>
+                    <th class="rp-table__num rp-corte-gan">Costo</th>
+                    <th class="rp-table__num rp-corte-gan">Ganancia</th>
+                    <th class="rp-table__num rp-corte-gan" *ngIf="corte.ganancia.hayDescuento">Gan. con desc.</th>
                   </ng-container>
                 </tr>
               </thead>
@@ -491,12 +492,12 @@
                   <td class="rp-table__num"><strong>${{ p.saldo | number:'1.2-2' }}</strong></td>
                   <td>{{ p.estado }}<span *ngIf="p.entregado" title="Entregado"> 📦</span></td>
                   <ng-container *ngIf="authService.isAdminService">
-                    <td class="rp-table__num rp-corte-gan">
+                    <td class="rp-ojo-celda">
                       <button type="button" class="rp-ojo-zona rp-ojo-fila" (click)="alternarFila(p)"
                               [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'">
                         {{ filaVisible(p) ? '🙈' : '👁' }}</button>
-                      {{ filaVisible(p) ? ('$' + (p.ganancia.costo | number:'1.2-2')) : '••••' }}
                     </td>
+                    <td class="rp-table__num rp-corte-gan">{{ filaVisible(p) ? ('$' + (p.ganancia.costo | number:'1.2-2')) : '••••' }}</td>
                     <td class="rp-table__num rp-corte-gan" [title]="filaVisible(p) ? 'A precio de venta: $' + (p.ganancia.ventaNormal | number:'1.2-2') : ''">
                       <b *ngIf="filaVisible(p)" class="rp-table__num--green">${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</b>
                       <span *ngIf="!filaVisible(p)">••••</span>
@@ -516,12 +517,12 @@
                   <td class="rp-table__num"><strong>${{ z.subtotal | number:'1.2-2' }}</strong></td>
                   <td></td>
                   <ng-container *ngIf="authService.isAdminService">
-                    <td class="rp-table__num rp-corte-gan">
+                    <td class="rp-ojo-celda">
                       <button type="button" class="rp-ojo-zona rp-ojo-fila" (click)="alternarTotalDeZona(z)"
                               [title]="totalDeZonaVisible(z) ? 'Ocultar el total de costo y ganancia de esta zona' : 'Ver el total de costo y ganancia de esta zona'">
                         {{ totalDeZonaVisible(z) ? '🙈' : '👁' }}</button>
-                      <strong>{{ totalDeZonaVisible(z) ? ('$' + (z.ganancia.costo | number:'1.2-2')) : '••••' }}</strong>
                     </td>
+                    <td class="rp-table__num rp-corte-gan"><strong>{{ totalDeZonaVisible(z) ? ('$' + (z.ganancia.costo | number:'1.2-2')) : '••••' }}</strong></td>
                     <td class="rp-table__num rp-corte-gan" [title]="totalDeZonaVisible(z) ? 'A precio de venta: $' + (z.ganancia.ventaNormal | number:'1.2-2') : ''">
                       <strong *ngIf="totalDeZonaVisible(z)" class="rp-table__num--green">${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</strong>
                       <strong *ngIf="!totalDeZonaVisible(z)">••••</strong>

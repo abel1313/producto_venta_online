@@ -176,11 +176,25 @@ export class BuscarComponent implements OnInit, OnDestroy {
           // selecciono filtro y me voy a otros lados... quiero que se mantenga").
           const f = this.varianteService.filtrosCache as Record<string, any> | null;
           if (f) this.restaurarFiltros(f);
+          // Se muestra al instante lo guardado, pero el STOCK cambia al vender o cancelar en otras pantallas: se vuelve a consultar la
+          // misma búsqueda para que no se quede el número de la última vez (reportado en QA 2026-11-05).
+          this.refrescarResultadosRestaurados();
         } else {
           this.arrancarConFiltrosGuardados();
         }
       }
     });
+  }
+
+  /** Vuelve a pedir la búsqueda que se restauró de la memoria (mismo término, página y filtros), sin vaciar la lista mientras llega. */
+  private refrescarResultadosRestaurados(): void {
+    const pagina = this.paginaActual || 1;
+    if (this.hayFiltrosAdminActivos || this.hayFiltrosPublicosActivos) {
+      this.aplicarFiltros(pagina);
+    } else {
+      this.varianteService.invalidarCache();   // sin esto, buscarPagina ve «ya lo tengo en memoria» y no consulta
+      this.buscarPagina(this.terminoBusqueda.trim(), pagina);
+    }
   }
 
   private restaurarFiltros(f: Record<string, any>): void {

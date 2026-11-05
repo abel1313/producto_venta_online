@@ -461,6 +461,10 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       // y producto en buscar... quería que se guardara su estado").
       const f = this.srvice.prodFiltrosCache as Record<string, any> | null;
       if (f) this.restaurarFiltros(f);
+      // Se muestra al instante lo guardado, pero el STOCK cambia al vender o cancelar en otras pantallas: se vuelve a consultar
+      // la misma búsqueda (mismo término, página y filtros) para que no se quede el número de la última vez (reportado en QA 2026-11-05).
+      this.srvice.invalidarProdCache();
+      this.conOSinBuscar(this.paginaPrimera || 1);
     } else {
       // Sin memoria (recién recargado u otra sesión): el personal arranca con sus filtros
       // guardados; para cualquier otro `obtener` responde null al instante.

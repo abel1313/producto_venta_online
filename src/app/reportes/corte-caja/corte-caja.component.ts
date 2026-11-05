@@ -188,6 +188,19 @@ export class CorteCajaComponent implements OnInit {
 
   get totalSinCosto(): number { return (this.corte?.zonas ?? []).reduce((n, z) => n + this.pedidosSinCosto(z), 0); }
 
+  /** Ganancia real de la zona: solo pedidos con costo (los que no lo tienen no se pueden calcular). */
+  gananciaRealZona(z: CorteZona): number {
+    return z.pedidos.filter(p => !this.sinCosto(p)).reduce((n, p) => n + this.gananciaReal(p.total, p.ganancia.costo), 0);
+  }
+
+  rebajaZona(z: CorteZona): number {
+    return z.pedidos.filter(p => !this.sinCosto(p)).reduce((n, p) => n + this.rebaja(p.ganancia.ventaNormal, p.total), 0);
+  }
+
+  get gananciaRealCorte(): number { return (this.corte?.zonas ?? []).reduce((n, z) => n + this.gananciaRealZona(z), 0); }
+
+  get rebajaCorte(): number { return (this.corte?.zonas ?? []).reduce((n, z) => n + this.rebajaZona(z), 0); }
+
   /** Ganancia con lo que de verdad se cobró: total del pedido menos el costo. */
   gananciaReal(total: number, costo: number): number { return total - costo; }
 

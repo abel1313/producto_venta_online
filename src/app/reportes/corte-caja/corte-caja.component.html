@@ -172,9 +172,9 @@
               <ng-container *ngIf="!totalDeZonaVisible(z)"><span class="cc-oculto">••••</span></ng-container>
               <ng-container *ngIf="totalDeZonaVisible(z)">
                 <span class="cc-dato">costo <b>${{ z.ganancia.costo | number:'1.2-2' }}</b></span>
-                <span *ngIf="rebaja(z.ganancia.ventaNormal, z.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(z.ganancia.ventaNormal, z.totalPedidos) | number:'1.2-2' }}</b></span>
-                <span class="cc-gana" [class.cc-pierde]="gananciaReal(z.totalPedidos, z.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(z.totalPedidos, z.ganancia.costo) | number:'1.2-2' }}</b></span>
-                <span *ngIf="pedidosSinCosto(z) > 0" class="cc-aviso" title="Esos pedidos cuentan todo su total como ganancia">⚠ {{ pedidosSinCosto(z) }} pedido(s) sin costo: la ganancia sale inflada</span>
+                <span *ngIf="rebajaZona(z) > 0" class="cc-rebaja">rebajas <b>−${{ rebajaZona(z) | number:'1.2-2' }}</b></span>
+                <span class="cc-gana" [class.cc-pierde]="gananciaRealZona(z) < 0">ganancia real <b>${{ gananciaRealZona(z) | number:'1.2-2' }}</b></span>
+                <span *ngIf="pedidosSinCosto(z) > 0" class="cc-aviso" title="Sin el costo de sus productos no se puede calcular su ganancia, así que se dejan fuera">⚠ {{ pedidosSinCosto(z) }} pedido(s) sin costo no entran en la ganancia</span>
               </ng-container>
             </div>
           </footer>
@@ -194,9 +194,9 @@
           <span *ngIf="!gananciaTotalVisible" class="cc-oculto cc-oculto--grande">••••••</span>
           <ng-container *ngIf="gananciaTotalVisible">
             <span class="cc-dato">costo <b>${{ corte.ganancia.costo | number:'1.2-2' }}</b></span>
-            <span *ngIf="rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) | number:'1.2-2' }}</b></span>
-            <span class="cc-gana" [class.cc-pierde]="gananciaReal(corte.totalPedidos, corte.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(corte.totalPedidos, corte.ganancia.costo) | number:'1.2-2' }}</b></span>
-            <span *ngIf="totalSinCosto > 0" class="cc-aviso" title="Esos pedidos cuentan todo su total como ganancia">⚠ {{ totalSinCosto }} pedido(s) sin costo: la ganancia sale inflada</span>
+            <span *ngIf="rebajaCorte > 0" class="cc-rebaja">rebajas <b>−${{ rebajaCorte | number:'1.2-2' }}</b></span>
+            <span class="cc-gana" [class.cc-pierde]="gananciaRealCorte < 0">ganancia real <b>${{ gananciaRealCorte | number:'1.2-2' }}</b></span>
+            <span *ngIf="totalSinCosto > 0" class="cc-aviso" title="Sin el costo de sus productos no se puede calcular su ganancia, así que se dejan fuera">⚠ {{ totalSinCosto }} pedido(s) sin costo no entran en la ganancia</span>
           </ng-container>
         </div>
       </div>

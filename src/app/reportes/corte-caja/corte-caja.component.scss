@@ -282,6 +282,7 @@
 .cc-estado--aviso { background: var(--pk-warning-soft); color: var(--pk-warning); }
 .cc-estado--neutro { background: var(--card-body-bg); color: var(--app-text-muted); }
 
+.cc-aviso { color: var(--pk-warning); font-weight: 600; font-size: .82rem; }
 .cc-rebaja { color: var(--pk-warning); font-variant-numeric: tabular-nums; }
 .cc-dato { font-variant-numeric: tabular-nums; }
 .cc-gana { font-weight: 600; color: var(--pk-success); font-variant-numeric: tabular-nums; }

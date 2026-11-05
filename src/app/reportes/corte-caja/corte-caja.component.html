@@ -144,7 +144,8 @@
                         [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'"
                         [attr.aria-label]="filaVisible(p) ? 'Ocultar costo y ganancia' : 'Ver costo y ganancia'">{{ filaVisible(p) ? '🙈' : '👁' }}</button>
                 <ng-container *ngIf="!filaVisible(p)"><span class="cc-oculto">Costo ••••</span><span class="cc-oculto">Ganancia ••••</span></ng-container>
-                <ng-container *ngIf="filaVisible(p)">
+                <span *ngIf="filaVisible(p) && sinCosto(p)" class="cc-aviso" title="Este pedido no tiene costo capturado en sus productos; la ganancia no se puede calcular">⚠ Sin costo registrado</span>
+                <ng-container *ngIf="filaVisible(p) && !sinCosto(p)">
                   <span class="cc-dato">Costo <b>${{ p.ganancia.costo | number:'1.2-2' }}</b></span>
                   <span *ngIf="rebaja(p.ganancia.ventaNormal, p.total) > 0" class="cc-rebaja" [title]="'Valía $' + (p.ganancia.ventaNormal | number:'1.2-2') + ' a precio de lista y se cobró $' + (p.total | number:'1.2-2')">Rebaja <b>−${{ rebaja(p.ganancia.ventaNormal, p.total) | number:'1.2-2' }}</b></span>
                   <span class="cc-gana" [class.cc-pierde]="gananciaReal(p.total, p.ganancia.costo) < 0">Ganancia real <b>${{ gananciaReal(p.total, p.ganancia.costo) | number:'1.2-2' }}</b></span>
@@ -173,6 +174,7 @@
                 <span class="cc-dato">costo <b>${{ z.ganancia.costo | number:'1.2-2' }}</b></span>
                 <span *ngIf="rebaja(z.ganancia.ventaNormal, z.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(z.ganancia.ventaNormal, z.totalPedidos) | number:'1.2-2' }}</b></span>
                 <span class="cc-gana" [class.cc-pierde]="gananciaReal(z.totalPedidos, z.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(z.totalPedidos, z.ganancia.costo) | number:'1.2-2' }}</b></span>
+                <span *ngIf="pedidosSinCosto(z) > 0" class="cc-aviso" title="Esos pedidos cuentan todo su total como ganancia">⚠ {{ pedidosSinCosto(z) }} pedido(s) sin costo: la ganancia sale inflada</span>
               </ng-container>
             </div>
           </footer>
@@ -194,6 +196,7 @@
             <span class="cc-dato">costo <b>${{ corte.ganancia.costo | number:'1.2-2' }}</b></span>
             <span *ngIf="rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) | number:'1.2-2' }}</b></span>
             <span class="cc-gana" [class.cc-pierde]="gananciaReal(corte.totalPedidos, corte.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(corte.totalPedidos, corte.ganancia.costo) | number:'1.2-2' }}</b></span>
+            <span *ngIf="totalSinCosto > 0" class="cc-aviso" title="Esos pedidos cuentan todo su total como ganancia">⚠ {{ totalSinCosto }} pedido(s) sin costo: la ganancia sale inflada</span>
           </ng-container>
         </div>
       </div>

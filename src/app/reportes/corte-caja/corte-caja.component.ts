@@ -181,6 +181,13 @@ export class CorteCajaComponent implements OnInit {
     return z.totalPedidos > 0 ? Math.min(100, Math.round(100 * z.totalPagado / z.totalPedidos)) : 0;
   }
 
+  /** Un pedido sin costo capturado haría ver toda la venta como ganancia: se avisa en lugar de mostrar esa cifra. */
+  sinCosto(p: CortePedido): boolean { return p.ganancia.costo <= 0; }
+
+  pedidosSinCosto(z: CorteZona): number { return z.pedidos.filter(p => this.sinCosto(p)).length; }
+
+  get totalSinCosto(): number { return (this.corte?.zonas ?? []).reduce((n, z) => n + this.pedidosSinCosto(z), 0); }
+
   /** Ganancia con lo que de verdad se cobró: total del pedido menos el costo. */
   gananciaReal(total: number, costo: number): number { return total - costo; }
 

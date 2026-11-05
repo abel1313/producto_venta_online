@@ -146,8 +146,8 @@
                 <ng-container *ngIf="!filaVisible(p)"><span class="cc-oculto">Costo ••••</span><span class="cc-oculto">Ganancia ••••</span></ng-container>
                 <ng-container *ngIf="filaVisible(p)">
                   <span class="cc-dato">Costo <b>${{ p.ganancia.costo | number:'1.2-2' }}</b></span>
-                  <span class="cc-gana" [class.cc-pierde]="p.ganancia.gananciaNormal < 0">Ganancia <b>${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</b></span>
-                  <span *ngIf="corte.ganancia.hayDescuento" class="cc-gana" [class.cc-pierde]="p.ganancia.gananciaConDescuento < 0">c/ desc. <b>${{ p.ganancia.gananciaConDescuento | number:'1.2-2' }}</b></span>
+                  <span *ngIf="rebaja(p.ganancia.ventaNormal, p.total) > 0" class="cc-rebaja" [title]="'Valía $' + (p.ganancia.ventaNormal | number:'1.2-2') + ' a precio de lista y se cobró $' + (p.total | number:'1.2-2')">Rebaja <b>−${{ rebaja(p.ganancia.ventaNormal, p.total) | number:'1.2-2' }}</b></span>
+                  <span class="cc-gana" [class.cc-pierde]="gananciaReal(p.total, p.ganancia.costo) < 0">Ganancia real <b>${{ gananciaReal(p.total, p.ganancia.costo) | number:'1.2-2' }}</b></span>
                 </ng-container>
               </div>
             </div>
@@ -171,8 +171,8 @@
               <ng-container *ngIf="!totalDeZonaVisible(z)"><span class="cc-oculto">••••</span></ng-container>
               <ng-container *ngIf="totalDeZonaVisible(z)">
                 <span class="cc-dato">costo <b>${{ z.ganancia.costo | number:'1.2-2' }}</b></span>
-                <span class="cc-gana">ganancia <b>${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</b></span>
-                <span *ngIf="z.ganancia.hayDescuento" class="cc-gana">c/ desc. <b>${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }}</b></span>
+                <span *ngIf="rebaja(z.ganancia.ventaNormal, z.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(z.ganancia.ventaNormal, z.totalPedidos) | number:'1.2-2' }}</b></span>
+                <span class="cc-gana" [class.cc-pierde]="gananciaReal(z.totalPedidos, z.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(z.totalPedidos, z.ganancia.costo) | number:'1.2-2' }}</b></span>
               </ng-container>
             </div>
           </footer>
@@ -192,8 +192,8 @@
           <span *ngIf="!gananciaTotalVisible" class="cc-oculto cc-oculto--grande">••••••</span>
           <ng-container *ngIf="gananciaTotalVisible">
             <span class="cc-dato">costo <b>${{ corte.ganancia.costo | number:'1.2-2' }}</b></span>
-            <span class="cc-gana">ganancia <b>${{ corte.ganancia.gananciaNormal | number:'1.2-2' }}</b></span>
-            <span *ngIf="corte.ganancia.hayDescuento" class="cc-gana">con descuento <b>${{ corte.ganancia.gananciaConDescuento | number:'1.2-2' }}</b></span>
+            <span *ngIf="rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) > 0" class="cc-rebaja">rebajas <b>−${{ rebaja(corte.ganancia.ventaNormal, corte.totalPedidos) | number:'1.2-2' }}</b></span>
+            <span class="cc-gana" [class.cc-pierde]="gananciaReal(corte.totalPedidos, corte.ganancia.costo) < 0">ganancia real <b>${{ gananciaReal(corte.totalPedidos, corte.ganancia.costo) | number:'1.2-2' }}</b></span>
           </ng-container>
         </div>
       </div>

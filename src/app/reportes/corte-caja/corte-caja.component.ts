@@ -181,6 +181,12 @@ export class CorteCajaComponent implements OnInit {
     return z.totalPedidos > 0 ? Math.min(100, Math.round(100 * z.totalPagado / z.totalPedidos)) : 0;
   }
 
+  /** Ganancia con lo que de verdad se cobró: total del pedido menos el costo. */
+  gananciaReal(total: number, costo: number): number { return total - costo; }
+
+  /** Lo que se rebajó respecto al precio de lista (0 si no hubo rebaja). */
+  rebaja(lista: number, total: number): number { return Math.max(0, Math.round((lista - total) * 100) / 100); }
+
   copiar(): void {
     if (!this.corte) return;
     const dinero = (n: number) => `$${n.toFixed(2)}`;

@@ -98,6 +98,7 @@ export interface CortePedido {
   dioAnticipo: boolean;
   saldo:       number;
   fechaPedido: string | null;
+  fechaEntrega?: string | null;
   estado:      string;
   entregado:   boolean;
   ganancia:    CorteGanancia;

@@ -37,11 +37,11 @@
       </div>
 
       <div class="cc-campo">
-        <label class="cc-label">Pedidos desde</label>
+        <label class="cc-label">Entrega desde</label>
         <app-selector-fecha [(ngModel)]="filtros.desde" placeholder="Desde"></app-selector-fecha>
       </div>
       <div class="cc-campo">
-        <label class="cc-label">Hasta</label>
+        <label class="cc-label">Entrega hasta</label>
         <app-selector-fecha [(ngModel)]="filtros.hasta" placeholder="Hasta"></app-selector-fecha>
       </div>
 
@@ -131,7 +131,7 @@
                 <span class="cc-pedido">#{{ p.pedidoId }}</span>
                 <div class="cc-pedido-card__quien">
                   <b>{{ p.cliente }}</b>
-                  <small>{{ p.fechaPedido | date:'dd MMM' }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
+                  <small>{{ p.fechaEntrega ? ("Entrega " + (p.fechaEntrega | date:"dd MMM")) : "Sin fecha de entrega" }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
                 </div>
                 <div class="cc-pedido-card__monto">
                   <span class="cc-estado" [ngClass]="claseEstado(p)">{{ p.estado }}<span *ngIf="p.entregado" title="Entregado"> 📦</span></span>

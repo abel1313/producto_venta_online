@@ -7,6 +7,7 @@ import Swal from 'sweetalert2';
 import { Constants } from 'src/app/Constants/Constants.model';
 import {
   CorteDeCaja,
+  CorteFiltros,
   CortePedido,
   ProductoMasVendido,
   PromocionReporte,
@@ -17,6 +18,8 @@ import {
   RevisionVentas,
 } from './service/reportes.service';
 import { ClienteService } from '../clietes/cliente.service';
+import { LugarEntregaService } from '../lugares-entrega/service/lugar-entrega.service';
+import { ILugarEntrega } from '../lugares-entrega/models/lugar-entrega.model';
 import { AuthService } from '../auth/auth.service';
 import { IClienteBusquedaDto } from '../productos/producto/detalle-productos/models/pedidos.model';
 
@@ -71,7 +74,10 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   corte: CorteDeCaja | null = null;
   cargandoCorte = false;
   errorCorte: string | null = null;
-  /** La ganancia (costo, venta, descuento) está oculta hasta que el administrador la despliega. */
+  /** Filtros: el corte NO se arma al abrir; se elige y se pulsa Buscar. */
+  filtrosCorte: CorteFiltros = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+  zonasCorte: ILugarEntrega[] = [];
+  /** Costo y ganancia están ocultos hasta que el administrador pulsa el ojito 👁. */
   verGanancia = false;
   copiado = false;
 
@@ -117,6 +123,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly clienteService: ClienteService,
     public  readonly authService: AuthService,
     private readonly ruta: ActivatedRoute,
+    private readonly lugares: LugarEntregaService,
   ) {}
 
   ngOnInit(): void {
@@ -173,17 +180,49 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (t === 'revision' && !this.revision && !this.cargandoRevision) {
       this.buscarRevision();
     }
-    if (t === 'corte' && !this.corte && !this.cargandoCorte) {
-      this.buscarCorte();
+    if (t === 'corte') {
+      this.cargarZonasDelCorte();
+    } else {
+      this.verGanancia = false;   // al salir se vuelve a ocultar
     }
   }
 
   // ── CORTE DE CAJA ──────────────────────────────────────────────────────────
 
+  private cargarZonasDelCorte(): void {
+    if (this.zonasCorte.length) return;
+    this.lugares.getAll().subscribe({
+      next: z => this.zonasCorte = [...z].sort((a, b) => a.nombre.localeCompare(b.nombre)),
+      error: () => this.zonasCorte = []
+    });
+  }
+
+  /** Marca o desmarca una zona (0 = «Sin zona»). Sin ninguna marcada, salen todas. */
+  alternarZonaCorte(id: number): void {
+    const zonas = this.filtrosCorte.zonas ?? [];
+    this.filtrosCorte.zonas = zonas.includes(id) ? zonas.filter(z => z !== id) : [...zonas, id];
+  }
+
+  zonaMarcada(id: number): boolean {
+    return (this.filtrosCorte.zonas ?? []).includes(id);
+  }
+
+  limpiarFiltrosCorte(): void {
+    this.filtrosCorte = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+    this.corte = null;
+    this.errorCorte = null;
+  }
+
   buscarCorte(): void {
     this.cargandoCorte = true;
     this.errorCorte = null;
-    this.svc.getCorteDeCaja().subscribe({
+    this.verGanancia = false;   // cada búsqueda nueva empieza con costo y ganancia ocultos
+    this.svc.getCorteDeCaja({
+      ...this.filtrosCorte,
+      zonas: [...(this.filtrosCorte.zonas ?? [])],
+      desde: this.filtrosCorte.desde || undefined,
+      hasta: this.filtrosCorte.hasta || undefined,
+    }).subscribe({
       next: c => { this.corte = c; this.cargandoCorte = false; },
       error: err => {
         this.cargandoCorte = false;

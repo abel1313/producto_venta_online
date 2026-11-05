@@ -419,3 +419,8 @@
 .rp-corte-zona__cuenta { font-weight: 400; color: var(--app-text-muted); font-size: .85em; }
 .rp-corte-ganancia { margin-top: 20px; }
 .rp-table tfoot td { border-top: 2px solid var(--table-border); }
+
+.rp-filtro-group--zonas { flex: 1 1 100%; }
+.rp-zonas { display: flex; flex-wrap: wrap; gap: .4rem; }
+.rp-zona { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border: 1.5px solid var(--card-border); border-radius: 999px; cursor: pointer; font-size: .9rem; user-select: none; }
+.rp-zona--on { border-color: var(--app-accent); background: var(--app-tint); }

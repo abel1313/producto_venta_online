@@ -99,6 +99,7 @@ export interface CortePedido {
   saldo:       number;
   fechaPedido: string | null;
   estado:      string;
+  entregado:   boolean;
   ganancia:    CorteGanancia;
 }
 
@@ -106,16 +107,32 @@ export interface CorteZona {
   /** null = «Sin zona» (se recoge en la tienda). */
   zonaId:    number | null;
   zona:      string;
+  /** Lo que falta por cobrar en la zona. */
   subtotal:  number;
+  totalPedidos: number;
+  totalPagado:  number;
   cantidad:  number;
   articulos: number;
   ganancia:  CorteGanancia;
   pedidos:   CortePedido[];
 }
 
+/** Filtros del corte: zona, fechas del pedido (yyyy-MM-dd), pago y entrega. */
+export interface CorteFiltros {
+  /** Varias zonas a la vez; vacío = todas; 0 = «Sin zona» (se recoge en tienda). */
+  zonas?:   number[];
+  desde?:   string;
+  hasta?:   string;
+  pago:     'POR_COBRAR' | 'PAGADOS' | 'TODOS';
+  entrega:  'SIN_ENTREGAR' | 'ENTREGADOS' | 'TODOS';
+}
+
 export interface CorteDeCaja {
   generado:        string;
+  /** Lo que falta por cobrar. */
   total:           number;
+  totalPedidos:    number;
+  totalPagado:     number;
   cantidadPedidos: number;
   articulos:       number;
   ganancia:        CorteGanancia;
@@ -186,11 +203,14 @@ export class ReportesService {
       .pipe(map(r => r.data));
   }
 
-  /** Corte de caja (solo administrador): pedidos sin entregar y con saldo, por zona de entrega. `zonaId` = una sola zona. */
-  getCorteDeCaja(zonaId?: number | null): Observable<CorteDeCaja> {
-    const qs = zonaId ? `?zonaId=${zonaId}` : '';
+  /** Corte de caja (solo administrador): pedidos por zona con los filtros elegidos. */
+  getCorteDeCaja(f: CorteFiltros): Observable<CorteDeCaja> {
+    const params: string[] = [`pago=${f.pago}`, `entrega=${f.entrega}`];
+    (f.zonas ?? []).forEach(z => params.push(`zonaId=${z}`));
+    if (f.desde) params.push(`desde=${f.desde}`);
+    if (f.hasta) params.push(`hasta=${f.hasta}`);
     return this.http
-      .get<{ data: CorteDeCaja }>(`${environment.api_Url}/v1/reportes/corte-caja${qs}`)
+      .get<{ data: CorteDeCaja }>(`${environment.api_Url}/v1/reportes/corte-caja?${params.join('&')}`)
       .pipe(map(r => r.data));
   }
 }

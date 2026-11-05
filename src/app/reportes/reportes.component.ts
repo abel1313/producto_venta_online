@@ -58,6 +58,14 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Tipos con la lista de casos abierta. */
   tiposAbiertos = new Set<string>();
 
+  /** Abre Reportes con `?debug=1` para ver la versión de la pantalla y los roles de tu sesión (diagnóstico; no cambia nada). */
+  readonly debug = new URLSearchParams(window.location.search).has('debug');
+  readonly build = 'corte-2026-11-05';
+
+  get rolesParaDiagnostico(): string {
+    return this.authService.rolesValue.filter(r => r.startsWith('ROLE_')).join(', ') || '(ninguno)';
+  }
+
   // — Corte de caja (solo administrador) —
   corte: CorteDeCaja | null = null;
   cargandoCorte = false;

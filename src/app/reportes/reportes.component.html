@@ -7,6 +7,12 @@
     </div>
   </div>
 
+  <p *ngIf="debug" class="rp-hint" style="max-width:1100px;margin:.5rem auto;padding:0 1rem;">
+    🔧 Diagnóstico · pantalla <b>{{ build }}</b> · roles: <b>{{ rolesParaDiagnostico }}</b> ·
+    ¿administrador? <b>{{ authService.isAdminService ? 'sí' : 'no' }}</b> ·
+    ¿permiso Revisión? <b>{{ authService.tieneAccion('reportes', 'reporte-revision') ? 'sí' : 'no' }}</b>
+  </p>
+
   <!-- Tabs -->
   <div class="rp-tabs">
     <button class="rp-tab" [class.rp-tab--active]="tab === 'diario'"     *ngIf="authService.tieneAccion('reportes', 'reporte-diario')" (click)="setTab('diario')">📅 Diario</button>

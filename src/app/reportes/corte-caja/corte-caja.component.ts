@@ -26,6 +26,8 @@ export class CorteCajaComponent implements OnInit {
   filtrosAbiertos = true;
   zonaBuscador = '';
   zonasAbiertas = false;
+  /** Los filtros con los que se armó el corte que se ve en pantalla. */
+  filtrosAplicados: string[] = [];
   copiado = false;
 
   readonly opcionesPorPagina = [10, 25, 50, 100];
@@ -108,6 +110,11 @@ export class CorteCajaComponent implements OnInit {
     this.zonaBuscador = '';
   }
 
+  /** Se cierra con un respiro: en el celular el campo pierde el foco antes de que el toque llegue a la opción. */
+  cerrarListaDeZonas(): void {
+    setTimeout(() => { this.zonasAbiertas = false; }, 250);
+  }
+
   elegirPrimeraZona(): void {
     const primera = this.zonasParaElegir[0];
     if (primera) this.elegirZona(primera.id);
@@ -127,6 +134,7 @@ export class CorteCajaComponent implements OnInit {
     }).subscribe({
       next: c => {
         this.corte = c;
+        this.filtrosAplicados = this.resumenFiltros;
         this.cargando = false;
         if (window.innerWidth < 720) this.filtrosAbiertos = false;   // en el celular se ve primero el resultado
       },

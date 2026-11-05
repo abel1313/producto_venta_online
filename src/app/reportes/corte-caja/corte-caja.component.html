@@ -28,10 +28,10 @@
             <button type="button" class="cc-zona-tag__x" (click)="alternarZona(z.id)" [attr.aria-label]="'Quitar ' + z.nombre">✕</button>
           </span>
           <input class="cc-zonas__input" type="text" [(ngModel)]="zonaBuscador" placeholder="Escribe y elige una zona…"
-                 (focus)="zonasAbiertas = true" (blur)="zonasAbiertas = false" autocomplete="off" (keydown.enter)="$event.preventDefault(); elegirPrimeraZona()" />
+                 (focus)="zonasAbiertas = true" (blur)="cerrarListaDeZonas()" autocomplete="off" (keydown.enter)="$event.preventDefault(); elegirPrimeraZona()" />
         </div>
         <div *ngIf="zonasAbiertas" class="cc-zonas__lista">
-          <button type="button" *ngFor="let z of zonasParaElegir" class="cc-zonas__op" (mousedown)="$event.preventDefault(); elegirZona(z.id)">{{ z.nombre }}</button>
+          <button type="button" *ngFor="let z of zonasParaElegir" class="cc-zonas__op" (mousedown)="$event.preventDefault()" (click)="elegirZona(z.id)">{{ z.nombre }}</button>
           <p *ngIf="!zonasParaElegir.length" class="cc-zonas__nada">No hay más zonas con ese nombre.</p>
         </div>
       </div>
@@ -80,6 +80,8 @@
     <ng-container *ngIf="corte.zonas.length">
 
       <!-- Resumen -->
+      <p class="cc-aplicados"><span>Mostrando:</span> <span class="cc-chip" *ngFor="let c of filtrosAplicados">{{ c }}</span></p>
+
       <div class="cc-kpis">
         <div class="cc-kpi cc-kpi--hero">
           <span class="cc-kpi__etiqueta">Por cobrar</span>

@@ -379,3 +379,5 @@
 @media (prefers-reduced-motion: reduce) {
   .cc-zona, .cc-cargando__punto, .cc-barra > span { animation: none; transition: none; }
 }
+
+.cc-aplicados { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin: 0; font-size: .85rem; color: var(--app-text-muted); }

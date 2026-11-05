@@ -424,3 +424,14 @@
 .rp-zonas { display: flex; flex-wrap: wrap; gap: .4rem; }
 .rp-zona { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .7rem; border: 1.5px solid var(--card-border); border-radius: 999px; cursor: pointer; font-size: .9rem; user-select: none; }
 .rp-zona--on { border-color: var(--app-accent); background: var(--app-tint); }
+
+.rp-zonas-box { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; padding: .35rem .5rem; border: 1.5px solid var(--input-border); border-radius: 10px; background: var(--input-bg); }
+.rp-zonas-input { flex: 1 1 10rem; min-width: 8rem; border: 0; outline: 0; background: transparent; color: var(--input-text); padding: .25rem; }
+.rp-zonas-lista { max-height: 14rem; overflow-y: auto; border: 1.5px solid var(--card-border); border-radius: 10px; background: var(--card-body-bg); margin-top: .25rem; display: flex; flex-direction: column; }
+.rp-zonas-op { text-align: left; padding: .5rem .8rem; border: 0; background: transparent; color: var(--app-text); cursor: pointer; }
+.rp-zonas-op:hover { background: var(--app-tint); }
+.rp-zona__x { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0 .1rem; }
+.rp-ojo-zona { border: 1px solid var(--card-border); background: transparent; border-radius: 8px; cursor: pointer; padding: .1rem .5rem; margin-left: .5rem; }
+
+.rp-paginas { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; margin-top: .5rem; }
+.rp-corte-gan { white-space: nowrap; }

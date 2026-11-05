@@ -363,14 +363,17 @@
     <!-- Filtros: el corte se arma al pulsar Buscar, no al abrir la pantalla -->
     <div class="rp-filtros rp-filtros--row">
       <div class="rp-filtro-group rp-filtro-group--zonas">
-        <label class="rp-label">Zonas <span class="rp-corte-zona__cuenta">(marca las que quieras; sin marcar = todas)</span></label>
-        <div class="rp-zonas">
-          <label *ngFor="let z of zonasCorte" class="rp-zona" [class.rp-zona--on]="zonaMarcada(z.id)">
-            <input type="checkbox" [checked]="zonaMarcada(z.id)" (change)="alternarZonaCorte(z.id)" /> {{ z.nombre }}
-          </label>
-          <label class="rp-zona" [class.rp-zona--on]="zonaMarcada(0)">
-            <input type="checkbox" [checked]="zonaMarcada(0)" (change)="alternarZonaCorte(0)" /> Sin zona (se recoge en tienda)
-          </label>
+        <label class="rp-label">Zonas <span class="rp-corte-zona__cuenta">(escribe y elige; sin elegir = todas)</span></label>
+        <div class="rp-zonas-box">
+          <span *ngFor="let z of zonasElegidas" class="rp-zona rp-zona--on">
+            {{ z.nombre }} <button type="button" class="rp-zona__x" (click)="alternarZonaCorte(z.id)" [attr.aria-label]="'Quitar ' + z.nombre">✕</button>
+          </span>
+          <input class="rp-zonas-input" type="text" [(ngModel)]="zonaBuscador" placeholder="Buscar zona…"
+                 (focus)="zonasAbiertas = true" (blur)="zonasAbiertas = false" autocomplete="off" />
+        </div>
+        <div *ngIf="zonasAbiertas" class="rp-zonas-lista">
+          <button type="button" *ngFor="let z of zonasParaElegir" class="rp-zonas-op" (mousedown)="$event.preventDefault(); elegirZonaCorte(z.id)">{{ z.nombre }}</button>
+          <p *ngIf="!zonasParaElegir.length" class="rp-hint">No hay más zonas con ese nombre.</p>
         </div>
       </div>
       <div class="rp-filtro-group">
@@ -436,16 +439,28 @@
 
         <div class="rp-filtros rp-filtros--row">
           <button class="rp-btn--primary" (click)="copiarCorte()">{{ copiado ? 'Copiado ✓' : 'Copiar corte' }}</button>
-          <!-- El ojito: costo y ganancia ocultos hasta que el administrador los muestra -->
-          <button *ngIf="authService.isAdminService" type="button" class="rp-btn--primary rp-ojo" (click)="verGanancia = !verGanancia"
-                  [attr.aria-pressed]="verGanancia" [title]="verGanancia ? 'Ocultar costo y ganancia' : 'Ver costo y ganancia (solo administrador)'">
-            {{ verGanancia ? '🙈 Ocultar costo y ganancia' : '👁 Ver costo y ganancia' }}
+          <!-- Ojo de arriba: muestra u oculta TODO (cada zona y el total). Cada zona y el total tienen además el suyo. -->
+          <button *ngIf="authService.isAdminService" type="button" class="rp-btn--primary rp-ojo" (click)="alternarTodaLaGanancia()"
+                  [attr.aria-pressed]="todaLaGananciaVisible" [title]="todaLaGananciaVisible ? 'Ocultar costo y ganancia de todo' : 'Ver costo y ganancia de todo (solo administrador)'">
+            {{ todaLaGananciaVisible ? '🙈 Ocultar todo' : '👁 Ver todo (costo y ganancia)' }}
           </button>
+        </div>
+
+        <!-- Por página: solo parte la tabla en pantalla; los totales son siempre los de TODO lo filtrado -->
+        <div class="rp-filtros rp-filtros--row">
+          <label class="rp-label">Filas por página</label>
+          <select class="rp-input" [ngModel]="porPagina" (ngModelChange)="cambiarPorPagina($event)">
+            <option *ngFor="let n of opcionesPorPagina" [ngValue]="n">{{ n }}</option>
+          </select>
+          <span class="rp-hint">Los totales incluyen todos los pedidos filtrados, no solo los de la página.</span>
         </div>
 
         <!-- Una tabla por zona -->
         <div *ngFor="let z of corte.zonas" class="rp-corte-zona">
-          <h6 class="rp-chart-title">{{ z.zona }} <span class="rp-corte-zona__cuenta">· {{ z.cantidad }} pedido(s), {{ z.articulos }} artículo(s)</span></h6>
+          <h6 class="rp-chart-title">{{ z.zona }} <span class="rp-corte-zona__cuenta">· {{ z.cantidad }} pedido(s), {{ z.articulos }} artículo(s)</span>
+            <button *ngIf="authService.isAdminService" type="button" class="rp-ojo-zona" (click)="alternarZonaTodo(z)"
+                    [title]="zonaTodaVisible(z) ? 'Ocultar costo y ganancia de toda esta zona' : 'Ver costo y ganancia de toda esta zona (todas las filas y su total)'">
+              {{ zonaTodaVisible(z) ? '🙈' : '👁' }}</button></h6>
           <div class="rp-table-wrap">
             <table class="rp-table">
               <thead>
@@ -458,20 +473,11 @@
                   <th>Pagos</th>
                   <th class="rp-table__num">Por cobrar</th>
                   <th>Estado</th>
-                  <ng-container *ngIf="authService.isAdminService">
-                    <th class="rp-table__num" *ngIf="!verGanancia">Ganancia</th>
-                    <ng-container *ngIf="verGanancia">
-                      <th class="rp-table__num">Costo</th>
-                      <th class="rp-table__num">A precio de venta</th>
-                      <th class="rp-table__num">Ganancia</th>
-                      <th class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">Con descuento</th>
-                      <th class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">Ganancia con descuento</th>
-                    </ng-container>
-                  </ng-container>
+                  <th *ngIf="authService.isAdminService">Costo y ganancia</th>
                 </tr>
               </thead>
               <tbody>
-                <tr *ngFor="let p of z.pedidos">
+                <tr *ngFor="let p of pedidosDePagina(z)">
                   <td>#{{ p.pedidoId }}</td>
                   <td>{{ p.cliente }}</td>
                   <td>{{ p.fechaPedido | date:'dd/MM/yyyy' }}</td>
@@ -480,49 +486,68 @@
                   <td>{{ textoPagos(p) }}</td>
                   <td class="rp-table__num"><strong>${{ p.saldo | number:'1.2-2' }}</strong></td>
                   <td>{{ p.estado }}<span *ngIf="p.entregado"> · entregado</span></td>
-                  <ng-container *ngIf="authService.isAdminService">
-                    <td class="rp-table__num" *ngIf="!verGanancia">••••</td>
-                    <ng-container *ngIf="verGanancia">
-                      <td class="rp-table__num">${{ p.ganancia.costo | number:'1.2-2' }}</td>
-                      <td class="rp-table__num">${{ p.ganancia.ventaNormal | number:'1.2-2' }}</td>
-                      <td class="rp-table__num rp-table__num--green">${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</td>
-                      <td class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">${{ p.ganancia.conDescuento | number:'1.2-2' }}</td>
-                      <td class="rp-table__num rp-table__num--green" *ngIf="corte.ganancia.hayDescuento">${{ p.ganancia.gananciaConDescuento | number:'1.2-2' }}</td>
-                    </ng-container>
-                  </ng-container>
+                  <td *ngIf="authService.isAdminService" class="rp-corte-gan">
+                    <button type="button" class="rp-ojo-zona" (click)="alternarFila(p)"
+                            [title]="filaVisible(p) ? 'Ocultar costo y ganancia de este pedido' : 'Ver costo y ganancia de este pedido'">
+                      {{ filaVisible(p) ? '🙈' : '👁' }}</button>
+                    <span *ngIf="!filaVisible(p)"> ••••</span>
+                    <span *ngIf="filaVisible(p)">
+                      costo ${{ p.ganancia.costo | number:'1.2-2' }} · venta ${{ p.ganancia.ventaNormal | number:'1.2-2' }} ·
+                      <b class="rp-table__num--green">ganancia ${{ p.ganancia.gananciaNormal | number:'1.2-2' }}</b>
+                      <ng-container *ngIf="p.ganancia.hayDescuento"> · con descuento ${{ p.ganancia.conDescuento | number:'1.2-2' }}
+                        (<b class="rp-table__num--green">${{ p.ganancia.gananciaConDescuento | number:'1.2-2' }}</b>)</ng-container>
+                    </span>
+                  </td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="4"><strong>Subtotal {{ z.zona }}</strong></td>
+                  <td colspan="4"><strong>Total de {{ z.zona }}</strong> <span class="rp-hint">(todos los {{ z.pedidos.length }} pedidos)</span></td>
                   <td class="rp-table__num"><strong>${{ z.totalPedidos | number:'1.2-2' }}</strong></td>
                   <td><strong>Pagado ${{ z.totalPagado | number:'1.2-2' }}</strong></td>
                   <td class="rp-table__num"><strong>${{ z.subtotal | number:'1.2-2' }}</strong></td>
                   <td></td>
-                  <ng-container *ngIf="authService.isAdminService">
-                    <td class="rp-table__num" *ngIf="!verGanancia">••••</td>
-                    <ng-container *ngIf="verGanancia">
-                      <td class="rp-table__num"><strong>${{ z.ganancia.costo | number:'1.2-2' }}</strong></td>
-                      <td class="rp-table__num"><strong>${{ z.ganancia.ventaNormal | number:'1.2-2' }}</strong></td>
-                      <td class="rp-table__num rp-table__num--green"><strong>${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</strong></td>
-                      <td class="rp-table__num" *ngIf="corte.ganancia.hayDescuento"><strong>${{ z.ganancia.conDescuento | number:'1.2-2' }}</strong></td>
-                      <td class="rp-table__num rp-table__num--green" *ngIf="corte.ganancia.hayDescuento"><strong>${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }}</strong></td>
-                    </ng-container>
-                  </ng-container>
+                  <td *ngIf="authService.isAdminService" class="rp-corte-gan">
+                    <button type="button" class="rp-ojo-zona" (click)="alternarTotalDeZona(z)"
+                            [title]="totalDeZonaVisible(z) ? 'Ocultar el total de costo y ganancia de esta zona' : 'Ver el total de costo y ganancia de esta zona'">
+                      {{ totalDeZonaVisible(z) ? '🙈' : '👁' }}</button>
+                    <span *ngIf="!totalDeZonaVisible(z)"> ••••</span>
+                    <span *ngIf="totalDeZonaVisible(z)">
+                      <strong>costo ${{ z.ganancia.costo | number:'1.2-2' }} · venta ${{ z.ganancia.ventaNormal | number:'1.2-2' }} ·
+                      <span class="rp-table__num--green">ganancia ${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</span></strong>
+                      <ng-container *ngIf="z.ganancia.hayDescuento"> · con descuento ${{ z.ganancia.conDescuento | number:'1.2-2' }}
+                        (${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }})</ng-container>
+                    </span>
+                  </td>
                 </tr>
               </tfoot>
             </table>
           </div>
+
+          <!-- Páginas de esta zona -->
+          <div *ngIf="totalPaginas(z) > 1" class="rp-paginas">
+            <span class="rp-hint">{{ rangoDePagina(z) }}</span>
+            <button type="button" class="rp-ojo-zona" [disabled]="paginaActual(z) === 1" (click)="irAPagina(z, paginaActual(z) - 1)">‹ Anterior</button>
+            <span>Página {{ paginaActual(z) }} de {{ totalPaginas(z) }}</span>
+            <button type="button" class="rp-ojo-zona" [disabled]="paginaActual(z) === totalPaginas(z)" (click)="irAPagina(z, paginaActual(z) + 1)">Siguiente ›</button>
+          </div>
         </div>
 
-        <!-- Total general de la ganancia: solo cuando se muestra -->
-        <p *ngIf="authService.isAdminService && verGanancia" class="rp-hint">
-          <b>Total del corte</b> · costo ${{ corte.ganancia.costo | number:'1.2-2' }} ·
-          a precio de venta ${{ corte.ganancia.ventaNormal | number:'1.2-2' }} (ganancia ${{ corte.ganancia.gananciaNormal | number:'1.2-2' }})
-          <ng-container *ngIf="corte.ganancia.hayDescuento"> · con descuento ${{ corte.ganancia.conDescuento | number:'1.2-2' }}
-            (ganancia ${{ corte.ganancia.gananciaConDescuento | number:'1.2-2' }})</ng-container>.
-          El costo es el costo actual del producto.
-        </p>
+        <!-- Total general de la ganancia: oculto, con su propio ojito al final -->
+        <div *ngIf="authService.isAdminService" class="rp-corte-ganancia">
+          <button type="button" class="rp-ojo-zona" (click)="gananciaTotalVisible = !gananciaTotalVisible"
+                  [title]="gananciaTotalVisible ? 'Ocultar el total de costo y ganancia' : 'Ver el total de costo y ganancia (solo administrador)'">
+            {{ gananciaTotalVisible ? '🙈' : '👁' }}</button>
+          <b>Total del corte · costo y ganancia</b>
+          <span *ngIf="!gananciaTotalVisible"> ••••</span>
+          <span *ngIf="gananciaTotalVisible">
+            · costo ${{ corte.ganancia.costo | number:'1.2-2' }} ·
+            a precio de venta ${{ corte.ganancia.ventaNormal | number:'1.2-2' }} (ganancia ${{ corte.ganancia.gananciaNormal | number:'1.2-2' }})
+            <ng-container *ngIf="corte.ganancia.hayDescuento"> · con descuento ${{ corte.ganancia.conDescuento | number:'1.2-2' }}
+              (ganancia ${{ corte.ganancia.gananciaConDescuento | number:'1.2-2' }})</ng-container>.
+            <span class="rp-hint">El costo es el costo actual del producto.</span>
+          </span>
+        </div>
 
       </ng-container>
     </ng-container>

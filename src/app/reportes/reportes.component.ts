@@ -9,6 +9,7 @@ import {
   CorteDeCaja,
   CorteFiltros,
   CortePedido,
+  CorteZona,
   ProductoMasVendido,
   PromocionReporte,
   ReporteCliente,
@@ -77,8 +78,19 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   /** Filtros: el corte NO se arma al abrir; se elige y se pulsa Buscar. */
   filtrosCorte: CorteFiltros = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
   zonasCorte: ILugarEntrega[] = [];
-  /** Costo y ganancia están ocultos hasta que el administrador pulsa el ojito 👁. */
-  verGanancia = false;
+  /** Costo y ganancia están ocultos: un ojito por zona (caja) y uno al final para el total del corte; el de arriba muestra u oculta todo. */
+  /** Filas (por número de pedido) con su costo y ganancia a la vista. */
+  private readonly filasVisibles = new Set<number>();
+  /** Zonas cuyo total de costo y ganancia (al final de su tabla) está a la vista. */
+  private readonly totalesDeZonaVisibles = new Set<string>();
+  gananciaTotalVisible = false;
+  /** Paginación EN PANTALLA: se parte la tabla de cada zona, pero los totales son siempre los de todo lo filtrado. */
+  readonly opcionesPorPagina = [10, 25, 50, 100];
+  porPagina = 10;
+  private readonly paginaDeZona = new Map<string, number>();
+  /** Buscador de zonas (con muchas zonas no caben las casillas): se escribe, se elige y queda como etiqueta. */
+  zonaBuscador = '';
+  zonasAbiertas = false;
   copiado = false;
 
   // — Diario —
@@ -183,7 +195,7 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (t === 'corte') {
       this.cargarZonasDelCorte();
     } else {
-      this.verGanancia = false;   // al salir se vuelve a ocultar
+      this.ocultarTodaLaGanancia();   // al salir se vuelve a ocultar
     }
   }
 
@@ -207,6 +219,112 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     return (this.filtrosCorte.zonas ?? []).includes(id);
   }
 
+  /** Zonas que coinciden con lo escrito y todavía no se eligieron; «Sin zona» (0) va como una opción más. */
+  get zonasParaElegir(): { id: number; nombre: string }[] {
+    const texto = this.zonaBuscador.trim().toLowerCase();
+    return [...this.zonasCorte.map(z => ({ id: z.id, nombre: z.nombre })), { id: 0, nombre: 'Sin zona (se recoge en tienda)' }]
+      .filter(z => !this.zonaMarcada(z.id) && (!texto || z.nombre.toLowerCase().includes(texto)));
+  }
+
+  /** Las elegidas, para mostrarlas como etiquetas con ✕. */
+  get zonasElegidas(): { id: number; nombre: string }[] {
+    return (this.filtrosCorte.zonas ?? []).map(id => ({
+      id, nombre: id === 0 ? 'Sin zona' : (this.zonasCorte.find(z => z.id === id)?.nombre ?? `Zona ${id}`)
+    }));
+  }
+
+  elegirZonaCorte(id: number): void {
+    this.alternarZonaCorte(id);
+    this.zonaBuscador = '';
+  }
+
+  // ── Ojitos de costo y ganancia (solo administrador) ─────────────────────────
+  private claveZona(z: { zonaId: number | null }): string { return String(z.zonaId ?? 0); }
+
+  filaVisible(p: CortePedido): boolean { return this.filasVisibles.has(p.pedidoId); }
+
+  alternarFila(p: CortePedido): void {
+    if (this.filasVisibles.has(p.pedidoId)) this.filasVisibles.delete(p.pedidoId); else this.filasVisibles.add(p.pedidoId);
+  }
+
+  /** El total de costo y ganancia de la zona (al final de su tabla). */
+  totalDeZonaVisible(z: { zonaId: number | null }): boolean { return this.totalesDeZonaVisibles.has(this.claveZona(z)); }
+
+  alternarTotalDeZona(z: { zonaId: number | null }): void {
+    const k = this.claveZona(z);
+    if (this.totalesDeZonaVisibles.has(k)) this.totalesDeZonaVisibles.delete(k); else this.totalesDeZonaVisibles.add(k);
+  }
+
+  /** ¿Toda la caja a la vista (todas las filas de la zona, no solo la página, y su total)? */
+  zonaTodaVisible(z: CorteZona): boolean {
+    return this.totalDeZonaVisible(z) && z.pedidos.every(p => this.filaVisible(p));
+  }
+
+  /** El ojo del encabezado de cada zona: muestra u oculta todas sus filas y su total. */
+  alternarZonaTodo(z: CorteZona): void {
+    if (this.zonaTodaVisible(z)) {
+      z.pedidos.forEach(p => this.filasVisibles.delete(p.pedidoId));
+      this.totalesDeZonaVisibles.delete(this.claveZona(z));
+    } else {
+      z.pedidos.forEach(p => this.filasVisibles.add(p.pedidoId));
+      this.totalesDeZonaVisibles.add(this.claveZona(z));
+    }
+  }
+
+  /** ¿Todo visible (todas las zonas y el total del corte)? */
+  get todaLaGananciaVisible(): boolean {
+    return !!this.corte && this.gananciaTotalVisible && this.corte.zonas.every(z => this.zonaTodaVisible(z));
+  }
+
+  /** El ojo de arriba: muestra todo (filas, totales de zona y total del corte) o lo oculta todo. */
+  alternarTodaLaGanancia(): void {
+    if (!this.corte) return;
+    if (this.todaLaGananciaVisible) {
+      this.ocultarTodaLaGanancia();
+    } else {
+      this.corte.zonas.forEach(z => {
+        z.pedidos.forEach(p => this.filasVisibles.add(p.pedidoId));
+        this.totalesDeZonaVisibles.add(this.claveZona(z));
+      });
+      this.gananciaTotalVisible = true;
+    }
+  }
+
+  private ocultarTodaLaGanancia(): void {
+    this.filasVisibles.clear();
+    this.totalesDeZonaVisibles.clear();
+    this.gananciaTotalVisible = false;
+  }
+
+  // ── Paginación en pantalla (los totales NO dependen de la página) ───────────
+  paginaActual(z: CorteZona): number {
+    return Math.min(this.paginaDeZona.get(this.claveZona(z)) ?? 1, this.totalPaginas(z));
+  }
+
+  totalPaginas(z: CorteZona): number {
+    return Math.max(1, Math.ceil(z.pedidos.length / this.porPagina));
+  }
+
+  pedidosDePagina(z: CorteZona): CortePedido[] {
+    const inicio = (this.paginaActual(z) - 1) * this.porPagina;
+    return z.pedidos.slice(inicio, inicio + this.porPagina);
+  }
+
+  irAPagina(z: CorteZona, n: number): void {
+    this.paginaDeZona.set(this.claveZona(z), Math.min(Math.max(1, n), this.totalPaginas(z)));
+  }
+
+  /** «Mostrando 1–10 de 20». */
+  rangoDePagina(z: CorteZona): string {
+    const inicio = (this.paginaActual(z) - 1) * this.porPagina;
+    return `Mostrando ${z.pedidos.length ? inicio + 1 : 0}–${Math.min(inicio + this.porPagina, z.pedidos.length)} de ${z.pedidos.length}`;
+  }
+
+  cambiarPorPagina(n: number): void {
+    this.porPagina = Number(n);
+    this.paginaDeZona.clear();
+  }
+
   limpiarFiltrosCorte(): void {
     this.filtrosCorte = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
     this.corte = null;
@@ -216,7 +334,8 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   buscarCorte(): void {
     this.cargandoCorte = true;
     this.errorCorte = null;
-    this.verGanancia = false;   // cada búsqueda nueva empieza con costo y ganancia ocultos
+    this.ocultarTodaLaGanancia();   // cada búsqueda nueva empieza con costo y ganancia ocultos
+    this.paginaDeZona.clear();
     this.svc.getCorteDeCaja({
       ...this.filtrosCorte,
       zonas: [...(this.filtrosCorte.zonas ?? [])],

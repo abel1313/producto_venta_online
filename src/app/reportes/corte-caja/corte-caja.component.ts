@@ -20,7 +20,7 @@ export class CorteCajaComponent implements OnInit {
   cargando = false;
   error: string | null = null;
 
-  filtros: CorteFiltros = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+  filtros: CorteFiltros = this.filtrosPorDefecto();
   zonasCatalogo: ILugarEntrega[] = [];
   /** El panel de filtros se pliega a un resumen después de buscar (sobre todo en el celular). */
   filtrosAbiertos = true;
@@ -95,8 +95,17 @@ export class CorteCajaComponent implements OnInit {
     return r.filter(x => !!x);
   }
 
+  /** Al entrar (y al limpiar) el corte arranca con la semana en curso: del lunes al domingo de hoy. Las fechas se pueden cambiar. */
+  private filtrosPorDefecto(): CorteFiltros {
+    const hoy = new Date();
+    const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - ((hoy.getDay() + 6) % 7));
+    const domingo = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6);
+    const f = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    return { zonas: [], desde: f(lunes), hasta: f(domingo), pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+  }
+
   limpiar(): void {
-    this.filtros = { zonas: [], desde: '', hasta: '', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+    this.filtros = this.filtrosPorDefecto();
     this.corte = null;
     this.error = null;
     this.filtrosAbiertos = true;

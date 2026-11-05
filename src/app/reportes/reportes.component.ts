@@ -5,6 +5,8 @@ import { Chart, registerables } from 'chart.js';
 import Swal from 'sweetalert2';
 import { Constants } from 'src/app/Constants/Constants.model';
 import {
+  CorteDeCaja,
+  CortePedido,
   ProductoMasVendido,
   PromocionReporte,
   ReporteCliente,
@@ -30,7 +32,7 @@ function tema(token: string, alfa = 1): string {
 }
 Chart.register(...registerables);
 
-type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones' | 'revision';
+type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones' | 'revision' | 'corte';
 
 @Component({
   selector: 'app-reportes',
@@ -55,6 +57,14 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
   errorRevision: string | null = null;
   /** Tipos con la lista de casos abierta. */
   tiposAbiertos = new Set<string>();
+
+  // — Corte de caja (solo administrador) —
+  corte: CorteDeCaja | null = null;
+  cargandoCorte = false;
+  errorCorte: string | null = null;
+  /** La ganancia (costo, venta, descuento) está oculta hasta que el administrador la despliega. */
+  verGanancia = false;
+  copiado = false;
 
   // — Diario —
   fechaDiario: string = this.hoy();
@@ -148,6 +158,49 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     if (t === 'revision' && !this.revision && !this.cargandoRevision) {
       this.buscarRevision();
     }
+    if (t === 'corte' && !this.corte && !this.cargandoCorte) {
+      this.buscarCorte();
+    }
+  }
+
+  // ── CORTE DE CAJA ──────────────────────────────────────────────────────────
+
+  buscarCorte(): void {
+    this.cargandoCorte = true;
+    this.errorCorte = null;
+    this.svc.getCorteDeCaja().subscribe({
+      next: c => { this.corte = c; this.cargandoCorte = false; },
+      error: err => {
+        this.cargandoCorte = false;
+        this.errorCorte = err?.error?.mensaje ?? 'No se pudo armar el corte de caja. Intenta de nuevo.';
+      }
+    });
+  }
+
+  /** «Sin pagos», «1 pago (anticipo $100.00)» o «N pagos ($…)». */
+  textoPagos(p: CortePedido): string {
+    if (p.pagos === 0) return 'Sin pagos';
+    const monto = `$${p.pagado.toFixed(2)}`;
+    return p.dioAnticipo ? `1 pago (anticipo ${monto})` : `${p.pagos} pagos (${monto})`;
+  }
+
+  /** Copia el corte como texto (para mandarlo por mensaje o pegarlo en una nota). No incluye costo ni ganancia. */
+  copiarCorte(): void {
+    if (!this.corte) return;
+    const dinero = (n: number) => `$${n.toFixed(2)}`;
+    const lineas: string[] = ['CORTE DE CAJA'];
+    for (const z of this.corte.zonas) {
+      lineas.push('', `${z.zona.toUpperCase()} (${z.cantidad} pedidos, ${z.articulos} artículos)`);
+      for (const p of z.pedidos) {
+        lineas.push(`#${p.pedidoId} ${p.cliente} · ${p.articulos} art. · total ${dinero(p.total)} · ${this.textoPagos(p)} · debe ${dinero(p.saldo)}`);
+      }
+      lineas.push(`Subtotal ${z.zona}: ${dinero(z.subtotal)}`);
+    }
+    lineas.push('', `TOTAL POR COBRAR: ${dinero(this.corte.total)}`);
+    navigator.clipboard?.writeText(lineas.join('\n')).then(() => {
+      this.copiado = true;
+      setTimeout(() => this.copiado = false, 1500);
+    }, () => undefined);
   }
 
   // ── REVISIÓN DE VENTAS ─────────────────────────────────────────────────────

@@ -78,6 +78,50 @@ export interface RevisionTipo {
   ejemplos:    RevisionEjemplo[];
 }
 
+/** Costo y ganancia (solo administrador; el endpoint entero es solo de administrador). */
+export interface CorteGanancia {
+  costo:                number;
+  ventaNormal:          number;
+  gananciaNormal:       number;
+  conDescuento:         number;
+  gananciaConDescuento: number;
+  hayDescuento:         boolean;
+}
+
+export interface CortePedido {
+  pedidoId:    number;
+  cliente:     string;
+  articulos:   number;
+  total:       number;
+  pagado:      number;
+  pagos:       number;
+  dioAnticipo: boolean;
+  saldo:       number;
+  fechaPedido: string | null;
+  estado:      string;
+  ganancia:    CorteGanancia;
+}
+
+export interface CorteZona {
+  /** null = «Sin zona» (se recoge en la tienda). */
+  zonaId:    number | null;
+  zona:      string;
+  subtotal:  number;
+  cantidad:  number;
+  articulos: number;
+  ganancia:  CorteGanancia;
+  pedidos:   CortePedido[];
+}
+
+export interface CorteDeCaja {
+  generado:        string;
+  total:           number;
+  cantidadPedidos: number;
+  articulos:       number;
+  ganancia:        CorteGanancia;
+  zonas:           CorteZona[];
+}
+
 export interface RevisionVentas {
   desde:          string;
   hasta:          string;
@@ -139,6 +183,14 @@ export class ReportesService {
     const qs = params.length ? `?${params.join('&')}` : '';
     return this.http
       .get<{ data: RevisionVentas }>(`${environment.api_Url}/v1/reportes/revision-ventas${qs}`)
+      .pipe(map(r => r.data));
+  }
+
+  /** Corte de caja (solo administrador): pedidos sin entregar y con saldo, por zona de entrega. `zonaId` = una sola zona. */
+  getCorteDeCaja(zonaId?: number | null): Observable<CorteDeCaja> {
+    const qs = zonaId ? `?zonaId=${zonaId}` : '';
+    return this.http
+      .get<{ data: CorteDeCaja }>(`${environment.api_Url}/v1/reportes/corte-caja${qs}`)
       .pipe(map(r => r.data));
   }
 }

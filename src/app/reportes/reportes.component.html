@@ -15,6 +15,8 @@
     <button class="rp-tab" [class.rp-tab--active]="tab === 'masVendidos'" *ngIf="authService.tieneAccion('reportes', 'reporte-mas-vendidos')" (click)="setTab('masVendidos')">🏆 Más vendidos</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'promociones'" *ngIf="authService.tieneAccion('reportes', 'reporte-promociones')" (click)="setTab('promociones')">🎁 Promociones</button>
     <button class="rp-tab" [class.rp-tab--active]="tab === 'revision'"    *ngIf="authService.tieneAccion('reportes', 'reporte-revision')" (click)="setTab('revision')">🔎 Revisión</button>
+    <!-- Lleva costo y ganancia: solo administrador (el back también lo exige). -->
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'corte'"       *ngIf="authService.isAdminService" (click)="setTab('corte')">🧾 Corte de caja</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
@@ -345,6 +347,124 @@
         No se pudo revisar en este ambiente:
         <ng-container *ngFor="let c of revision.noRevisados; let ultimo = last">{{ tituloDeTipo(c) }}{{ ultimo ? '.' : ', ' }}</ng-container>
       </p>
+
+    </ng-container>
+  </div>
+
+  <!-- ── CORTE DE CAJA (solo administrador) ──────────────────────────────── -->
+  <div *ngIf="tab === 'corte' && authService.isAdminService" class="rp-panel">
+    <div class="rp-filtros rp-filtros--row">
+      <button class="rp-btn--primary" [disabled]="cargandoCorte" (click)="buscarCorte()">Actualizar</button>
+      <button class="rp-btn--primary" *ngIf="corte && corte.zonas.length" (click)="copiarCorte()">{{ copiado ? 'Copiado ✓' : 'Copiar corte' }}</button>
+    </div>
+
+    <p class="rp-hint">
+      Pedidos <b>sin pagar por completo y sin entregar</b>, por zona de entrega. Cada pedido aporta lo que <b>falta por cobrar</b>.
+      Es el corte de este momento; no cambia nada.
+    </p>
+
+    <div *ngIf="cargandoCorte" class="rp-loading">Armando el corte…</div>
+    <p *ngIf="errorCorte && !cargandoCorte" class="rp-empty">{{ errorCorte }}</p>
+
+    <ng-container *ngIf="corte && !cargandoCorte">
+
+      <p *ngIf="!corte.zonas.length" class="rp-empty">No hay pedidos por cobrar. 🎉</p>
+
+      <div *ngIf="corte.zonas.length" class="rp-cards-row">
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Total por cobrar</span>
+          <span class="rp-stat-card__val">${{ corte.total | number:'1.2-2' }}</span>
+        </div>
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Pedidos</span>
+          <span class="rp-stat-card__val">{{ corte.cantidadPedidos }}</span>
+        </div>
+        <div class="rp-stat-card">
+          <span class="rp-stat-card__label">Artículos</span>
+          <span class="rp-stat-card__val">{{ corte.articulos }}</span>
+        </div>
+      </div>
+
+      <!-- Una tabla por zona -->
+      <div *ngFor="let z of corte.zonas" class="rp-corte-zona">
+        <h6 class="rp-chart-title">{{ z.zona }} <span class="rp-corte-zona__cuenta">· {{ z.cantidad }} pedido(s), {{ z.articulos }} artículo(s)</span></h6>
+        <div class="rp-table-wrap">
+          <table class="rp-table">
+            <thead>
+              <tr>
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th class="rp-table__num">Artículos</th>
+                <th class="rp-table__num">Total</th>
+                <th>Pagos</th>
+                <th class="rp-table__num">Por cobrar</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let p of z.pedidos">
+                <td>#{{ p.pedidoId }}</td>
+                <td>{{ p.cliente }}</td>
+                <td class="rp-table__num">{{ p.articulos }}</td>
+                <td class="rp-table__num">${{ p.total | number:'1.2-2' }}</td>
+                <td>{{ textoPagos(p) }}</td>
+                <td class="rp-table__num"><strong>${{ p.saldo | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5" class="rp-table__num"><strong>Subtotal {{ z.zona }}</strong></td>
+                <td class="rp-table__num"><strong>${{ z.subtotal | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ganancia: oculta hasta que se despliega -->
+      <div *ngIf="corte.zonas.length" class="rp-corte-ganancia">
+        <button type="button" class="rp-rev-tipo__cabeza" (click)="verGanancia = !verGanancia" [attr.aria-expanded]="verGanancia">
+          <span class="rp-rev-tipo__titulo">💰 Ganancia (solo administrador)</span>
+          <span class="rp-rev-tipo__flecha">{{ verGanancia ? '▾' : '▸' }}</span>
+        </button>
+
+        <div *ngIf="verGanancia" class="rp-table-wrap">
+          <p class="rp-hint">
+            El <b>costo</b> es el costo actual del producto. «Con descuento» solo cuenta si el artículo tiene descuento; si no, es igual al precio de venta.
+          </p>
+          <table class="rp-table">
+            <thead>
+              <tr>
+                <th>Zona</th>
+                <th class="rp-table__num">Costo</th>
+                <th class="rp-table__num">A precio de venta</th>
+                <th class="rp-table__num">Ganancia</th>
+                <th class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">Con descuento</th>
+                <th class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">Ganancia con descuento</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let z of corte.zonas">
+                <td>{{ z.zona }}</td>
+                <td class="rp-table__num">${{ z.ganancia.costo | number:'1.2-2' }}</td>
+                <td class="rp-table__num">${{ z.ganancia.ventaNormal | number:'1.2-2' }}</td>
+                <td class="rp-table__num rp-table__num--green">${{ z.ganancia.gananciaNormal | number:'1.2-2' }}</td>
+                <td class="rp-table__num" *ngIf="corte.ganancia.hayDescuento">${{ z.ganancia.conDescuento | number:'1.2-2' }}</td>
+                <td class="rp-table__num rp-table__num--green" *ngIf="corte.ganancia.hayDescuento">${{ z.ganancia.gananciaConDescuento | number:'1.2-2' }}</td>
+              </tr>
+            </tbody>
+            <tfoot>
+              <tr>
+                <td><strong>Total</strong></td>
+                <td class="rp-table__num"><strong>${{ corte.ganancia.costo | number:'1.2-2' }}</strong></td>
+                <td class="rp-table__num"><strong>${{ corte.ganancia.ventaNormal | number:'1.2-2' }}</strong></td>
+                <td class="rp-table__num rp-table__num--green"><strong>${{ corte.ganancia.gananciaNormal | number:'1.2-2' }}</strong></td>
+                <td class="rp-table__num" *ngIf="corte.ganancia.hayDescuento"><strong>${{ corte.ganancia.conDescuento | number:'1.2-2' }}</strong></td>
+                <td class="rp-table__num rp-table__num--green" *ngIf="corte.ganancia.hayDescuento"><strong>${{ corte.ganancia.gananciaConDescuento | number:'1.2-2' }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
 
     </ng-container>
   </div>

@@ -413,3 +413,9 @@
   .rp-page { background: var(--page-bg, var(--form-section-bg)); }
   .rp-header__title { color: var(--header-text, var(--app-text)); }
 }
+
+// Corte de caja: una tabla por zona y la ganancia plegada.
+.rp-corte-zona { margin-top: 16px; }
+.rp-corte-zona__cuenta { font-weight: 400; color: var(--app-text-muted); font-size: .85em; }
+.rp-corte-ganancia { margin-top: 20px; }
+.rp-table tfoot td { border-top: 2px solid var(--table-border); }

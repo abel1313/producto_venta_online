@@ -100,7 +100,21 @@ export class CorteCajaComponent implements OnInit {
     this.filtrosAbiertos = true;
   }
 
+  /** Lo que quedó escrito en el buscador de zonas cuenta como elegido (si no, parecía que el filtro no hacía nada). */
+  private tomarZonasEscritas(): void {
+    if (!this.zonaBuscador.trim()) return;
+    const ids = this.zonasParaElegir.map(z => z.id);
+    if (ids.length) this.filtros.zonas = [...(this.filtros.zonas ?? []), ...ids];
+    this.zonaBuscador = '';
+  }
+
+  elegirPrimeraZona(): void {
+    const primera = this.zonasParaElegir[0];
+    if (primera) this.elegirZona(primera.id);
+  }
+
   buscar(): void {
+    this.tomarZonasEscritas();
     this.cargando = true;
     this.error = null;
     this.ocultarTodaLaGanancia();   // cada búsqueda nueva empieza con costo y ganancia ocultos

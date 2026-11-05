@@ -171,20 +171,22 @@
 .cc-zonas__nada { margin: 0; padding: .7rem .9rem; color: var(--app-text-muted); font-size: .9rem; }
 
 // Opciones de pago y entrega como botones pegados
-.cc-seg { display: flex; border: 1px solid var(--app-border); border-radius: 12px; overflow: hidden; background: var(--app-tint); }
+.cc-seg { display: flex; flex-wrap: wrap; gap: .4rem; }
 .cc-seg__op {
-  flex: 1;
-  padding: .6rem .4rem;
-  border: 0;
-  border-right: 1px solid var(--app-border);
-  background: transparent;
+  flex: 1 1 auto;
+  padding: .55rem 1rem;
+  border: 1px solid var(--app-border);
+  border-radius: 999px;
+  background: var(--input-bg, transparent);
   color: var(--app-text-muted);
   font: inherit;
-  font-size: .9rem;
+  font-size: .88rem;
+  white-space: nowrap;
   cursor: pointer;
-  &:last-child { border-right: 0; }
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
+  &:hover { border-color: var(--app-accent); color: var(--app-text); }
 }
-.cc-seg__op--on { background: var(--btn-primary-bg); color: var(--btn-primary-text); font-weight: 700; }
+.cc-seg__op--on { background: var(--app-tint); border-color: var(--app-accent); color: var(--app-accent-text); font-weight: 700; box-shadow: inset 0 0 0 1px var(--app-accent); }
 
 .cc-filtros__acciones { display: flex; gap: .6rem; }
 .cc-filtros__acciones .cc-btn--primario { flex: 1; }

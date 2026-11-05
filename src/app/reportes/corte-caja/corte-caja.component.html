@@ -27,8 +27,8 @@
             {{ z.nombre }}
             <button type="button" class="cc-zona-tag__x" (click)="alternarZona(z.id)" [attr.aria-label]="'Quitar ' + z.nombre">✕</button>
           </span>
-          <input class="cc-zonas__input" type="text" [(ngModel)]="zonaBuscador" placeholder="Buscar zona…"
-                 (focus)="zonasAbiertas = true" (blur)="zonasAbiertas = false" autocomplete="off" />
+          <input class="cc-zonas__input" type="text" [(ngModel)]="zonaBuscador" placeholder="Escribe y elige una zona…"
+                 (focus)="zonasAbiertas = true" (blur)="zonasAbiertas = false" autocomplete="off" (keydown.enter)="$event.preventDefault(); elegirPrimeraZona()" />
         </div>
         <div *ngIf="zonasAbiertas" class="cc-zonas__lista">
           <button type="button" *ngFor="let z of zonasParaElegir" class="cc-zonas__op" (mousedown)="$event.preventDefault(); elegirZona(z.id)">{{ z.nombre }}</button>

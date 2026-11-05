@@ -115,6 +115,14 @@ export class CorteCajaComponent implements OnInit {
     setTimeout(() => { this.zonasAbiertas = false; }, 250);
   }
 
+  /** Lista nativa: funciona igual con mouse que con el dedo. */
+  agregarDesdeSelect(ev: Event): void {
+    const sel = ev.target as HTMLSelectElement;
+    const id = Number(sel.value);
+    if (sel.value !== '' && !Number.isNaN(id) && !this.zonaMarcada(id)) this.alternarZona(id);
+    sel.value = '';
+  }
+
   elegirPrimeraZona(): void {
     const primera = this.zonasParaElegir[0];
     if (primera) this.elegirZona(primera.id);

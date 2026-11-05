@@ -141,7 +141,8 @@
       </button>
       <div class="sb-submenu">
         <a class="sb-subitem" *ngIf="tienePantalla('dashboard')" routerLinkActive="sb-subitem--active" routerLink="dashboard" (click)="closeMobile()">🏠 Dashboard</a>
-        <a class="sb-subitem" *ngIf="tienePantalla('reportes')" routerLinkActive="sb-subitem--active" routerLink="reportes" (click)="closeMobile()">📈 Reportes de ventas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('reportes')" routerLinkActive="sb-subitem--active" routerLink="reportes" [routerLinkActiveOptions]="{exact:true}" (click)="closeMobile()">📈 Reportes de ventas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('reportes/corte-caja')" routerLinkActive="sb-subitem--active" routerLink="reportes/corte-caja" (click)="closeMobile()">🧾 Corte de caja</a>
       </div>
     </div>
 

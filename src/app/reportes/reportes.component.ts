@@ -1,4 +1,5 @@
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { Chart, registerables } from 'chart.js';
@@ -115,10 +116,16 @@ export class ReportesComponent implements OnInit, AfterViewInit, OnDestroy {
     private readonly svc: ReportesService,
     private readonly clienteService: ClienteService,
     public  readonly authService: AuthService,
+    private readonly ruta: ActivatedRoute,
   ) {}
 
   ngOnInit(): void {
-    this.buscarDiario();
+    // Entrando por «Corte de caja» del menú (ruta reportes/corte-caja) abre directo en esa pestaña, sin pedir el reporte diario.
+    if (this.ruta.snapshot.data['tab'] === 'corte') {
+      this.setTab('corte');
+    } else {
+      this.buscarDiario();
+    }
     this.clienteSearch$.pipe(
       debounceTime(350),
       distinctUntilChanged(),

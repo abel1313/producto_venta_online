@@ -4,7 +4,7 @@
   <header class="cc-hero">
     <p class="pk-kicker">Reportes · solo administrador</p>
     <h2 class="cc-titulo">Corte de caja</h2>
-    <p class="cc-sub">Lo que falta por cobrar de tus pedidos, por zona de entrega.</p>
+    <p class="cc-sub">Todos los pedidos de la zona y fecha de entrega, con el estado que tengan.</p>
   </header>
 
   <div class="cc-layout">
@@ -45,25 +45,6 @@
         <app-selector-fecha [(ngModel)]="filtros.hasta" placeholder="Hasta"></app-selector-fecha>
       </div>
 
-      <div class="cc-campo">
-        <label class="cc-label">Qué pedidos quieres ver</label>
-        <div class="cc-seg" role="group" aria-label="Atajos">
-          <button type="button" *ngFor="let a of atajos" class="cc-seg__op" [class.cc-seg__op--on]="atajoActivo(a)" (click)="aplicarAtajo(a)">{{ a.etiqueta }}</button>
-        </div>
-      </div>
-      <div class="cc-campo">
-        <label class="cc-label">Pago</label>
-        <div class="cc-seg" role="group" aria-label="Pago">
-          <button type="button" *ngFor="let p of pagos" class="cc-seg__op" [class.cc-seg__op--on]="filtros.pago === p.valor" (click)="filtros.pago = p.valor">{{ p.etiqueta }}</button>
-        </div>
-      </div>
-      <div class="cc-campo">
-        <label class="cc-label">Entrega</label>
-        <div class="cc-seg" role="group" aria-label="Entrega">
-          <button type="button" *ngFor="let e of entregas" class="cc-seg__op" [class.cc-seg__op--on]="filtros.entrega === e.valor" (click)="filtros.entrega = e.valor">{{ e.etiqueta }}</button>
-        </div>
-      </div>
-
       <div class="cc-filtros__acciones">
         <button type="button" class="cc-btn cc-btn--primario" [disabled]="cargando" (click)="buscar()">{{ cargando ? 'Buscando…' : '🔎 Buscar' }}</button>
         <button type="button" class="cc-btn cc-btn--suave" (click)="limpiar()">Limpiar</button>
@@ -76,7 +57,7 @@
   <!-- Estados -->
   <p *ngIf="!corte && !cargando && !error" class="cc-pista">
     <span class="cc-pista__icono">🧾</span>
-    Elige zonas, fechas y si quieres lo que falta por cobrar, lo pagado o todo, y pulsa <b>Buscar</b>.
+    Elige la zona y las fechas de entrega, y pulsa <b>Buscar</b>.
   </p>
   <div *ngIf="cargando" class="cc-cargando" aria-live="polite"><span class="cc-cargando__punto"></span> Armando el corte…</div>
   <p *ngIf="error && !cargando" class="cc-error" role="alert">{{ error }}</p>
@@ -137,7 +118,7 @@
                 <span class="cc-pedido">#{{ p.pedidoId }}</span>
                 <div class="cc-pedido-card__quien">
                   <b>{{ p.cliente }}</b>
-                  <small>{{ p.fechaEntrega ? ("Entrega " + (p.fechaEntrega | date:"dd MMM")) : "Sin fecha de entrega" }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
+                  <small>{{ p.fechaEntrega ? ("Entrega " + (p.fechaEntrega | date:"dd MMM")) : ("Vendido " + (p.fechaPedido | date:"dd MMM")) }} · {{ p.articulos }} art. · {{ textoPagos(p) }}</small>
                 </div>
                 <div class="cc-pedido-card__monto">
                   <span class="cc-estado" [ngClass]="claseEstado(p)">{{ p.estado }}<span *ngIf="p.entregado" title="Entregado"> 📦</span></span>

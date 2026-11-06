@@ -25,13 +25,13 @@
       <div class="cc-campo cc-campo--ancho">
         <label class="cc-label">Zonas <span class="cc-label__ayuda">(sin elegir = todas)</span></label>
         <div class="cc-zonas">
-          <span *ngFor="let z of zonasElegidas" class="cc-zona-tag">
+          <span *ngFor="let z of zonasElegidas; trackBy: porIdDeZona" class="cc-zona-tag">
             {{ z.nombre }}
             <button type="button" class="cc-zona-tag__x" (click)="alternarZona(z.id)" [attr.aria-label]="'Quitar ' + z.nombre">✕</button>
           </span>
           <select class="cc-zonas__select" aria-label="Agregar zona" (change)="agregarDesdeSelect($event)">
             <option value="">{{ zonasElegidas.length ? '＋ Agregar otra zona…' : '＋ Elegir zona…' }}</option>
-            <option *ngFor="let z of zonasParaElegir" [value]="z.id">{{ z.nombre }}</option>
+            <option *ngFor="let z of zonasParaElegir; trackBy: porIdDeZona" [value]="z.id">{{ z.nombre }}</option>
           </select>
         </div>
       </div>

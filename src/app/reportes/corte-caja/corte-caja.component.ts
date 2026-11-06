@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit } from '@angular/core';
 import { AuthService } from '../../auth/auth.service';
 import { LugarEntregaService } from '../../lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from '../../lugares-entrega/models/lugar-entrega.model';
@@ -14,7 +14,7 @@ import { CorteDeCaja, CorteFiltros, CortePedido, CorteZona, ReportesService } fr
   templateUrl: './corte-caja.component.html',
   styleUrls: ['./corte-caja.component.scss']
 })
-export class CorteCajaComponent implements OnInit {
+export class CorteCajaComponent implements OnInit, OnDestroy {
 
   corte: CorteDeCaja | null = null;
   cargando = false;
@@ -32,29 +32,6 @@ export class CorteCajaComponent implements OnInit {
 
   readonly opcionesPorPagina = [10, 25, 50, 100];
   porPagina = 10;
-
-  readonly pagos: { valor: CorteFiltros['pago']; etiqueta: string }[] = [
-    { valor: 'POR_COBRAR', etiqueta: 'Por cobrar' }, { valor: 'PAGADOS', etiqueta: 'Pagados' }, { valor: 'TODOS', etiqueta: 'Todos' }];
-  readonly entregas: { valor: CorteFiltros['entrega']; etiqueta: string }[] = [
-    { valor: 'SIN_ENTREGAR', etiqueta: 'Sin entregar' }, { valor: 'ENTREGADOS', etiqueta: 'Entregados' }, { valor: 'TODOS', etiqueta: 'Todos' }];
-
-  /** Atajos: un solo clic pone Pago y Entrega juntos (siguen disponibles abajo para combinarlos a mano). */
-  readonly atajos: { etiqueta: string; pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }[] = [
-    { etiqueta: 'Todos', pago: 'TODOS', entrega: 'TODOS' },
-    { etiqueta: 'Por entregar', pago: 'TODOS', entrega: 'SIN_ENTREGAR' },
-    { etiqueta: 'Por entregar y sin pagar', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' },
-    { etiqueta: 'Por entregar y ya pagados', pago: 'PAGADOS', entrega: 'SIN_ENTREGAR' },
-    { etiqueta: 'Ya se llevaron y deben', pago: 'POR_COBRAR', entrega: 'ENTREGADOS' },
-    { etiqueta: 'Cerrados (pagados y entregados)', pago: 'PAGADOS', entrega: 'ENTREGADOS' }];
-
-  aplicarAtajo(a: { pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }): void {
-    this.filtros.pago = a.pago;
-    this.filtros.entrega = a.entrega;
-  }
-
-  atajoActivo(a: { pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }): boolean {
-    return this.filtros.pago === a.pago && this.filtros.entrega === a.entrega;
-  }
 
   /** Filas (por número de pedido) con su costo y ganancia a la vista. */
   private readonly filasVisibles = new Set<number>();
@@ -95,6 +72,19 @@ export class CorteCajaComponent implements OnInit {
   alternarZona(id: number): void {
     const zonas = this.filtros.zonas ?? [];
     this.filtros.zonas = zonas.includes(id) ? zonas.filter(z => z !== id) : [...zonas, id];
+    this.programarBusqueda();
+  }
+
+  private temporizadorBusqueda: ReturnType<typeof setTimeout> | null = null;
+
+  /** Al agregar o quitar una zona el corte se busca solo; con un respiro para que elegir varias seguidas haga una sola búsqueda. */
+  private programarBusqueda(): void {
+    if (this.temporizadorBusqueda) clearTimeout(this.temporizadorBusqueda);
+    this.temporizadorBusqueda = setTimeout(() => { this.temporizadorBusqueda = null; this.buscar(false); }, 500);
+  }
+
+  ngOnDestroy(): void {
+    if (this.temporizadorBusqueda) clearTimeout(this.temporizadorBusqueda);
   }
 
   elegirZona(id: number): void {
@@ -107,8 +97,6 @@ export class CorteCajaComponent implements OnInit {
     const r: string[] = [];
     const z = this.zonasElegidas.map(x => x.nombre);
     r.push(z.length ? (z.length > 2 ? `${z.slice(0, 2).join(', ')} +${z.length - 2}` : z.join(', ')) : 'Todas las zonas');
-    r.push(this.pagos.find(p => p.valor === this.filtros.pago)?.etiqueta ?? '');
-    r.push(this.entregas.find(e => e.valor === this.filtros.entrega)?.etiqueta ?? '');
     if (this.filtros.desde || this.filtros.hasta) r.push(`Entrega ${this.filtros.desde || '…'} → ${this.filtros.hasta || '…'}`);
     return r.filter(x => !!x);
   }
@@ -119,7 +107,7 @@ export class CorteCajaComponent implements OnInit {
     const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - ((hoy.getDay() + 6) % 7));
     const domingo = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6);
     const f = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return { zonas: [], desde: f(lunes), hasta: f(domingo), pago: 'TODOS', entrega: 'SIN_ENTREGAR' };
+    return { zonas: [], desde: f(lunes), hasta: f(domingo), pago: 'TODOS', entrega: 'TODOS' };
   }
 
   limpiar(): void {
@@ -155,7 +143,9 @@ export class CorteCajaComponent implements OnInit {
     if (primera) this.elegirZona(primera.id);
   }
 
-  buscar(): void {
+  /** @param plegar en el celular, plegar los filtros para ver primero el resultado (no se pliega cuando la búsqueda salió de elegir una zona). */
+  buscar(plegar = true): void {
+    if (this.temporizadorBusqueda) { clearTimeout(this.temporizadorBusqueda); this.temporizadorBusqueda = null; }
     this.tomarZonasEscritas();
     this.cargando = true;
     this.error = null;
@@ -171,7 +161,7 @@ export class CorteCajaComponent implements OnInit {
         this.corte = c;
         this.filtrosAplicados = this.resumenFiltros;
         this.cargando = false;
-        if (window.innerWidth < 720) this.filtrosAbiertos = false;   // en el celular se ve primero el resultado
+        if (plegar && window.innerWidth < 720) this.filtrosAbiertos = false;   // en el celular se ve primero el resultado
       },
       error: err => {
         this.cargando = false;

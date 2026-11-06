@@ -67,6 +67,9 @@ export class CorteCajaComponent implements OnInit, OnDestroy {
     }));
   }
 
+  /** Sin esto Angular recrea las etiquetas (y su ✕) en cada ciclo de cambios y el clic del mouse se pierde: el botón que recibió el mousedown ya no existe al soltar. */
+  porIdDeZona(_: number, z: { id: number }): number { return z.id; }
+
   zonaMarcada(id: number): boolean { return (this.filtros.zonas ?? []).includes(id); }
 
   alternarZona(id: number): void {

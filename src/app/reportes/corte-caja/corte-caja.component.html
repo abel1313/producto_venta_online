@@ -46,6 +46,12 @@
       </div>
 
       <div class="cc-campo">
+        <label class="cc-label">Qué pedidos quieres ver</label>
+        <div class="cc-seg" role="group" aria-label="Atajos">
+          <button type="button" *ngFor="let a of atajos" class="cc-seg__op" [class.cc-seg__op--on]="atajoActivo(a)" (click)="aplicarAtajo(a)">{{ a.etiqueta }}</button>
+        </div>
+      </div>
+      <div class="cc-campo">
         <label class="cc-label">Pago</label>
         <div class="cc-seg" role="group" aria-label="Pago">
           <button type="button" *ngFor="let p of pagos" class="cc-seg__op" [class.cc-seg__op--on]="filtros.pago === p.valor" (click)="filtros.pago = p.valor">{{ p.etiqueta }}</button>

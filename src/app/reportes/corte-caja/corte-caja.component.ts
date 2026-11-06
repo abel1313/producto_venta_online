@@ -38,6 +38,24 @@ export class CorteCajaComponent implements OnInit {
   readonly entregas: { valor: CorteFiltros['entrega']; etiqueta: string }[] = [
     { valor: 'SIN_ENTREGAR', etiqueta: 'Sin entregar' }, { valor: 'ENTREGADOS', etiqueta: 'Entregados' }, { valor: 'TODOS', etiqueta: 'Todos' }];
 
+  /** Atajos: un solo clic pone Pago y Entrega juntos (siguen disponibles abajo para combinarlos a mano). */
+  readonly atajos: { etiqueta: string; pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }[] = [
+    { etiqueta: 'Todos', pago: 'TODOS', entrega: 'TODOS' },
+    { etiqueta: 'Por entregar', pago: 'TODOS', entrega: 'SIN_ENTREGAR' },
+    { etiqueta: 'Por entregar y sin pagar', pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' },
+    { etiqueta: 'Por entregar y ya pagados', pago: 'PAGADOS', entrega: 'SIN_ENTREGAR' },
+    { etiqueta: 'Ya se llevaron y deben', pago: 'POR_COBRAR', entrega: 'ENTREGADOS' },
+    { etiqueta: 'Cerrados (pagados y entregados)', pago: 'PAGADOS', entrega: 'ENTREGADOS' }];
+
+  aplicarAtajo(a: { pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }): void {
+    this.filtros.pago = a.pago;
+    this.filtros.entrega = a.entrega;
+  }
+
+  atajoActivo(a: { pago: CorteFiltros['pago']; entrega: CorteFiltros['entrega'] }): boolean {
+    return this.filtros.pago === a.pago && this.filtros.entrega === a.entrega;
+  }
+
   /** Filas (por número de pedido) con su costo y ganancia a la vista. */
   private readonly filasVisibles = new Set<number>();
   /** Zonas cuyo total de costo y ganancia está a la vista. */
@@ -101,7 +119,7 @@ export class CorteCajaComponent implements OnInit {
     const lunes = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - ((hoy.getDay() + 6) % 7));
     const domingo = new Date(lunes.getFullYear(), lunes.getMonth(), lunes.getDate() + 6);
     const f = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    return { zonas: [], desde: f(lunes), hasta: f(domingo), pago: 'POR_COBRAR', entrega: 'SIN_ENTREGAR' };
+    return { zonas: [], desde: f(lunes), hasta: f(domingo), pago: 'TODOS', entrega: 'SIN_ENTREGAR' };
   }
 
   limpiar(): void {

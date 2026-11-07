@@ -16,6 +16,9 @@ export interface IDetalleVariante {
   usaOtroPrecio?: boolean;
   cantidad: number;
   subTotal: number;
+  /** Precio por cantidad: el precio de grupo que le toca a esta línea según lo que lleva el carrito (no se guarda; se calcula). */
+  precioGrupo?: number | null;
+  grupoNombre?: string | null;
   imagenBase64?: string | null;
   imagenUrl?: string | null;
   codigoBarras?: string | null;

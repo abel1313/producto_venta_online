@@ -749,3 +749,13 @@ $t:  all 0.22s ease;
   background: var(--app-tint);
   border: 1px solid var(--app-border);
 }
+
+// Precio por cantidad (grupos): el precio normal tachado y lo que ahorra, con los tokens del diseño (día y noche).
+.vd-line__grupo {
+  display: block;
+  font-size: .72rem;
+  color: var(--pk-success);
+  text-align: right;
+  s { color: var(--app-text-muted); }
+}
+.vd-totals__row--ahorro { color: var(--pk-success); }

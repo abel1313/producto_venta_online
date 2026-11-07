@@ -21,6 +21,13 @@ const routes: Routes = [
     canActivate: [CarritoGuard, UsuariosGuard]
   },
   {
+    // Grupos de precio por cantidad (solo administrador). Va ANTES de 'productos' para que esa ruta de prefijo no la tape.
+    // Fila en submenu: migration_grupo_precio_cantidad.sql.
+    path: 'productos/grupos-precio',
+    loadChildren: () => import('./precio-cantidad/precio-cantidad.module').then(m => m.PrecioCantidadModule),
+    canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
+  },
+  {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule),
     canActivate: [CarritoGuard, AuthGuard, PantallaGuard]

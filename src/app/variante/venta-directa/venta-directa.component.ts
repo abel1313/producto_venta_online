@@ -26,11 +26,14 @@ import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entre
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { IPrecioGrupo, PrecioCantidadService } from 'src/app/precio-cantidad/precio-cantidad.service';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
   subTotal:  number;
+  /** Precio por cantidad: el precio de grupo que le toca a esta línea (null = no le toca). */
+  grupo?: IPrecioGrupo | null;
 }
 
 @Component({
@@ -167,6 +170,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly negocioService:  NegocioService,
     private readonly pedidosService:  PedidosService,
     private readonly lugarEntregaService: LugarEntregaService,
+    private readonly precioCantidad: PrecioCantidadService,
     private fb: FormBuilder
   ) {
 
@@ -329,6 +333,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           subTotal: item.subTotal
         }));
         this.promosCarrito = promosCarrito;
+        this.repreciar();
         if (promosCarrito.length > 0) this.tipoPedido = 'NORMAL';
       }
     }
@@ -471,7 +476,6 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         return;
       }
       this.lineas[idx].cantidad++;
-      this.lineas[idx].subTotal = this.lineas[idx].cantidad * (this.lineas[idx].variante.precio ?? 0);
     } else {
       if ((v.stock ?? 0) <= 0) {
         Swal.fire({ icon: 'warning', title: 'Artículo sin stock', timer: 1400, showConfirmButton: false });
@@ -479,21 +483,67 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       }
       this.lineas.push({ variante: v, cantidad: 1, subTotal: v.precio ?? 0 });
     }
+    this.repreciar();
   }
 
   incrementar(linea: ILineaVenta): void {
     if (linea.cantidad >= (linea.variante.stock ?? 0)) return;
     linea.cantidad++;
-    linea.subTotal = linea.cantidad * (linea.variante.precio ?? 0);
+    this.repreciar();
   }
 
   decrementar(linea: ILineaVenta): void {
     if (linea.cantidad <= 1) { this.quitarLinea(this.lineas.indexOf(linea)); return; }
     linea.cantidad--;
-    linea.subTotal = linea.cantidad * (linea.variante.precio ?? 0);
+    this.repreciar();
   }
 
-  quitarLinea(i: number): void { this.lineas.splice(i, 1); }
+  quitarLinea(i: number): void { this.lineas.splice(i, 1); this.repreciar(); }
+
+  // ── Precio por cantidad (grupos de precio) ─────────────────────────────────
+  // Las piezas se suman por producto dentro de su grupo; el back dice a quién le toca y ESE cálculo es el que cuenta al guardar. Gana el
+  // precio más bajo: el de grupo solo se usa si es menor al precio de la línea (si el admin ya puso una rebaja menor, se queda).
+
+  /** Lo que de verdad cuesta cada pieza de la línea: el de grupo si le toca y es menor, si no el precio de la línea. */
+  precioUnitarioDe(l: ILineaVenta): number {
+    const base = l.variante.precio ?? 0;
+    return l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+  }
+
+  /** ¿Esta línea se está cobrando con precio de grupo? */
+  conPrecioDeGrupo(l: ILineaVenta): boolean {
+    return !!l.grupo && l.grupo.precioPromocion < (l.variante.precio ?? 0);
+  }
+
+  /** Lo que ahorra la línea por el precio de grupo. */
+  ahorroDe(l: ILineaVenta): number {
+    return this.conPrecioDeGrupo(l) ? +(((l.variante.precio ?? 0) - this.precioUnitarioDe(l)) * l.cantidad).toFixed(2) : 0;
+  }
+
+  get ahorroTotal(): number {
+    return +this.lineas.reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+  }
+
+  private pedidoPrecios = 0;
+
+  /** Recalcula los subtotales al momento (sin grupo) y pide al back a qué productos les toca su precio de grupo. */
+  private repreciar(): void {
+    this.lineas.forEach(l => { l.subTotal = l.cantidad * this.precioUnitarioDe(l); });
+    const pedido = ++this.pedidoPrecios;
+    const porProducto = new Map<number, number>();
+    this.lineas.forEach(l => {
+      const p = l.variante.productoId ?? 0;
+      if (p > 0) porProducto.set(p, (porProducto.get(p) ?? 0) + l.cantidad);
+    });
+    this.precioCantidad.calcular([...porProducto].map(([productoId, cantidad]) => ({ productoId, cantidad }))).subscribe(precios => {
+      if (pedido !== this.pedidoPrecios) return;   // llegó una respuesta vieja: ya hay otra consulta en camino
+      const porId = new Map(precios.map(p => [p.productoId, p]));
+      this.lineas.forEach(l => {
+        l.grupo = porId.get(l.variante.productoId ?? 0) ?? null;
+        l.subTotal = l.cantidad * this.precioUnitarioDe(l);
+      });
+    });
+  }
 
   // Solo quita el combo de ESTA venta en curso, igual que quitarLinea(). El carrito
   // real se limpia hasta el final, en limpiarTodo(), si la venta vino de ahí.
@@ -801,7 +851,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       productoId:  l.variante.productoId ?? 0,
       varianteId:  l.variante.id,
       cantidad:    l.cantidad,
-      precioVenta: l.variante.precio ?? 0,
+      precioVenta: this.precioUnitarioDe(l),
       subTotal:    l.subTotal
     }));
 

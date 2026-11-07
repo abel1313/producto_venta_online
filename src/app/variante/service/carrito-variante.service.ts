@@ -47,6 +47,7 @@ export class CarritoVarianteService {
       const precio = v.precio ?? 0;
       actual.push({
         varianteId:   v.id,
+        productoId:   v.productoId ?? null,
         talla:        v.talla,
         color:        v.color,
         marca:        v.marca,

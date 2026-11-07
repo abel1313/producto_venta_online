@@ -399,6 +399,10 @@
           </div>
           <div class="vd-line__right">
             <span class="vd-line__subtotal">{{ l.subTotal | currency:'$' }}</span>
+            <span class="vd-line__grupo" *ngIf="conPrecioDeGrupo(l)"
+                  [title]="'Grupo «' + l.grupo?.grupo + '»: ' + l.grupo?.piezasDelGrupo + ' piezas (mínimo ' + l.grupo?.minimoPiezas + ')'">
+              <s>{{ (l.variante.precio ?? 0) * l.cantidad | currency:'$' }}</s> · ahorra {{ ahorroDe(l) | currency:'$' }}
+            </span>
             <button class="vd-line__del" (click)="quitarLinea(i)">✕</button>
           </div>
         </div>
@@ -406,6 +410,9 @@
         <div class="vd-totals">
           <div class="vd-totals__row">
             <span>Unidades</span><strong>{{ totalUnidades }}</strong>
+          </div>
+          <div class="vd-totals__row vd-totals__row--ahorro" *ngIf="ahorroTotal > 0">
+            <span>🏷️ Ahorro por cantidad</span><strong>{{ ahorroTotal | currency:'$' }}</strong>
           </div>
           <div class="vd-totals__row vd-totals__row--total">
             <span>Total</span><strong>{{ totalVenta | currency:'$' }}</strong>

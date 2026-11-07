@@ -1,5 +1,5 @@
 // Grupos de precio por cantidad. Solo tokens del diseño (--app-*, --card-*, --input-*, --pk-*): cambia con Personalización, de día y de noche.
-.gp { max-width: 980px; margin-inline: auto; display: grid; gap: 1rem; }
+.gp { max-width: 1180px; margin-inline: auto; display: grid; gap: 1rem; }
 .gp-hero { display: grid; gap: .35rem; }
 .gp-titulo { font-size: 1.6rem; }
 .gp-barra { display: flex; justify-content: flex-end; }
@@ -65,3 +65,11 @@
 .gp-catalogo__meta { color: var(--app-text-muted); }
 .gp-catalogo__estado { font-size: .78rem; font-weight: 700; color: var(--pk-success); white-space: nowrap; &--otro { color: var(--app-text-muted); font-weight: 500; } }
 .gp-catalogo__pie { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; color: var(--app-text-muted); font-size: .85rem; }
+
+// Dos columnas (productos del grupo | catálogo), cada lista con su propio scroll: la pantalla no crece al agregar productos.
+.gp-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .gp-columnas { grid-template-columns: minmax(0, 1fr); } }
+.gp-productos__lista, .gp-catalogo__lista { max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; padding-right: .25rem; }
+@media (max-width: 900px) { .gp-productos__lista, .gp-catalogo__lista { max-height: 18rem; } }
+.gp-columnas > .gp-catalogo { border-top: 0; padding-top: 0; }
+.gp-columnas > .gp-productos, .gp-columnas > .gp-catalogo { align-content: start; }

@@ -6,6 +6,8 @@ import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
 import { IGrupoPrecioCantidad, IGrupoProducto, PrecioCantidadService } from './precio-cantidad.service';
 
+interface IProductoCatalogo { id: number; nombre: string; precioVenta: number; stock: number; categoria: string | null; }
+
 /**
  * Grupos de precio por cantidad (solo administrador): "si llevas N piezas de este grupo, cada una sale a su precio de promoción".
  * Reglas G1 a G8 de `PLAN_CAMPANAS_Y_PRECIOS.md` (back). Un producto está en UN solo grupo (el back lo rechaza y dice en cuál).
@@ -26,10 +28,15 @@ export class GruposPrecioComponent implements OnInit, OnDestroy {
   edicion: IGrupoPrecioCantidad | null = null;
   guardando = false;
 
-  // Buscador de productos para agregarlos al grupo
-  buscar = '';
-  resultados: { id: number; nombre: string; precioVenta: number }[] = [];
-  buscando = false;
+  // Catálogo de productos para agregarlos al grupo: se muestra la lista (no hay que recordar nombres); el texto solo filtra.
+  readonly porPagina = 12;
+  catalogo: IProductoCatalogo[] = [];
+  pagina = 1;
+  totalPaginas = 1;
+  totalRegistros = 0;
+  filtro = '';
+  cargandoCatalogo = false;
+  errorCatalogo: string | null = null;
   private readonly buscador$ = new Subject<string>();
   private sub?: Subscription;
 
@@ -37,7 +44,7 @@ export class GruposPrecioComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.cargar();
-    this.sub = this.buscador$.pipe(debounceTime(350), distinctUntilChanged()).subscribe(t => this.buscarProductos(t));
+    this.sub = this.buscador$.pipe(debounceTime(350), distinctUntilChanged()).subscribe(() => this.cargarCatalogo(1));
   }
 
   ngOnDestroy(): void { this.sub?.unsubscribe(); }
@@ -91,15 +98,15 @@ export class GruposPrecioComponent implements OnInit, OnDestroy {
 
   nuevo(): void {
     this.edicion = { nombre: '', minimoPiezas: 3, fechaInicio: null, fechaFin: null, activo: true, productos: [] };
-    this.limpiarBuscador();
+    this.abrirCatalogo();
   }
 
   editar(g: IGrupoPrecioCantidad): void {
     this.edicion = { ...g, productos: g.productos.map(p => ({ ...p })) };
-    this.limpiarBuscador();
+    this.abrirCatalogo();
   }
 
-  cancelar(): void { this.edicion = null; this.limpiarBuscador(); }
+  cancelar(): void { this.edicion = null; }
 
   get puedeGuardar(): boolean {
     const g = this.edicion;
@@ -129,37 +136,65 @@ export class GruposPrecioComponent implements OnInit, OnDestroy {
 
   // ── Productos del grupo ────────────────────────────────────────────────────
 
+  private abrirCatalogo(): void {
+    this.filtro = '';
+    this.cargarCatalogo(1);
+  }
+
   alEscribir(texto: string): void {
-    this.buscar = texto;
+    this.filtro = texto;
     this.buscador$.next(texto.trim());
   }
 
-  private buscarProductos(texto: string): void {
-    if (texto.length < 2) { this.resultados = []; return; }
-    this.buscando = true;
-    this.productos.getDataNombreCodigoBarra(1, 8, texto).subscribe({
+  cargarCatalogo(pagina: number): void {
+    this.cargandoCatalogo = true;
+    this.errorCatalogo = null;
+    // `todos`: el administrador ve también los productos sin stock o deshabilitados (un juguete puede estar agotado hoy y entrar al grupo).
+    this.productos.getDataNombreCodigoBarra(pagina, this.porPagina, this.filtro.trim(), true).subscribe({
       next: r => {
-        this.resultados = (r?.t ?? []).map(p => ({ id: p.idProducto, nombre: p.nombre, precioVenta: p.precioVenta }));
-        this.buscando = false;
+        this.catalogo = (r?.t ?? []).map(p => ({
+          id: p.idProducto, nombre: p.nombre, precioVenta: p.precioVenta, stock: p.stock, categoria: p.palabraClave?.nombre ?? null
+        }));
+        this.pagina = r?.pagina ?? pagina;
+        this.totalPaginas = Math.max(1, r?.totalPaginas ?? 1);
+        this.totalRegistros = r?.totalRegistros ?? this.catalogo.length;
+        this.cargandoCatalogo = false;
       },
-      error: () => { this.resultados = []; this.buscando = false; }
+      error: (e: HttpErrorResponse) => {
+        this.catalogo = [];
+        this.totalPaginas = 1;
+        this.totalRegistros = 0;
+        // El back responde 404 cuando el filtro no encuentra nada: no es un error para el usuario.
+        this.errorCatalogo = e.status === 404 ? null : 'No se pudo cargar el catálogo.';
+        this.cargandoCatalogo = false;
+      }
     });
   }
 
-  agregarProducto(p: { id: number; nombre: string; precioVenta: number }): void {
+  irAPagina(p: number): void {
+    if (p >= 1 && p <= this.totalPaginas && p !== this.pagina) this.cargarCatalogo(p);
+  }
+
+  /** ¿Dónde está este producto? 'aqui' = ya en este grupo; 'otro' = en otro grupo (no se puede repetir); 'libre'. */
+  estadoDe(p: IProductoCatalogo): { tipo: 'aqui' | 'otro' | 'libre'; grupo?: string } {
+    if (this.edicion?.productos.some(x => x.productoId === p.id)) return { tipo: 'aqui' };
+    const otro = this.grupos.find(g => g.id !== this.edicion?.id && g.productos.some(x => x.productoId === p.id));
+    return otro ? { tipo: 'otro', grupo: otro.nombre } : { tipo: 'libre' };
+  }
+
+  agregarProducto(p: IProductoCatalogo): void {
     const g = this.edicion;
     if (!g || g.productos.some(x => x.productoId === p.id)) return;
     g.productos = [...g.productos, { productoId: p.id, nombre: p.nombre, precioPromocion: p.precioVenta }];
-    this.limpiarBuscador();
   }
+
+  porIdDeCatalogo(_: number, p: IProductoCatalogo): number { return p.id; }
 
   quitarProducto(p: IGrupoProducto): void {
     if (this.edicion) this.edicion.productos = this.edicion.productos.filter(x => x.productoId !== p.productoId);
   }
 
   porIdDeProducto(_: number, p: IGrupoProducto): number { return p.productoId; }
-
-  private limpiarBuscador(): void { this.buscar = ''; this.resultados = []; }
 
   private mensaje(e: unknown, defecto: string): string {
     return (e instanceof HttpErrorResponse ? e.error?.mensaje : null) || defecto;

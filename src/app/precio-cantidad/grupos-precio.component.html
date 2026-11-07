@@ -48,20 +48,7 @@
     <div class="gp-productos">
       <h4 class="gp-productos__titulo">Productos del grupo y su precio de promoción</h4>
 
-      <div class="gp-buscar">
-        <input class="pk-input" name="buscar" [ngModel]="buscar" (ngModelChange)="alEscribir($event)"
-               placeholder="Buscar producto por nombre o código de barras…">
-        <span class="gp-buscando" *ngIf="buscando">Buscando…</span>
-        <ul class="gp-resultados" *ngIf="resultados.length">
-          <li *ngFor="let r of resultados">
-            <button type="button" (click)="agregarProducto(r)">
-              <span>{{ r.nombre }}</span><small>{{ r.precioVenta | currency:'$' }}</small>
-            </button>
-          </li>
-        </ul>
-      </div>
-
-      <p class="gp-vacio" *ngIf="!g.productos.length">Busca y agrega al menos un producto.</p>
+      <p class="gp-vacio" *ngIf="!g.productos.length">Todavía no hay productos en el grupo: agrégalos desde el catálogo de abajo.</p>
 
       <div class="gp-fila" *ngFor="let p of g.productos; trackBy: porIdDeProducto">
         <span class="gp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}</span>
@@ -70,6 +57,41 @@
           <input class="pk-input" type="number" step="0.01" min="0.01" [name]="'precio' + p.productoId" [(ngModel)]="p.precioPromocion">
         </label>
         <button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
+      </div>
+    </div>
+
+    <!-- Catálogo: se ve la lista de productos; el texto solo filtra. Los que ya están en otro grupo salen bloqueados. -->
+    <div class="gp-catalogo">
+      <div class="gp-catalogo__cab">
+        <h4 class="gp-productos__titulo">Catálogo de productos <span class="gp-opcional">({{ totalRegistros }} en total)</span></h4>
+        <input class="pk-input gp-catalogo__filtro" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)"
+               placeholder="Filtrar por nombre o código de barras (opcional)…">
+      </div>
+
+      <p class="gp-vacio" *ngIf="cargandoCatalogo">Cargando productos…</p>
+      <p class="pk-error" *ngIf="errorCatalogo">{{ errorCatalogo }}</p>
+      <p class="gp-vacio" *ngIf="!cargandoCatalogo && !errorCatalogo && !catalogo.length">No hay productos con ese filtro.</p>
+
+      <ul class="gp-catalogo__lista" *ngIf="catalogo.length" [class.gp-catalogo__lista--carga]="cargandoCatalogo">
+        <li class="gp-catalogo__fila" *ngFor="let p of catalogo; trackBy: porIdDeCatalogo">
+          <div class="gp-catalogo__datos">
+            <span class="gp-catalogo__nombre">{{ p.nombre }}</span>
+            <small class="gp-catalogo__meta">
+              {{ p.precioVenta | currency:'$' }} · stock {{ p.stock }}<ng-container *ngIf="p.categoria"> · {{ p.categoria }}</ng-container>
+            </small>
+          </div>
+          <ng-container *ngIf="estadoDe(p) as e">
+            <span class="gp-catalogo__estado" *ngIf="e.tipo === 'aqui'">✓ En este grupo</span>
+            <span class="gp-catalogo__estado gp-catalogo__estado--otro" *ngIf="e.tipo === 'otro'" [title]="'Ya está en el grupo «' + e.grupo + '»'">En «{{ e.grupo }}»</span>
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="e.tipo === 'libre'" (click)="agregarProducto(p)">＋ Agregar</button>
+          </ng-container>
+        </li>
+      </ul>
+
+      <div class="gp-catalogo__pie" *ngIf="totalPaginas > 1">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina <= 1 || cargandoCatalogo" (click)="irAPagina(pagina - 1)">‹ Anterior</button>
+        <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina >= totalPaginas || cargandoCatalogo" (click)="irAPagina(pagina + 1)">Siguiente ›</button>
       </div>
     </div>
 

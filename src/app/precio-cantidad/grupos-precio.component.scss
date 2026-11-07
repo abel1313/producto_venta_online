@@ -24,19 +24,6 @@
 .gp-productos__titulo { margin: 0; font-size: .95rem; color: var(--app-text); }
 .gp-vacio { margin: 0; color: var(--app-text-muted); font-size: .9rem; }
 
-.gp-buscar { position: relative; }
-.gp-buscando { position: absolute; right: .8rem; top: .7rem; font-size: .75rem; color: var(--app-text-muted); }
-.gp-resultados {
-  list-style: none; margin: .3rem 0 0; padding: .25rem; position: absolute; z-index: 20; left: 0; right: 0;
-  background: var(--card-body-bg); border: 1px solid var(--card-border); border-radius: 12px; box-shadow: var(--shadow-md, var(--card-shadow));
-  li button {
-    width: 100%; display: flex; justify-content: space-between; gap: .6rem; text-align: left; border: 0; background: transparent;
-    color: var(--app-text); padding: .5rem .6rem; border-radius: 8px; cursor: pointer;
-    small { color: var(--app-text-muted); }
-    &:hover { background: var(--app-tint); }
-  }
-}
-
 .gp-fila {
   display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center;
   padding: .45rem 0; border-bottom: 1px solid var(--app-hairline, var(--app-border));
@@ -64,3 +51,17 @@
   &--fuera { background: var(--pk-warning-soft, var(--app-tint)); color: var(--pk-warning); }
   &--apagado { background: var(--app-tint); color: var(--app-text-muted); }
 }
+
+// Catálogo de productos para armar el grupo (lista con filtro y páginas). Tokens del diseño, día y noche.
+.gp-catalogo { display: grid; gap: .6rem; border-top: 1px solid var(--app-hairline, var(--app-border)); padding-top: .8rem; }
+.gp-catalogo__cab { display: grid; gap: .5rem; }
+.gp-catalogo__lista { list-style: none; margin: 0; padding: 0; display: grid; transition: opacity .15s; &--carga { opacity: .55; } }
+.gp-catalogo__fila {
+  display: grid; grid-template-columns: 1fr auto; gap: .6rem; align-items: center; padding: .5rem .2rem;
+  border-bottom: 1px solid var(--app-hairline, var(--app-border));
+}
+.gp-catalogo__datos { min-width: 0; display: grid; }
+.gp-catalogo__nombre { color: var(--app-text); overflow-wrap: anywhere; }
+.gp-catalogo__meta { color: var(--app-text-muted); }
+.gp-catalogo__estado { font-size: .78rem; font-weight: 700; color: var(--pk-success); white-space: nowrap; &--otro { color: var(--app-text-muted); font-weight: 500; } }
+.gp-catalogo__pie { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; color: var(--app-text-muted); font-size: .85rem; }

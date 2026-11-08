@@ -28,6 +28,7 @@ import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.mode
 import { hoyIso } from '../../shared/fecha.util';
 import { IPrecioGrupo, PrecioCantidadService } from 'src/app/precio-cantidad/precio-cantidad.service';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
+import { CampanasService, ICampana, IVerificacionCodigo } from 'src/app/campanas/campanas.service';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
@@ -80,6 +81,16 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   clienteSeleccionado: IClienteBusquedaDto | null = null;
   private cliSub$      = new Subject<string>();
   private clienteResolvedId = 0;
+
+  // ── Campaña (solo si hay una vigente) ─────────────────────────────
+  /** La campaña vigente hoy; null = no hay y no se muestra nada de campaña. */
+  campana: ICampana | null = null;
+  campanaCodigo = '';
+  /** El check «Cliente recurrente»: el administrador lo marca a mano y no hace falta código. */
+  campanaRecurrente = false;
+  campanaPrivacidad = false;
+  verificacion: IVerificacionCodigo | null = null;
+  verificando = false;
 
   // ── Forma de pago (cargada al inicio) ─────────────────────────────
   opcionesEstructuradas: IOpcionPagoDto[] = [];
@@ -171,6 +182,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly pedidosService:  PedidosService,
     private readonly lugarEntregaService: LugarEntregaService,
     private readonly precioCantidad: PrecioCantidadService,
+    private readonly campanasService: CampanasService,
     private fb: FormBuilder
   ) {
 
@@ -302,6 +314,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteForm.reset();
   }
   ngOnInit(): void {
+    // Campaña vigente: sin ella (o sin permiso) la venta es la de siempre.
+    this.campanasService.activa().subscribe(c => { this.campana = c && c.vigente ? c : null; this.recalcularSubtotales(); });
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
@@ -407,6 +421,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.pagosYMesesId     = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
     this.tipoPedido        = 'NORMAL';
     this.montoDadoContado  = 0;
+    this.recalcularSubtotales();
   }
 
   seleccionarMeses(opcion: IOpcionMesesDto): void {
@@ -419,6 +434,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.tipoPedido        = 'NORMAL';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial      = 0;
+    this.recalcularSubtotales();
   }
 
   /** Se eligió Apartado y luego se escribió un enganche: quedó como Ir pagando. */
@@ -430,6 +446,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     if (this.tipoPedido === 'APARTADO' && monto > 0) {
       this.tipoPedido     = 'FIADO';
       this.pasoAIrPagando = true;
+      this.recalcularSubtotales();
     }
   }
 
@@ -442,6 +459,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.pagosYMesesId     = null;
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial      = 0;
+    this.recalcularSubtotales();
   }
 
   // ── Búsqueda de variantes ──────────────────────────────────────────
@@ -504,24 +522,118 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   // Las piezas se suman por producto dentro de su grupo; el back dice a quién le toca y ESE cálculo es el que cuenta al guardar. Gana el
   // precio más bajo: el de grupo solo se usa si es menor al precio de la línea (si el admin ya puso una rebaja menor, se queda).
 
-  /** Lo que de verdad cuesta cada pieza de la línea: el de grupo si le toca y es menor, si no el precio de la línea. */
+  /** Lo que de verdad cuesta cada pieza de la línea: el precio más bajo entre el de la línea, el de grupo y el de campaña. */
   precioUnitarioDe(l: ILineaVenta): number {
     const base = l.variante.precio ?? 0;
-    return l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+    const conGrupo = l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+    const camp = this.precioCampanaDe(l);
+    return camp !== null && camp < conGrupo ? camp : conGrupo;
   }
 
-  /** ¿Esta línea se está cobrando con precio de grupo? */
+  /** ¿Esta línea se está cobrando con precio de grupo? (si gana el de campaña, se cuenta como campaña) */
   conPrecioDeGrupo(l: ILineaVenta): boolean {
-    return !!l.grupo && l.grupo.precioPromocion < (l.variante.precio ?? 0);
+    return !!l.grupo && l.grupo.precioPromocion < (l.variante.precio ?? 0) && !this.conPrecioDeCampana(l);
   }
 
-  /** Lo que ahorra la línea por el precio de grupo. */
+  /** ¿Esta línea se está cobrando con el precio de campaña? */
+  conPrecioDeCampana(l: ILineaVenta): boolean {
+    const camp = this.precioCampanaDe(l);
+    if (camp === null) return false;
+    const base = l.variante.precio ?? 0;
+    const conGrupo = l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+    return camp < conGrupo;
+  }
+
+  /** Lo que ahorra la línea por el precio de grupo o de campaña. */
   ahorroDe(l: ILineaVenta): number {
-    return this.conPrecioDeGrupo(l) ? +(((l.variante.precio ?? 0) - this.precioUnitarioDe(l)) * l.cantidad).toFixed(2) : 0;
+    return this.conPrecioDeGrupo(l) || this.conPrecioDeCampana(l)
+      ? +(((l.variante.precio ?? 0) - this.precioUnitarioDe(l)) * l.cantidad).toFixed(2) : 0;
   }
 
   get ahorroTotal(): number {
-    return +this.lineas.reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+    return +this.lineas.filter(l => this.conPrecioDeGrupo(l)).reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+  }
+
+  get ahorroCampanaTotal(): number {
+    return +this.lineas.filter(l => this.conPrecioDeCampana(l)).reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+  }
+
+  // ── Campaña ────────────────────────────────────────────────────────────────
+  // El back decide todo (quién es recurrente, qué precio); esto solo lo muestra igual para que el total no sorprenda. Si el cálculo del back
+  // fuera distinto, el back rechaza el precio y no se cobra mal.
+
+  private esDeCampana(l: ILineaVenta): boolean {
+    return !!this.campana?.productos.some(p => p.productoId === l.variante.productoId);
+  }
+
+  get hayJuguetesDeCampana(): boolean { return this.lineas.some(l => this.esDeCampana(l)); }
+
+  /** Lo que lleva el ticket sin los juguetes de la campaña (cuenta para la meta). */
+  get ticketSinJuguetes(): number {
+    return +this.lineas.filter(l => !this.esDeCampana(l)).reduce((s, l) => s + (l.variante.precio ?? 0) * l.cantidad, 0).toFixed(2);
+  }
+
+  /** ¿Este cliente es recurrente ahora? A mano, o con código verificado cuyo avance + este ticket llega a la meta. */
+  get esRecurrente(): boolean {
+    if (!this.campana) return false;
+    if (this.campanaRecurrente) return true;
+    const v = this.verificacion;
+    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado + this.ticketSinJuguetes >= v.meta;
+  }
+
+  /** El precio de campaña de la línea, o null si no le toca (no es juguete, no es recurrente o la venta es Ir pagando). */
+  private precioCampanaDe(l: ILineaVenta): number | null {
+    if (!this.campana || !this.esRecurrente || this.tipoPedido === 'FIADO') return null;
+    const p = this.campana.productos.find(x => x.productoId === l.variante.productoId);
+    return p && p.precio < (l.variante.precio ?? 0) ? p.precio : null;
+  }
+
+  /** Aviso cuando se pasa a Ir pagando una venta que sí llevaría precio de campaña. */
+  get avisoIrPagandoSinDescuento(): boolean {
+    return !!this.campana && this.tipoPedido === 'FIADO' && this.hayJuguetesDeCampana && (this.campanaRecurrente || this.verificacion?.estado === 'OK');
+  }
+
+  get contactoClienteCampana(): { correo: string | null; telefono: string | null } {
+    const c = this.clienteSeleccionado;
+    const s = this.clienteSinRegistroModal;
+    return {
+      correo: (c?.correoElectronico || s?.correo_Electronico || '') || null,
+      telefono: (c?.numeroTelefonico || s?.numero_Telefonico || '') || null
+    };
+  }
+
+  get clienteTieneContacto(): boolean {
+    const k = this.contactoClienteCampana;
+    return !!(k.correo || k.telefono);
+  }
+
+  recalcularSubtotales(): void {
+    this.lineas.forEach(l => { l.subTotal = l.cantidad * this.precioUnitarioDe(l); });
+  }
+
+  alCambiarCodigo(codigo: string): void {
+    this.campanaCodigo = codigo;
+    this.verificacion = null;
+    this.recalcularSubtotales();
+  }
+
+  alCambiarRecurrente(): void { this.recalcularSubtotales(); }
+
+  verificarCodigo(): void {
+    const k = this.contactoClienteCampana;
+    if (!this.campanaCodigo.trim()) return;
+    if (!k.correo && !k.telefono) {
+      Swal.fire({ icon: 'info', title: 'Elige primero al cliente', text: 'El código se comprueba contra el correo o el teléfono del cliente de la venta.' });
+      return;
+    }
+    this.verificando = true;
+    this.campanasService.verificarCodigo(this.campanaCodigo.trim(), k.correo, k.telefono).subscribe({
+      next: v => { this.verificacion = v; this.verificando = false; this.recalcularSubtotales(); },
+      error: e => {
+        this.verificando = false;
+        Swal.fire({ icon: 'warning', title: 'No se pudo verificar', text: e?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
   }
 
   private pedidoPrecios = 0;
@@ -574,6 +686,10 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.mostrarTerminal = false;
     this.estadoTerminal = 'idle';
     this.tipoPedido = 'NORMAL';
+    this.campanaCodigo = '';
+    this.campanaRecurrente = false;
+    this.campanaPrivacidad = false;
+    this.verificacion = null;
     this.observaciones = '';
     this.nombreReceptor = '';
     this.direccionEntrega = '';
@@ -659,11 +775,17 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = c;
     this.terminoCliente = `${c.nombrePersona} ${c.apeidoPaterno}`;
     this.clientes = [];
+    this.verificacion = null;
+    this.campanaPrivacidad = false;
+    this.recalcularSubtotales();
     this.actualizarCheckboxesTicket();
   }
 
   limpiarCliente(): void {
     this.clienteSeleccionado = null;
+    this.verificacion = null;
+    this.campanaPrivacidad = false;
+    this.recalcularSubtotales();
     this.terminoCliente = '';
     this.clientes = [];
     this.actualizarCheckboxesTicket();
@@ -880,7 +1002,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       fechaEntrega:      this.fechaEntrega || undefined,
       lugarEntregaId:    this.lugarEntregaId ?? undefined,
       urlFacebook:       this.urlFacebook || undefined,
-      entregado
+      entregado,
+      // Campaña vigente: el back decide el precio; solo se manda lo que el administrador puso.
+      campana: this.campana
+        ? { codigo: this.campanaCodigo.trim() || undefined, recurrenteManual: this.campanaRecurrente,
+            aceptaPrivacidad: this.campanaPrivacidad && this.clienteTieneContacto }
+        : undefined
     };
 
     if (this.esCredito) {

@@ -154,6 +154,49 @@
         </div>
       </div>
 
+      <!-- ── CAMPAÑA — solo existe si hay una campaña vigente (encendida y dentro de fechas) ───────────── -->
+      <div class="vd-campana" *ngIf="campana && lineas.length > 0">
+        <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
+          🎁 Campaña «{{ campana.nombre }}» <span class="vd-optional">(hasta {{ campana.fechaFin }})</span>
+        </p>
+        <p class="vd-campana__nota">
+          Quien junte {{ campana.metaMonto | currency:'$' }} comprando en el evento (sin contar los juguetes de la campaña) lleva los juguetes a precio de campaña.
+          Con Contado y Apartado; con Ir pagando no entra el descuento.
+        </p>
+
+        <app-entrada-codigo-qr [valor]="campanaCodigo" (valorChange)="alCambiarCodigo($event)"></app-entrada-codigo-qr>
+        <div class="vd-campana__fila">
+          <button type="button" class="vd-campana__verificar" [disabled]="!campanaCodigo.trim() || verificando" (click)="verificarCodigo()">
+            {{ verificando ? 'Verificando…' : 'Verificar' }}
+          </button>
+          <span class="vd-campana__ok" *ngIf="verificacion?.estado === 'OK'">
+            ✓ Es de {{ verificacion?.nombre || 'este cliente' }} · lleva {{ verificacion?.acumulado | currency:'$' }} de {{ verificacion?.meta | currency:'$' }}
+            <ng-container *ngIf="esRecurrente"> · <strong>ya es recurrente</strong></ng-container>
+            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · con este ticket le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) - ticketSinJuguetes | currency:'$' }}</ng-container>
+          </span>
+          <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_COINCIDE'">✕ Ese código es de otra persona (no coincide con el correo ni el teléfono del cliente).</span>
+          <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_EXISTE'">✕ Ese código no existe.</span>
+        </div>
+
+        <label class="vd-campana__check">
+          <input type="checkbox" [(ngModel)]="campanaRecurrente" (ngModelChange)="alCambiarRecurrente()">
+          Cliente recurrente <span class="vd-optional">(sin código ni meta)</span>
+        </label>
+
+        <label class="vd-campana__check" *ngIf="clienteTieneContacto">
+          <input type="checkbox" [(ngModel)]="campanaPrivacidad">
+          El cliente aceptó el Aviso de privacidad: se guardan su nombre, correo y teléfono para su código de cliente
+          <span class="vd-optional">(si tiene correo, se le manda su código)</span>
+        </label>
+
+        <p class="vd-campana__aviso" *ngIf="avisoIrPagandoSinDescuento">
+          ⚠️ Con Ir pagando no entra el descuento de campaña: los juguetes se cobran a su precio normal.
+        </p>
+        <p class="vd-campana__aviso" *ngIf="esRecurrente && !hayJuguetesDeCampana">
+          Este cliente ya es recurrente, pero no lleva juguetes de la campaña.
+        </p>
+      </div>
+
       <!-- ── FORMA DE PAGO ─────────────────────────────────────── -->
       <div class="vd-pay-section">
         <p class="vd-panel__title">
@@ -399,6 +442,9 @@
           </div>
           <div class="vd-line__right">
             <span class="vd-line__subtotal">{{ l.subTotal | currency:'$' }}</span>
+            <span class="vd-line__grupo" *ngIf="conPrecioDeCampana(l)" [title]="'Precio de campaña «' + campana?.nombre + '»'">
+              🎁 <s>{{ (l.variante.precio ?? 0) * l.cantidad | currency:'$' }}</s> · ahorra {{ ahorroDe(l) | currency:'$' }}
+            </span>
             <span class="vd-line__grupo" *ngIf="conPrecioDeGrupo(l)"
                   [title]="'Grupo «' + l.grupo?.grupo + '»: ' + l.grupo?.piezasDelGrupo + ' piezas (mínimo ' + l.grupo?.minimoPiezas + ')'">
               <s>{{ (l.variante.precio ?? 0) * l.cantidad | currency:'$' }}</s> · ahorra {{ ahorroDe(l) | currency:'$' }}
@@ -413,6 +459,9 @@
           </div>
           <div class="vd-totals__row vd-totals__row--ahorro" *ngIf="ahorroTotal > 0">
             <span>🏷️ Ahorro por cantidad</span><strong>{{ ahorroTotal | currency:'$' }}</strong>
+          </div>
+          <div class="vd-totals__row vd-totals__row--ahorro" *ngIf="ahorroCampanaTotal > 0">
+            <span>🎁 Ahorro de campaña</span><strong>{{ ahorroCampanaTotal | currency:'$' }}</strong>
           </div>
           <div class="vd-totals__row vd-totals__row--total">
             <span>Total</span><strong>{{ totalVenta | currency:'$' }}</strong>

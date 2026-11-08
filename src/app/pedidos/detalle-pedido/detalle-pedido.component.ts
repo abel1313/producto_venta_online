@@ -1,3 +1,4 @@
+import { CampanasService } from 'src/app/campanas/campanas.service';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { Constants } from 'src/app/Constants';
@@ -556,7 +557,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly floresService:  FloresService,
     private readonly varianteService: VarianteService,
     private readonly router:         Router,
-    private readonly grupoPedidoService: GrupoPedidoService
+    private readonly grupoPedidoService: GrupoPedidoService,
+    private readonly campanasService: CampanasService
   ) {}
 
   ngOnInit(): void {
@@ -1103,6 +1105,24 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       default:
         return 'El pedido queda cobrado de contado.';
     }
+  }
+
+  enviandoCodigoCampana = false;
+
+  /** Vuelve a mandar por correo el código de campaña de la persona de este pedido. */
+  enviarCodigoDeCampana(): void {
+    if (this.enviandoCodigoCampana) return;
+    this.enviandoCodigoCampana = true;
+    this.campanasService.reenviarCodigo(this.pedido.pedido.id).subscribe({
+      next: () => {
+        this.enviandoCodigoCampana = false;
+        Swal.fire({ icon: 'success', title: 'Código enviado', timer: 1800, showConfirmButton: false });
+      },
+      error: err => {
+        this.enviandoCodigoCampana = false;
+        Swal.fire({ icon: 'warning', title: 'No se pudo enviar', text: err?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
   }
 
   cancelarFormTipo(): void {

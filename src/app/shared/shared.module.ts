@@ -18,6 +18,7 @@ import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.compo
 import { DialogModule } from 'primeng/dialog';
 import { QRCodeModule } from 'angularx-qrcode';
 import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
+import { EntradaCodigoQrComponent } from './entrada-codigo-qr/entrada-codigo-qr.component';
 import { FotoCelularComponent } from './foto-celular/foto-celular.component';
 import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarjeta.component';
 
@@ -38,6 +39,7 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     FiltroBuscableComponent,
     CobroTarjetaComponent,
     EscanerCelularComponent,
+    EntradaCodigoQrComponent,
     FotoCelularComponent
   ],
   imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
@@ -57,6 +59,7 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     FiltroBuscableComponent,
     CobroTarjetaComponent,
     EscanerCelularComponent,
+    EntradaCodigoQrComponent,
     FotoCelularComponent
   ]
 })

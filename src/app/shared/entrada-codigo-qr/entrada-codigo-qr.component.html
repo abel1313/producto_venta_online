@@ -1,0 +1,19 @@
+<div class="eq">
+  <input class="eq-input" type="text" autocomplete="off" spellcheck="false"
+         [ngModel]="valor" (ngModelChange)="alEscribir($event)" (paste)="alPegar($event)"
+         [placeholder]="placeholder" aria-label="Código del cliente">
+  <button type="button" class="eq-btn" (click)="abrirCamara()" title="Escanear el QR con la cámara" aria-label="Escanear QR con la cámara">📷</button>
+  <label class="eq-btn" title="Subir la imagen del QR" aria-label="Subir imagen del QR">
+    🖼️
+    <input type="file" accept="image/*" hidden (change)="alElegirArchivo($event)">
+  </label>
+  <button type="button" class="eq-btn" *ngIf="valor" (click)="alEscribir('')" title="Quitar el código" aria-label="Quitar el código">✕</button>
+</div>
+
+<div class="eq-camara" *ngIf="camaraAbierta" role="dialog" aria-label="Escanear QR">
+  <div class="eq-camara__caja">
+    <video #video class="eq-camara__video" muted playsinline></video>
+    <p class="eq-camara__error" *ngIf="errorCamara">{{ errorCamara }}</p>
+    <button type="button" class="eq-camara__cerrar" (click)="cerrarCamara()">Cerrar</button>
+  </div>
+</div>

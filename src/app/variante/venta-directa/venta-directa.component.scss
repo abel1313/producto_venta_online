@@ -759,3 +759,20 @@ $t:  all 0.22s ease;
   s { color: var(--app-text-muted); }
 }
 .vd-totals__row--ahorro { color: var(--pk-success); }
+
+// Campaña vigente: solo tokens del diseño.
+.vd-campana {
+  display: grid; gap: 8px; padding: 10px 12px; margin-bottom: 10px; min-width: 0;
+  border: 1px dashed var(--app-border); border-radius: 12px; background: var(--card-body-bg);
+}
+.vd-campana__nota { margin: 0; font-size: .78rem; color: var(--app-text-muted); }
+.vd-campana__fila { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: .82rem; }
+.vd-campana__verificar {
+  padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: .82rem;
+  background: var(--btn-primary-bg); color: var(--btn-primary-text); border: 1px solid var(--btn-primary-border);
+  &:disabled { opacity: .5; cursor: not-allowed; }
+}
+.vd-campana__ok { color: var(--pk-success); }
+.vd-campana__mal { color: var(--pk-danger); }
+.vd-campana__check { display: flex; gap: 8px; align-items: flex-start; font-size: .84rem; color: var(--app-text); }
+.vd-campana__aviso { margin: 0; font-size: .8rem; color: var(--pk-warning); }

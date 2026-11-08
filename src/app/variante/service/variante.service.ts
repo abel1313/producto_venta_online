@@ -392,6 +392,8 @@ export interface IVentaDirectaRequest {
   // clienteSinRegistroDto queda como fallback por compatibilidad — el flujo nuevo del front
   // siempre manda el id una vez que el modal ya lo creó.
   clienteSinRegistroId?: number,
+  /** Campaña vigente (back 2026-11-07): código del cliente, check «Cliente recurrente» y aviso de privacidad. */
+  campana?: { codigo?: string; recurrenteManual: boolean; aceptaPrivacidad: boolean };
   detalles: {
     productoId:   number;
     varianteId:   number | null;

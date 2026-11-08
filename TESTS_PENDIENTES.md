@@ -17,6 +17,14 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Campañas: scroll propio en la tarjeta de cada campaña y en el reporte
+**Dónde:** `campanas/campanas.component.scss` (`.cp-card__productos`, `.cp-tabla`)
+**Tipo:** e2e manual en QA (solo estilos)
+**Debe comprobar:**
+- [ ] campaña con 60+ juguetes → la tarjeta de la lista no se alarga: la lista de juguetes (alto ~16rem) hace scroll adentro y el scroll de la página no se mueve
+- [ ] reporte con 30+ personas → la tabla hace scroll adentro (alto ~28rem) con el encabezado fijo
+- [ ] celular (≤ 900px) y escritorio, de día y de noche: se ve igual de ordenado
+
 ### 2026-11-08 — Campañas: el QR llena al cliente, modal que no se cierra, 📱 con QR, imagen del QR, ticket con descuento
 **Dónde:** `variante/venta-directa` (`cobrar()`, `alHacerClicEnElFondo`, `noRegistrarYCobrar`, `alCambiarCodigo`, `buscarCodigo`, `aplicarCodigo`, `ticketQueSuma`, `articulosDelTicket`) ·
 `campanas/campanas.service.ts` (`buscarPorCodigo`) · `shared/entrada-codigo-qr/*` (`leerQrDeImagen`, `esUuid`, Enter, receptor) · `shared/escaner-celular/escaner-receptor.service.ts` (`destinoDelCodigo`) ·

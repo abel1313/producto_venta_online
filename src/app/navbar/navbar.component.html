@@ -58,6 +58,13 @@
       <span class="sb-icon">📱</span>
       <span class="sb-label">Escáner</span>
     </a>
+    <!-- Escáner de QR de clientes (campañas): el QR escaneado o fotografiado llega al campo «Código del cliente» de Venta directa -->
+    <a class="sb-item" *ngIf="puedeEscanerCelular"
+       routerLink="escaner-qr" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🎁</span>
+      <span class="sb-label">Escáner QR</span>
+    </a>
 
     <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
          "Artículo" es lo que se vende (Blusa Zara / M / Negro).

@@ -186,6 +186,13 @@ const routes: Routes = [
     canActivate: [AuthGuard]
   },
   {
+    // Igual que el Escáner, pero para el QR del código de cliente de una campaña (cámara o foto): llega al campo «Código del cliente» de Venta directa.
+    path: 'escaner-qr',
+    data: { modo: 'qr' },
+    loadChildren: () => import('./escaner-celular/escaner-celular.module').then(m => m.EscanerCelularModule),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'home', component: HomeComponent,
     canActivate: [CarritoGuard]
   },

@@ -17,6 +17,17 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — «Escáner QR» del celular (menú aparte): QR de cliente con cámara o foto → campo «Código del cliente» de Venta directa
+**Dónde:** `escaner-celular/escaner-celular-pagina.component.{ts,html}` (`modoQr`, `alLeer`, `alElegirFotoQr`) · ruta `escaner-qr` (`app-routing.module.ts`, `data: { modo: 'qr' }`) · `navbar.component.html` («Escáner QR»)
+**Tipo:** unitario (componente con `ActivatedRoute` simulado y `EscanerCelularService` simulado) · e2e manual en QA con celular real
+**Debe comprobar:**
+- [ ] `/escaner-qr` muestra «Escáner de QR de clientes» y SOLO los botones «📸 Foto del QR» y «🖼️ Elegir de la galería» (no «Tomar foto» ni «Cámara del celular»); `/escaner-celular` queda como antes
+- [ ] cámara: un QR con un UUID (solo o dentro de `…/codigo-campana/<uuid>`) se manda con `canalEnviar(uuid)`; un código de barras u otro QR se ignora con «Ese QR no es un código de cliente»
+- [ ] foto del QR (cámara nativa o galería): se lee con `leerQrDeImagen` y se manda como CÓDIGO (no como foto); sin QR legible → «No encontré un QR en esa foto…»
+- [ ] sin Venta directa abierta en la PC → «La computadora no tiene abierta Venta directa con una campaña vigente»; con ella abierta, el UUID llena el campo y el cliente
+- [ ] los códigos de barras del «Escáner» de siempre siguen yendo al buscador (con y sin campaña)
+- [ ] el menú «Escáner QR» sale con sesión, igual que «Escáner»
+
 ### 2026-11-08 — Reporte de Campañas: botón «Ver QR» por persona
 **Dónde:** `campanas/campanas.component.html` (`.cp-acciones-fila`)
 **Tipo:** e2e manual en QA

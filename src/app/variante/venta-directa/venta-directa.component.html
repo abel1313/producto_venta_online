@@ -158,7 +158,9 @@
       <div class="vd-campana" *ngIf="campana">
         <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
           🎁 Campaña «{{ campana.nombre }}» <span class="vd-optional">(hasta {{ campana.fechaFin }})</span>
+          <span class="vd-optional" title="Versión del front cargada en esta pestaña">· {{ marcaVersion }}</span>
         </p>
+        <p class="vd-campana__aviso" *ngIf="hayVersionNueva">Hay una versión nueva: recarga la página (Ctrl+F5) cuando termines esta venta.</p>
         <p class="vd-campana__nota">
           Quien junte {{ campana.metaMonto | currency:'$' }} pagados desde el {{ campana.fechaInicio }} hasta el {{ campana.fechaFin }} lleva los juguetes a precio de campaña.
           Escanea su QR para llenar sus datos. Con Contado y Apartado; con Ir pagando no entra el descuento.
@@ -171,7 +173,8 @@
           </button>
           <span class="vd-campana__ok" *ngIf="verificacion?.estado === 'OK'">
             ✓ Es de {{ verificacion?.nombre || 'este cliente' }} · lleva {{ verificacion?.acumulado | currency:'$' }} de {{ verificacion?.meta | currency:'$' }}
-            <ng-container *ngIf="esRecurrente"> · <strong>ya es recurrente</strong></ng-container>
+            <ng-container *ngIf="campanaRecurrente"> · <strong>recurrente a mano</strong> (casilla marcada)</ng-container>
+            <ng-container *ngIf="!campanaRecurrente && esRecurrente"> · <strong>ya es recurrente</strong> (llegó a la meta)</ng-container>
             <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) | currency:'$' }} pagados para el precio de campaña</ng-container>
           </span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_COINCIDE'">✕ Ese código es de otra persona (no coincide con el correo ni el teléfono del cliente).</span>

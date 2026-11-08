@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
@@ -21,6 +21,7 @@ import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
 import { htmlTicketParaCorreo } from 'src/app/shared/ticket-correo.util';
+import { hayVersionNueva, MARCA_VERSION_PRUEBA } from 'src/app/shared/marca-version';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
@@ -337,7 +338,26 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSinRegistroCorreoVerificado = false;
     this.clienteForm.reset();
   }
+  /** TEMPORAL: versión del front cargada en esta pestaña (ver `shared/marca-version.ts`); se quita al terminar. */
+  readonly marcaVersion = MARCA_VERSION_PRUEBA;
+  /** Hay una versión nueva del front publicada y esta pestaña sigue con la vieja (se avisa; se recarga sola cuando el carrito está vacío). */
+  hayVersionNueva = false;
+  private vigiaVersion: ReturnType<typeof setInterval> | null = null;
+
+  /** Venta directa se deja abierta todo el día: si se publicó una versión nueva, se recarga sola solo con el carrito vacío y sin cobro en curso. */
+  @HostListener('document:visibilitychange')
+  alCambiarVisibilidad(): void {
+    if (!document.hidden) void this.revisarVersion();
+  }
+
+  private async revisarVersion(): Promise<void> {
+    if (!(await hayVersionNueva())) return;
+    if (this.lineas.length === 0 && !this.procesando) { window.location.reload(); return; }
+    this.hayVersionNueva = true;
+  }
+
   ngOnInit(): void {
+    this.vigiaVersion = setInterval(() => void this.revisarVersion(), 10 * 60 * 1000);
     // Campaña vigente: sin ella (o sin permiso) la venta es la de siempre.
     this.campanasService.activa().subscribe(c => { this.campana = c && c.vigente ? c : null; this.recalcularSubtotales(); });
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
@@ -407,6 +427,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.vigiaVersion) clearInterval(this.vigiaVersion);
     this.destroy$.next(); this.destroy$.complete();
     this.varianteSub?.unsubscribe();
     this.clienteSub?.unsubscribe();

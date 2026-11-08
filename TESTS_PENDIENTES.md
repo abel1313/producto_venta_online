@@ -17,6 +17,15 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Venta directa: aviso que distingue «a mano» de «llegó a la meta», marca de versión y recarga cuando hay versión nueva
+**Dónde:** `variante/venta-directa/venta-directa.component.{ts,html}` (`marcaVersion`, `hayVersionNueva`, `revisarVersion`, aviso del bloque de campaña)
+**Tipo:** unitario (componente con `hayVersionNueva` simulado) · e2e manual en QA
+**Debe comprobar:**
+- [ ] casilla «Cliente recurrente» marcada → el aviso dice «recurrente a mano (casilla marcada)»; desmarcada y con $1,000 de $1,499 → «le faltan $499 pagados…»; con lo pagado ≥ meta → «ya es recurrente (llegó a la meta)»
+- [ ] el título del bloque «🎁 Campaña» muestra la versión («· QR-6»)
+- [ ] con una versión nueva publicada y el carrito vacío, al volver a la pestaña (o en ≤ 10 min) Venta directa se recarga sola; con artículos en el carrito o cobrando NO se recarga y muestra «Hay una versión nueva: recarga la página…»
+- [ ] **QUITAR AL TERMINAR:** la marca (`marcaVersion` y su span); la recarga puede quedarse
+
 ### 2026-11-08 — Ticket por correo con diseño (estilos en línea) y QR de «Síguenos» incrustados
 **Dónde:** `shared/ticket-correo.util.ts` (`htmlTicketParaCorreo`) · `pedidos/pedidos.service.ts` (`reenviarComprobante`) · `venta-directa`, `abonos` y `cobro-pedido.base` (`notificacion.ticketHtml`) · back `EmailService.enviarTicket` (`incrustarQrRemotos`)
 **Tipo:** unitario (`htmlTicketParaCorreo` con un ticket de ejemplo; `enviarTicket` con `JavaMailSender` simulado) · e2e manual en QA (correo real)

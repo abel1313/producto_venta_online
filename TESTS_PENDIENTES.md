@@ -17,6 +17,12 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Reporte de Campañas: botón «Ver QR» por persona
+**Dónde:** `campanas/campanas.component.html` (`.cp-acciones-fila`)
+**Tipo:** e2e manual en QA
+**Debe comprobar:**
+- [ ] Campañas → Reporte → «Ver QR» abre en pestaña nueva `/codigo-campana/<uuid>` con el QR de esa persona (sin iniciar sesión); «Eliminar datos» sigue funcionando
+
 ### 2026-11-08 — Campañas: scroll propio en la tarjeta de cada campaña y en el reporte
 **Dónde:** `campanas/campanas.component.scss` (`.cp-card__productos`, `.cp-tabla`)
 **Tipo:** e2e manual en QA (solo estilos)

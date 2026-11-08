@@ -133,7 +133,10 @@
             <td class="cp-num">{{ p.acumulado | currency:'$' }}</td>
             <td class="cp-num">{{ p.pedidos }}</td>
             <td><span class="cp-estado" [ngClass]="p.llegoALaMeta ? 'cp-estado--ok' : 'cp-estado--apagada'">{{ p.llegoALaMeta ? 'Llegó' : 'Falta' }}</span></td>
-            <td><button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminarPersona(p)">Eliminar datos</button></td>
+            <td class="cp-acciones-fila">
+              <a class="pk-btn pk-btn--secondary pk-btn--sm" [href]="'/codigo-campana/' + p.codigo" target="_blank" rel="noopener">Ver QR</a>
+              <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminarPersona(p)">Eliminar datos</button>
+            </td>
           </tr>
         </tbody>
       </table>

@@ -92,3 +92,4 @@
 .cp-tabla td { padding: .45rem .5rem; border-bottom: 1px solid var(--table-border); vertical-align: top; }
 .cp-num { text-align: right; font-variant-numeric: tabular-nums; }
 .cp-codigo { color: var(--app-text-muted); overflow-wrap: anywhere; }
+.cp-acciones-fila { display: flex; flex-wrap: wrap; gap: .4rem; white-space: nowrap; a { text-decoration: none; } }

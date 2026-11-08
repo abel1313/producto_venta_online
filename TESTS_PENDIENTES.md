@@ -17,6 +17,15 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Marca de versión temporal (QR-4) y recarga automática de la página del escáner del celular
+**Dónde:** `shared/marca-version.ts` (`MARCA_VERSION_PRUEBA`, `hayVersionNueva`) · `escaner-celular-pagina.component.{ts,html}` · `navbar.component.{ts,html}`
+**Tipo:** unitario (`hayVersionNueva` con `fetch` simulado) · e2e manual en QA
+**Debe comprobar:**
+- [ ] la página del escáner muestra «Versión: QR-4» y el menú «Escáner QR» muestra «QR-4» (si no sale, el navegador tiene la versión vieja: recargar)
+- [ ] con la página del celular abierta, se publica una versión nueva → al volver a primer plano o en ≤ 10 min la página se recarga sola y sigue conectada
+- [ ] `hayVersionNueva()` devuelve false sin red, sin hash en el nombre (desarrollo) o si es la misma versión; no recarga mientras hay una foto en vista previa
+- [ ] **QUITAR AL TERMINAR:** `MARCA_VERSION_PRUEBA` y sus usos (cambiarla en cada subida: QR-5, QR-6…); la recarga automática puede quedarse
+
 ### 2026-11-08 — «Escáner QR» del celular (menú aparte): QR de cliente con cámara o foto → campo «Código del cliente» de Venta directa
 **Dónde:** `escaner-celular/escaner-celular-pagina.component.{ts,html}` (`modoQr`, `alLeer`, `alElegirFotoQr`) · ruta `escaner-qr` (`app-routing.module.ts`, `data: { modo: 'qr' }`) · `navbar.component.html` («Escáner QR»)
 **Tipo:** unitario (componente con `ActivatedRoute` simulado y `EscanerCelularService` simulado) · e2e manual en QA con celular real

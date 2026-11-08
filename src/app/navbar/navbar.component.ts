@@ -1,4 +1,5 @@
 import { IconService } from './../Icon/icon.service';
+import { MARCA_VERSION_PRUEBA } from '../shared/marca-version';
 import { Component, OnInit } from '@angular/core';
 import { AuthService } from '../auth/auth.service';
 import { AuthenticateService } from '../auth.service';
@@ -162,6 +163,9 @@ export class NavbarComponent implements OnInit {
   // ¿El usuario tiene esta ruta puntual (item suelto dentro de un grupo mixto,
   // ej. "pedidos/historial-mp")?
   /** El Escáner del celular lo ve quien tiene sesión y puede escanear códigos (administrador, o la acción «escanear-codigo» de alguna pantalla). */
+  /** TEMPORAL: versión del front (ver `shared/marca-version.ts`); se muestra junto a «Escáner QR». */
+  readonly marcaVersion = MARCA_VERSION_PRUEBA;
+
   get puedeEscanerCelular(): boolean {
     if (this.isAnonymous) return false;
     return this.authService.isAdminService

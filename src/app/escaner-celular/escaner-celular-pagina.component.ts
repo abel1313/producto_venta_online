@@ -6,6 +6,7 @@ import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import { EscanerCelularService } from '../shared/escaner-celular/escaner-celular.service';
 import { esUuid, extraerCodigo, leerQrDeImagen } from '../shared/entrada-codigo-qr/codigo-qr.util';
+import { hayVersionNueva, MARCA_VERSION_PRUEBA } from '../shared/marca-version';
 
 type Tono = 'ok' | 'warn' | 'bad' | '';
 
@@ -37,11 +38,15 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
 
   /** `/escaner-qr`: lee solo el QR del código de cliente de una campaña (con la cámara o con una foto) y lo manda a la computadora como código. */
   readonly modoQr: boolean;
+  /** TEMPORAL: versión del front que corre en este celular (ver `shared/marca-version.ts`). */
+  readonly marca = MARCA_VERSION_PRUEBA;
 
   private stream: MediaStream | null = null;
   private controlesZxing: IScannerControls | null = null;
   private cicloNativo: ReturnType<typeof setTimeout> | null = null;
   private latidos: ReturnType<typeof setInterval> | null = null;
+  /** Revisa cada 10 min si hay una versión nueva del front: esta página se deja abierta todo el día y nunca se recargaría sola. */
+  private vigiaVersion: ReturnType<typeof setInterval> | null = null;
   private wakeLock: { release: () => Promise<void> } | null = null;
   private destruido = false;
   private arrancando = false;
@@ -73,10 +78,18 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     void this.iniciar();
+    this.vigiaVersion = setInterval(() => void this.recargarSiHayVersionNueva(), 10 * 60 * 1000);
+  }
+
+  /** Si se publicó una versión nueva, se recarga la página (vuelve sola al escáner; la sesión y el enlace con la PC no se pierden). */
+  private async recargarSiHayVersionNueva(): Promise<void> {
+    if (this.destruido || this.fotoPrevia || this.enviandoFoto) return;
+    if (await hayVersionNueva()) window.location.reload();
   }
 
   ngOnDestroy(): void {
     this.destruido = true;
+    if (this.vigiaVersion) clearInterval(this.vigiaVersion);
     this.apagar();
     if (this.latidos) clearInterval(this.latidos);
     void this.wakeLock?.release().catch(() => undefined);
@@ -86,6 +99,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   @HostListener('document:visibilitychange')
   alCambiarVisibilidad(): void {
     if (document.hidden || this.destruido || this.error) return;
+    void this.recargarSiHayVersionNueva();
     this.pedirPantallaEncendida();
     this.latido();
     if (!this.camaraViva() && !this.arrancando) { this.apagar(); void this.iniciar(); }

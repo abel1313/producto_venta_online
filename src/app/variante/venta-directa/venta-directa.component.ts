@@ -20,6 +20,7 @@ import { correoOpcional, cumpleMinLetras, minLetras, MIN_LETRAS_NOMBRE, telefono
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
+import { htmlTicketParaCorreo } from 'src/app/shared/ticket-correo.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
@@ -600,12 +601,13 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     return +this.lineas.reduce((t, l) => t + (l.variante.precio ?? 0) * l.cantidad, 0).toFixed(2);
   }
 
-  /** ¿Este cliente es recurrente ahora? A mano, o con código verificado cuyo avance + este ticket llega a la meta. */
+  /** ¿Este cliente es recurrente ahora? A mano, o con código verificado cuyo avance YA PAGADO llega a la meta (esta venta no cuenta). */
   get esRecurrente(): boolean {
     if (!this.campana) return false;
     if (this.campanaRecurrente) return true;
     const v = this.verificacion;
-    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado + this.ticketQueSuma >= v.meta;
+    // Solo cuenta lo YA pagado (lo mismo que decide el back): el ticket de esta venta no se suma a sí mismo.
+    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado >= v.meta;
   }
 
   /** El precio de campaña de la línea, o null si no le toca (no es juguete, no es recurrente o la venta es Ir pagando). */
@@ -1159,7 +1161,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         };
         request.notificacion = {
           enviarCorreo: true,
-          ticketHtml:   generarHtmlTicket(preTicket)
+          ticketHtml:   htmlTicketParaCorreo(generarHtmlTicket(preTicket))
         };
       }
     }

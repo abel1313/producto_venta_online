@@ -17,6 +17,23 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Ticket por correo con diseño (estilos en línea) y QR de «Síguenos» incrustados
+**Dónde:** `shared/ticket-correo.util.ts` (`htmlTicketParaCorreo`) · `pedidos/pedidos.service.ts` (`reenviarComprobante`) · `venta-directa`, `abonos` y `cobro-pedido.base` (`notificacion.ticketHtml`) · back `EmailService.enviarTicket` (`incrustarQrRemotos`)
+**Tipo:** unitario (`htmlTicketParaCorreo` con un ticket de ejemplo; `enviarTicket` con `JavaMailSender` simulado) · e2e manual en QA (correo real)
+**Debe comprobar:**
+- [ ] el correo del ticket se ve con tabla: artículo a la izquierda e importe a la derecha, línea verde «🎁 Precio de campaña» con el normal tachado, TOTAL grande sobre fondo verde suave, Entregó/Cambio o Método, «¡Gracias por tu compra!», garantía y «Síguenos»; sin clases CSS (todo en línea)
+- [ ] los QR de Tienda / WhatsApp / Facebook / Instagram / TikTok se ven **sin** pulsar «cargar imágenes» (van dentro del correo)
+- [ ] abono, liquidado, saldo pendiente, cancelación y reenvío de comprobante (Mis pedidos, Detalle, Abonos, Cobro) también salen con diseño
+- [ ] el ticket que se IMPRIME (térmico) y el texto de WhatsApp quedan idénticos a antes
+- [ ] si el HTML ya viene sin clases de ticket, `htmlTicketParaCorreo` lo deja igual; si falla, manda el original
+
+### 2026-11-08 — Meta: el ticket de la venta en curso ya no cuenta para calificar (`esRecurrente`)
+**Dónde:** `variante/venta-directa/venta-directa.component.{ts,html}` (`esRecurrente`, aviso «le faltan $X pagados»)
+**Tipo:** unitario (componente) · e2e manual en QA
+**Debe comprobar:**
+- [ ] cliente con código verificado que lleva $1,000 de $1,499: el bloque dice «le faltan $499 pagados para el precio de campaña» y los juguetes NO bajan, aunque el carrito pase de $1,499
+- [ ] con lo ya pagado ≥ la meta dice «ya es recurrente» y los juguetes bajan; con la casilla «Cliente recurrente» también
+
 ### 2026-11-08 — Marca de versión temporal (QR-4) y recarga automática de la página del escáner del celular
 **Dónde:** `shared/marca-version.ts` (`MARCA_VERSION_PRUEBA`, `hayVersionNueva`) · `escaner-celular-pagina.component.{ts,html}` · `navbar.component.{ts,html}`
 **Tipo:** unitario (`hayVersionNueva` con `fetch` simulado) · e2e manual en QA

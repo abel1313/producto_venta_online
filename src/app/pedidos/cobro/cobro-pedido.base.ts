@@ -9,6 +9,7 @@ import { FloresService } from 'src/app/flores/service/flores.service';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { hoyIso } from 'src/app/shared/fecha.util';
 import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
+import { htmlTicketParaCorreo } from 'src/app/shared/ticket-correo.util';
 import { PedidosService } from '../pedidos.service';
 import { FormularioCobroBase } from './formulario-cobro.base';
 
@@ -103,7 +104,7 @@ export abstract class CobroPedidoBase extends FormularioCobroBase implements OnI
     const liquida = this.saldo - this.monto <= 0.01;
     const ticket = this.ticket(d, body, liquida);
     if (this.enviarCorreo && this.correoCliente) {
-      body.notificacion = { enviarCorreo: true, ticketHtml: ticket };
+      body.notificacion = { enviarCorreo: true, ticketHtml: htmlTicketParaCorreo(ticket) };
     }
     const cambio = this.cambio;
     return this.abonoService.registrarAbono(this.pedidoId, body).pipe(

@@ -14,6 +14,7 @@ import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { preguntarYEntregar } from '../pedidos/entrega/entrega';
 import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
+import { htmlTicketParaCorreo } from '../shared/ticket-correo.util';
 import { NegocioService } from '../negocio/negocio.service';
 import { FloresService } from '../flores/service/flores.service';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
@@ -431,7 +432,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       tempTicket.qrTiktok  = this.qrTiktok;
       body.notificacion = {
         enviarCorreo: true,
-        ticketHtml:   generarHtmlTicket(tempTicket)
+        ticketHtml:   htmlTicketParaCorreo(generarHtmlTicket(tempTicket))
       };
     }
 

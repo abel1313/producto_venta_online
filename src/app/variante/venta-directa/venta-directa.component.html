@@ -172,7 +172,7 @@
           <span class="vd-campana__ok" *ngIf="verificacion?.estado === 'OK'">
             ✓ Es de {{ verificacion?.nombre || 'este cliente' }} · lleva {{ verificacion?.acumulado | currency:'$' }} de {{ verificacion?.meta | currency:'$' }}
             <ng-container *ngIf="esRecurrente"> · <strong>ya es recurrente</strong></ng-container>
-            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · con este ticket le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) - ticketQueSuma | currency:'$' }}</ng-container>
+            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) | currency:'$' }} pagados para el precio de campaña</ng-container>
           </span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_COINCIDE'">✕ Ese código es de otra persona (no coincide con el correo ni el teléfono del cliente).</span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_EXISTE'">✕ Ese código no existe.</span>

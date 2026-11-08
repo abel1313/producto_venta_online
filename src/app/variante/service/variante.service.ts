@@ -470,4 +470,7 @@ export interface IVentaDirectaResponse {
   erroresEnvio?:    string[];
   /** true: la venta quedó como pedido Pendiente y se cobra por /v1/pagos-tarjeta (módulo nuevo) con `pedidoId`. */
   cobroConModuloNuevo?: boolean;
+  /** Los renglones tal como los cobró el back (back 2026-11-08), para el ticket: precio normal y precio cobrado. */
+  renglones?: { nombre: string; cantidad: number; precioNormal: number; precioCobrado: number;
+                conDescuentoDeCampana?: boolean; conDescuentoDeGrupo?: boolean }[];
 }

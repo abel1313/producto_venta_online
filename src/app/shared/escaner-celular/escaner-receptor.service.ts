@@ -6,7 +6,7 @@ import { EscanerCelularService, LecturaEscaner } from './escaner-celular.service
 type AlRecibir = (codigo: string) => void;
 type AlRecibirFoto = (fotoDataUrl: string) => void;
 /** Una pantalla que recibe: códigos de barras, fotos o las dos. */
-interface Receptora { codigo?: AlRecibir; foto?: AlRecibirFoto; }
+interface Receptora { codigo?: AlRecibir; foto?: AlRecibirFoto; /** Si la tiene, esta receptora solo toma los códigos que acepta (y tiene prioridad sobre las que no filtran). */ acepta?: (codigo: string) => boolean; }
 
 const CLAVE_LIDER = 'escaner.pestana';
 /** Si una respuesta vacía llega antes de esto, la pregunta fue desplazada (hay otras preguntas abiertas de la cuenta): se espera antes de repetir. */
@@ -57,8 +57,8 @@ export class EscanerReceptorService implements OnDestroy {
   }
 
   /** Una pantalla pide recibir códigos. Devuelve la función que la da de baja (llamarla al destruirse). */
-  registrar(alRecibir: AlRecibir): () => void {
-    return this.agregar({ codigo: alRecibir });
+  registrar(alRecibir: AlRecibir, acepta?: (codigo: string) => boolean): () => void {
+    return this.agregar({ codigo: alRecibir, acepta });
   }
 
   /** Una pantalla pide recibir FOTOS del celular (data URL JPEG). Devuelve la función que la da de baja. */
@@ -83,6 +83,22 @@ export class EscanerReceptorService implements OnDestroy {
     if (this.receptoras.some(r => r.codigo)) partes.push('codigo');
     if (this.receptoras.some(r => r.foto)) partes.push('foto');
     return partes.join(',') || 'codigo';
+  }
+
+  /**
+   * A quién se entrega un código. Primero, la última receptora con FILTRO que lo acepta (ej. el campo del código de cliente de una campaña, que solo
+   * quiere UUID); si ninguna, la última que recibe códigos sin filtro (el buscador de siempre). Así los códigos de barras siguen yendo al buscador.
+   */
+  private destinoDelCodigo(codigo: string): AlRecibir | undefined {
+    for (let i = this.receptoras.length - 1; i >= 0; i--) {
+      const r = this.receptoras[i];
+      if (r.codigo && r.acepta && r.acepta(codigo)) return r.codigo;
+    }
+    for (let i = this.receptoras.length - 1; i >= 0; i--) {
+      const r = this.receptoras[i];
+      if (r.codigo && !r.acepta) return r.codigo;
+    }
+    return undefined;
   }
 
   private ultima(tipo: 'codigo' | 'foto'): Receptora | undefined {
@@ -149,8 +165,10 @@ export class EscanerReceptorService implements OnDestroy {
         this.epoca = lectura.epoca;
         this.desde = lectura.ultimaSecuencia;
         // Un código por escaneo: se entrega a la pantalla que acaba de aparecer (la última registrada que recibe códigos).
-        const destino = this.ultima('codigo')?.codigo;
-        if (destino) lectura.codigos.forEach(c => this.zona.run(() => destino(c.codigo)));
+        lectura.codigos.forEach(c => {
+          const destino = this.destinoDelCodigo(c.codigo);
+          if (destino) this.zona.run(() => destino(c.codigo));
+        });
         const destinoFoto = this.ultima('foto')?.foto;
         const fotos = lectura.fotos ?? [];
         if (destinoFoto) fotos.forEach(f => this.zona.run(() => destinoFoto(f.foto)));

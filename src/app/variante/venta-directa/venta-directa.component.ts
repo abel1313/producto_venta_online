@@ -19,7 +19,7 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { correoOpcional, cumpleMinLetras, minLetras, MIN_LETRAS_NOMBRE, telefonoOpcional } from '../../shared/validadores-persona';
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
-import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
@@ -28,7 +28,7 @@ import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.mode
 import { hoyIso } from '../../shared/fecha.util';
 import { IPrecioGrupo, PrecioCantidadService } from 'src/app/precio-cantidad/precio-cantidad.service';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
-import { CampanasService, ICampana, IVerificacionCodigo } from 'src/app/campanas/campanas.service';
+import { CampanasService, IBuscarPorCodigo, ICampana, IVerificacionCodigo } from 'src/app/campanas/campanas.service';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
@@ -46,6 +46,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   modalClienteSinRegistro = false;
   private cobrarPendiente = false;
+  /** Para la plantilla: el modal se abrió desde «Cobrar» (no desde el botón de agregar cliente). */
+  get cobrarPendienteVisible(): boolean { return this.cobrarPendiente; }
   clienteForm: FormGroup;
   clienteSinRegistroModal: IClienteSinRegistro = null as any;
 
@@ -218,6 +220,25 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.errorClienteSinRegistro = '';
   }
 
+  /** Clic en el fondo del modal: con una campaña vigente NO lo cierra (hay que pulsar «Guardar cliente», «No registrar» o la ✕). */
+  alHacerClicEnElFondo(): void {
+    if (!this.campana) {
+      this.closeModalModalSinRegistro();
+    }
+  }
+
+  /** Con campaña: el cliente no quiere registrarse. Se cierra el modal y se cobra sin cliente (a nombre del administrador), sin QR. */
+  noRegistrarYCobrar(): void {
+    this.modalClienteSinRegistro = false;
+    this.pasoClienteSinRegistro = 'form';
+    this.errorClienteSinRegistro = '';
+    this.campanaPrivacidad = false;
+    if (this.cobrarPendiente) {
+      this.cobrarPendiente = false;
+      this.ejecutarVentaConAdmin();
+    }
+  }
+
   // Paso 1: crea el registro en el back (antes solo se guardaba en memoria).
   // Si trae correo sin verificar, pasa al paso de verificación dentro del mismo
   // modal; si no hay correo, cierra directo (nada que verificar).
@@ -236,6 +257,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         this.clienteSeleccionado = null;
         this.terminoCliente = '';
         this.clientes = [];
+        this.verificacion = null;
+        this.recalcularSubtotales();
         this.actualizarCheckboxesTicket();
 
         if (dto.correo_Electronico && !res.correoVerificado) {
@@ -568,9 +591,13 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   get hayJuguetesDeCampana(): boolean { return this.lineas.some(l => this.esDeCampana(l)); }
 
-  /** Lo que lleva el ticket sin los juguetes de la campaña (cuenta para la meta). */
-  get ticketSinJuguetes(): number {
-    return +this.lineas.filter(l => !this.esDeCampana(l)).reduce((s, l) => s + (l.variante.precio ?? 0) * l.cantidad, 0).toFixed(2);
+  /**
+   * Lo de este ticket que suma para la meta: TODO (juguetes incluidos), pero solo si la venta es Contado (se paga ahora). En Apartado o Ir pagando
+   * no suma hasta que se abone. Es el mismo cálculo que hace el back.
+   */
+  get ticketQueSuma(): number {
+    if (this.tipoPedido !== 'NORMAL') return 0;
+    return +this.lineas.reduce((t, l) => t + (l.variante.precio ?? 0) * l.cantidad, 0).toFixed(2);
   }
 
   /** ¿Este cliente es recurrente ahora? A mano, o con código verificado cuyo avance + este ticket llega a la meta. */
@@ -578,7 +605,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     if (!this.campana) return false;
     if (this.campanaRecurrente) return true;
     const v = this.verificacion;
-    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado + this.ticketSinJuguetes >= v.meta;
+    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado + this.ticketQueSuma >= v.meta;
   }
 
   /** El precio de campaña de la línea, o null si no le toca (no es juguete, no es recurrente o la venta es Ir pagando). */
@@ -611,13 +638,90 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.lineas.forEach(l => { l.subTotal = l.cantidad * this.precioUnitarioDe(l); });
   }
 
+  private static readonly UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /** El código cambió (escrito, pegado, de la imagen del QR, de la cámara o del celular). Un UUID completo se busca solo: llena al cliente. */
   alCambiarCodigo(codigo: string): void {
     this.campanaCodigo = codigo;
     this.verificacion = null;
     this.recalcularSubtotales();
+    if (VentaDirectaComponent.UUID.test(codigo.trim())) {
+      this.buscarCodigo();
+    }
   }
 
   alCambiarRecurrente(): void { this.recalcularSubtotales(); }
+
+  /** Escanear el QR: ¿de quién es este código? Si es válido, se llenan solos los datos del cliente y se ve lo que lleva. */
+  buscarCodigo(): void {
+    const codigo = this.campanaCodigo.trim();
+    if (!codigo || this.verificando) return;
+    this.verificando = true;
+    this.campanasService.buscarPorCodigo(codigo).subscribe({
+      next: r => { this.verificando = false; this.aplicarCodigo(codigo, r); },
+      error: e => {
+        this.verificando = false;
+        Swal.fire({ icon: 'warning', title: 'No se pudo revisar el código', text: e?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private async aplicarCodigo(codigo: string, r: IBuscarPorCodigo): Promise<void> {
+    if (!r.valido) {
+      this.verificacion = { estado: 'NO_EXISTE', nombre: '', acumulado: 0, meta: r.meta, falta: 0 };
+      this.recalcularSubtotales();
+      return;
+    }
+    const tieneCliente = !!(r.clienteId || r.clienteSinRegistroId);
+    if (!tieneCliente) {
+      // Código anterior al ligado con el cliente: no se sabe a cuál pertenece. Se deja elegir al cliente y se valida por correo o teléfono.
+      if (this.clienteTieneContacto) {
+        this.verificarCodigo();
+      } else {
+        Swal.fire({ icon: 'info', title: `Código de ${r.nombre || 'un cliente'}`,
+          text: 'Este código no tiene un cliente ligado. Elige al cliente de la venta y pulsa «Verificar».' });
+      }
+      return;
+    }
+    const mismo = (!!r.clienteId && this.clienteSeleccionado?.id === r.clienteId)
+      || (!!r.clienteSinRegistroId && this.clienteSinRegistroId === r.clienteSinRegistroId);
+    const hayOtro = !mismo && (!!this.clienteSeleccionado || !!this.clienteSinRegistroModal);
+    if (hayOtro) {
+      const ok = await Swal.fire({
+        icon: 'question', title: `Este código es de ${r.nombre || 'otro cliente'}`,
+        text: 'La venta ya tiene otro cliente. ¿Cambiarlo por el dueño del código?',
+        showCancelButton: true, confirmButtonText: 'Sí, cambiar', cancelButtonText: 'No'
+      });
+      if (!ok.isConfirmed) {
+        this.campanaCodigo = '';
+        return;
+      }
+    }
+    if (r.clienteId) {
+      // Cliente registrado: se selecciona como si se hubiera buscado.
+      this.clienteSinRegistroModal = null as any;
+      this.clienteSinRegistroId = null;
+      this.clienteSeleccionado = {
+        id: r.clienteId, nombrePersona: r.nombre, apeidoPaterno: '', apeidoMaterno: '',
+        correoElectronico: r.correo ?? '', numeroTelefonico: r.telefono ?? '', correoVerificado: undefined
+      } as IClienteBusquedaDto;
+      this.terminoCliente = r.nombre;
+    } else {
+      // Cliente sin registro de su primera compra.
+      this.clienteSeleccionado = null;
+      this.clienteSinRegistroId = r.clienteSinRegistroId;
+      this.clienteSinRegistroModal = {
+        nombre_persona: r.nombre, segundo_nombre: '', apeido_Paterno: '', apeido_Materno: '', fecha_Nacimiento: '', sexo: '',
+        correo_Electronico: r.correo ?? '', numero_Telefonico: r.telefono ?? ''
+      } as IClienteSinRegistro;
+      this.terminoCliente = r.nombre;
+    }
+    this.clientes = [];
+    this.campanaCodigo = codigo;
+    this.verificacion = { estado: 'OK', nombre: r.nombre, acumulado: r.acumulado, meta: r.meta, falta: r.falta };
+    this.actualizarCheckboxesTicket();
+    this.recalcularSubtotales();
+  }
 
   verificarCodigo(): void {
     const k = this.contactoClienteCampana;
@@ -833,19 +937,26 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
       // Sin cliente → preguntar si quiere agregar uno para la rifa
+      // Con una campaña vigente esta ventana NO se cierra con un clic fuera ni con Esc: hay que elegir (registrar al cliente para darle su QR, o no).
+      const hayCampana = !!this.campana;
       Swal.fire({
         icon: 'question',
-        title: '¿Agregar cliente para la rifa?',
-        text: 'No hay cliente seleccionado. ¿Desea registrar uno antes de cobrar?',
+        title: hayCampana ? '¿Registrar los datos del cliente?' : '¿Agregar cliente para la rifa?',
+        text: hayCampana
+          ? `Hay una campaña vigente («${this.campana!.nombre}»). Si registras al cliente se le crea su código QR y se le manda por correo.`
+          : 'No hay cliente seleccionado. ¿Desea registrar uno antes de cobrar?',
         showCancelButton: true,
-        confirmButtonText: 'Sí, agregar cliente',
-        cancelButtonText: 'No, cobrar sin cliente',
-        reverseButtons: true
+        confirmButtonText: hayCampana ? 'Sí, registrar cliente' : 'Sí, agregar cliente',
+        cancelButtonText: hayCampana ? 'No registrar' : 'No, cobrar sin cliente',
+        reverseButtons: true,
+        allowOutsideClick: !hayCampana,
+        allowEscapeKey: !hayCampana
       }).then(result => {
         if (result.isConfirmed) {
           this.cobrarPendiente = true;
           this.openModalSinRegistro();
-        } else {
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          // Solo el botón «No…» cobra sin cliente. Cerrar la ventana (clic fuera o Esc) ya NO cobra a nombre del administrador.
           this.ejecutarVentaConAdmin();
         }
       });
@@ -945,6 +1056,22 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     });
   }
 
+  /**
+   * Los renglones del ticket impreso DESPUÉS de guardar: los que cobró el back (precio normal y precio cobrado), para que el ticket diga lo que de verdad
+   * se cobró aunque la pantalla pensara otra cosa. Si el back no los manda, el snapshot de la pantalla.
+   */
+  private articulosDelTicket(res: IVentaDirectaResponse, respaldo: ITicketArticulo[]): ITicketArticulo[] {
+    if (!res.renglones?.length) return respaldo;
+    return res.renglones.map(r => {
+      const hay = !!(r.conDescuentoDeCampana || r.conDescuentoDeGrupo) && r.precioNormal > r.precioCobrado + 0.005;
+      return {
+        cantidad: r.cantidad, productoNombre: r.nombre, talla: null, subTotal: +(r.precioCobrado * r.cantidad).toFixed(2),
+        subTotalNormal: hay ? +(r.precioNormal * r.cantidad).toFixed(2) : null,
+        etiqueta: hay ? (r.conDescuentoDeCampana ? 'Precio de campaña' : 'Precio por cantidad') : null
+      } as ITicketArticulo;
+    });
+  }
+
   private async ejecutarVenta(clienteId: number): Promise<void> {
     // "¿Ya se lo llevó?" (dominio entrega, 2026-10-06): contado e Ir pagando casi siempre sí; un
     // Apartado nunca (se lleva al pagarlo completo). Si dice que no, queda "Falta entregar".
@@ -960,8 +1087,11 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         ? `${l.variante.marca}${l.variante.talla ? ' ' + l.variante.talla : ''}`
         : (l.variante.color ?? `Artículo #${l.variante.id}`),
       talla:    null as string | null,
-      subTotal: l.subTotal
-    }));
+      subTotal: l.subTotal,
+      // Con descuento de campaña o de grupo: el precio normal tachado y la etiqueta (la pantalla replica lo que decide el back).
+      subTotalNormal: this.conPrecioDeCampana(l) || this.conPrecioDeGrupo(l) ? (l.variante.precio ?? 0) * l.cantidad : null,
+      etiqueta: this.conPrecioDeCampana(l) ? 'Precio de campaña' : this.conPrecioDeGrupo(l) ? 'Precio por cantidad' : null
+    })) as ITicketArticulo[];
     const totalSnap           = this.totalVenta;
     const clienteSnap         = this.nombreClienteTicket;
     const metodoPagoSnap      = this.tipoPagoActivo?.formaPago ?? 'EFECTIVO';
@@ -1041,7 +1171,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           this.procesando = false;
           this.varianteService.invalidarCache();
           this.abrirCobroTerminal(res.pedidoId, res.totalVenta, () => generarHtmlTicket({
-            tipo: 'venta', numero: res.pedidoId!, cliente: clienteSnap, articulos: articulosSnap, total: totalSnap,
+            tipo: 'venta', numero: res.pedidoId!, cliente: clienteSnap, articulos: this.articulosDelTicket(res, articulosSnap), total: totalSnap,
             metodoPago: metodoPagoSnap, montoDado: null, cambio: null,
             qrTienda: this.qrTienda, qrWhatsapp: this.qrWhatsapp, qrFacebook: this.qrFacebook,
             qrInstagram: this.qrInstagram, qrTiktok: this.qrTiktok
@@ -1108,7 +1238,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
             tipo:      'venta',
             numero:    res.ventaId ?? 0,
             cliente:   clienteSnap,
-            articulos: articulosSnap,
+            articulos: this.articulosDelTicket(res, articulosSnap),
             total:     totalSnap,
             metodoPago: metodoPagoSnap,
             montoDado:  montoDadoSnap,

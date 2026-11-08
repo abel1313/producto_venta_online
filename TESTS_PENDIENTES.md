@@ -17,6 +17,27 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-08 — Campañas: el QR llena al cliente, modal que no se cierra, 📱 con QR, imagen del QR, ticket con descuento
+**Dónde:** `variante/venta-directa` (`cobrar()`, `alHacerClicEnElFondo`, `noRegistrarYCobrar`, `alCambiarCodigo`, `buscarCodigo`, `aplicarCodigo`, `ticketQueSuma`, `articulosDelTicket`) ·
+`campanas/campanas.service.ts` (`buscarPorCodigo`) · `shared/entrada-codigo-qr/*` (`leerQrDeImagen`, `esUuid`, Enter, receptor) · `shared/escaner-celular/escaner-receptor.service.ts` (`destinoDelCodigo`) ·
+`escaner-celular/escaner-celular-pagina.component.ts` y `assets/escaner/escaner.html` (`qr_code`) · `campanas/codigo-publico/*` (Descargar / Compartir) · `shared/ticket.util.ts` (`articuloDeDetalle`, `subTotalNormal`, `etiqueta`)
+**Tipo:** unitario (componentes y utilidades; se probaron a mano en Karma temporal el 2026-11-08 y se borraron) · e2e manual en QA
+**Debe comprobar:**
+- [ ] Cobrar sin cliente con campaña vigente: la ventana «¿Registrar los datos del cliente?» NO se cierra con clic fuera ni Esc; «No registrar» cobra a nombre del administrador; sin campaña, clic fuera/Esc cierra y YA NO cobra
+- [ ] Modal de datos del cliente con campaña: clic en el fondo no lo cierra; la ✕ sí; «No registrar y cobrar» solo sale si se abrió desde «Cobrar»; casilla de privacidad desmarcada → se guarda el cliente pero no se crea QR
+- [ ] Pegar/escribir/escanear un UUID completo → llama a `buscar-por-codigo` solo; válido con `clienteId` → selecciona al cliente (`clienteSeleccionado`) y limpia el sin registro; con `clienteSinRegistroId` → llena el modal y el id; sin ids → pide elegir al cliente y valida por correo/teléfono
+- [ ] UUID de otro cliente con la venta ya con cliente → pregunta «¿Cambiarlo?»; «No» limpia el código
+- [ ] Código inexistente → «Ese código no existe», precio normal
+- [ ] Meta en pantalla: Contado suma todo el ticket (1000 + 1000 ≥ 1500 → recurrente); Apartado no suma el ticket de hoy
+- [ ] 📱: un UUID del celular entra al campo de campaña; un código de barras sigue entrando al buscador (con y sin campo de campaña, en cualquier orden de registro); en Android con `BarcodeDetector` sin `qr_code` se usa zxing o el detector sin `qr_code` sin fallar
+- [ ] Imagen del QR: PNG normal, JPEG comprimido, QR de 120 px, 2400 px y captura grande con margen → se leen; imagen sin QR → aviso (ya probado en Chrome 141 el 2026-11-08)
+- [ ] Lector USB: el UUID termina con Enter → busca; con teclado en otro idioma (`'` por `-`) se corrige
+- [ ] Página `/codigo-campana/:uuid`: QR 600 px margen 4; «Descargar imagen» baja un PNG con el UUID escrito; «Compartir» solo sale si el navegador lo soporta; liga con texto que no es UUID → «no trae un código válido»
+- [ ] Ticket: sin descuento sale idéntico a antes; con campaña muestra el normal tachado y «Precio de campaña»; impreso tras guardar usa `renglones[]` del back; en Mis pedidos / detalle / abonos usa `precioNormal` + `conPrecioDeCampana`
+- [ ] Línea de Venta directa muestra «$X c/u» con el descuento aplicado
+
+---
+
 ### 2026-10-28 — Cobro con tarjeta: terminal (admin) y pago en línea (cliente) con el módulo nuevo
 **Dónde:** `pedidos/pago-tarjeta.service.ts` y `pedidos/models/pago-tarjeta.model.ts` (nuevos); `pedidos/mis-pedidos` (`enviarATerminalNuevo`, `aplicarEstadoTarjeta`, `startPollingTarjeta`, `cancelarTerminal`, `opcionesMesesVisibles`, `motivoSinMeses`, `puedePagarEnLinea`); `pedidos/cobro/cobro-tarjeta` (componente nuevo)
 **Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA, pasarela simulada)

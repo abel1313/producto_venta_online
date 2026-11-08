@@ -1,8 +1,10 @@
-import { Component, ElementRef, EventEmitter, Input, OnDestroy, Output, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { IScannerControls } from '@zxing/browser';
 import Swal from 'sweetalert2';
 import { iniciarEscanerConAutofoco } from '../barcode-scanner.util';
-import { extraerCodigo, leerQrDeImagen } from './codigo-qr.util';
+import { AuthService } from 'src/app/auth/auth.service';
+import { EscanerReceptorService } from '../escaner-celular/escaner-receptor.service';
+import { extraerCodigo, esUuid, leerQrDeImagen } from './codigo-qr.util';
 
 /**
  * Campo para el código de cliente de una campaña. Tres formas de ponerlo: escribirlo o pegarlo, 📷 escanear su QR con la cámara, o 🖼️ subir
@@ -13,7 +15,7 @@ import { extraerCodigo, leerQrDeImagen } from './codigo-qr.util';
   templateUrl: './entrada-codigo-qr.component.html',
   styleUrls: ['./entrada-codigo-qr.component.scss']
 })
-export class EntradaCodigoQrComponent implements OnDestroy {
+export class EntradaCodigoQrComponent implements OnInit, OnDestroy {
   @Input() valor = '';
   @Input() placeholder = 'Código del cliente (pega o escanea su QR)';
   @Output() valorChange = new EventEmitter<string>();
@@ -24,10 +26,35 @@ export class EntradaCodigoQrComponent implements OnDestroy {
 
   @ViewChild('video') video?: ElementRef<HTMLVideoElement>;
 
-  ngOnDestroy(): void { this.cerrarCamara(); }
+  private desregistrar: (() => void) | null = null;
+
+  constructor(private readonly receptor: EscanerReceptorService, private readonly authService: AuthService) {}
+
+  /**
+   * El celular que ya se usa para códigos de barras también puede mandar el QR: mientras este campo existe se registra como receptor de los códigos que
+   * son UUID (los de barras siguen yendo al buscador de siempre). Solo con sesión iniciada, igual que el botón 📱.
+   */
+  ngOnInit(): void {
+    if (this.authService.rolesValue.length === 0) return;
+    this.desregistrar = this.receptor.registrar(codigo => this.poner(codigo), codigo => esUuid(codigo));
+  }
+
+  ngOnDestroy(): void {
+    this.cerrarCamara();
+    this.desregistrar?.();
+    this.desregistrar = null;
+  }
+
+  /** Un lector USB con otra distribución de teclado escribe `'` donde va `-`: se corrige antes de reconocer el código. */
+  private arreglarLector(texto: string): string {
+    return /^[0-9a-f]{8}['-][0-9a-f]{4}['-][0-9a-f]{4}['-][0-9a-f]{4}['-][0-9a-f]{12}$/i.test(texto.trim()) ? texto.trim().replace(/'/g, '-') : texto;
+  }
+
+  /** Enter (el lector USB lo manda al terminar): se avisa para buscar el código ya mismo. */
+  @Output() enter = new EventEmitter<void>();
 
   alEscribir(texto: string): void {
-    this.valor = extraerCodigo(texto);
+    this.valor = extraerCodigo(this.arreglarLector(texto));
     this.valorChange.emit(this.valor);
   }
 

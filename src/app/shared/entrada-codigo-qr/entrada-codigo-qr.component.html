@@ -1,6 +1,6 @@
 <div class="eq">
   <input class="eq-input" type="text" autocomplete="off" spellcheck="false"
-         [ngModel]="valor" (ngModelChange)="alEscribir($event)" (paste)="alPegar($event)"
+         [ngModel]="valor" (ngModelChange)="alEscribir($event)" (paste)="alPegar($event)" (keydown.enter)="enter.emit()"
          [placeholder]="placeholder" aria-label="Código del cliente">
   <button type="button" class="eq-btn" (click)="abrirCamara()" title="Escanear el QR con la cámara" aria-label="Escanear QR con la cámara">📷</button>
   <label class="eq-btn" title="Subir la imagen del QR" aria-label="Subir imagen del QR">

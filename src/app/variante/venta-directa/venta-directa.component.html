@@ -155,24 +155,24 @@
       </div>
 
       <!-- ── CAMPAÑA — solo existe si hay una campaña vigente (encendida y dentro de fechas) ───────────── -->
-      <div class="vd-campana" *ngIf="campana && lineas.length > 0">
+      <div class="vd-campana" *ngIf="campana">
         <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
           🎁 Campaña «{{ campana.nombre }}» <span class="vd-optional">(hasta {{ campana.fechaFin }})</span>
         </p>
         <p class="vd-campana__nota">
-          Quien junte {{ campana.metaMonto | currency:'$' }} comprando en el evento (sin contar los juguetes de la campaña) lleva los juguetes a precio de campaña.
-          Con Contado y Apartado; con Ir pagando no entra el descuento.
+          Quien junte {{ campana.metaMonto | currency:'$' }} pagados desde el {{ campana.fechaInicio }} hasta el {{ campana.fechaFin }} lleva los juguetes a precio de campaña.
+          Escanea su QR para llenar sus datos. Con Contado y Apartado; con Ir pagando no entra el descuento.
         </p>
 
-        <app-entrada-codigo-qr [valor]="campanaCodigo" (valorChange)="alCambiarCodigo($event)"></app-entrada-codigo-qr>
+        <app-entrada-codigo-qr [valor]="campanaCodigo" (valorChange)="alCambiarCodigo($event)" (enter)="buscarCodigo()"></app-entrada-codigo-qr>
         <div class="vd-campana__fila">
-          <button type="button" class="vd-campana__verificar" [disabled]="!campanaCodigo.trim() || verificando" (click)="verificarCodigo()">
-            {{ verificando ? 'Verificando…' : 'Verificar' }}
+          <button type="button" class="vd-campana__verificar" [disabled]="!campanaCodigo.trim() || verificando" (click)="buscarCodigo()">
+            {{ verificando ? 'Buscando…' : 'Buscar código' }}
           </button>
           <span class="vd-campana__ok" *ngIf="verificacion?.estado === 'OK'">
             ✓ Es de {{ verificacion?.nombre || 'este cliente' }} · lleva {{ verificacion?.acumulado | currency:'$' }} de {{ verificacion?.meta | currency:'$' }}
             <ng-container *ngIf="esRecurrente"> · <strong>ya es recurrente</strong></ng-container>
-            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · con este ticket le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) - ticketSinJuguetes | currency:'$' }}</ng-container>
+            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · con este ticket le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) - ticketQueSuma | currency:'$' }}</ng-container>
           </span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_COINCIDE'">✕ Ese código es de otra persona (no coincide con el correo ni el teléfono del cliente).</span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_EXISTE'">✕ Ese código no existe.</span>
@@ -442,6 +442,7 @@
           </div>
           <div class="vd-line__right">
             <span class="vd-line__subtotal">{{ l.subTotal | currency:'$' }}</span>
+            <span class="vd-line__unidad">{{ precioUnitarioDe(l) | currency:'$' }} c/u</span>
             <span class="vd-line__grupo" *ngIf="conPrecioDeCampana(l)" [title]="'Precio de campaña «' + campana?.nombre + '»'">
               🎁 <s>{{ (l.variante.precio ?? 0) * l.cantidad | currency:'$' }}</s> · ahorra {{ ahorroDe(l) | currency:'$' }}
             </span>
@@ -531,7 +532,7 @@
 
 
 <!-- Modal cliente sin registro -->
-<div class="vd-modal-overlay" *ngIf="modalClienteSinRegistro" (click)="closeModalModalSinRegistro()">
+<div class="vd-modal-overlay" *ngIf="modalClienteSinRegistro" (click)="alHacerClicEnElFondo()">
   <div class="vd-modal" (click)="$event.stopPropagation()">
 
     <div class="vd-modal__header">
@@ -614,10 +615,19 @@
 
       </div>
 
+      <!-- Con campaña vigente: el aviso de privacidad (sin él no se crea el código QR) -->
+      <label class="vd-campana__check" *ngIf="campana">
+        <input type="checkbox" [(ngModel)]="campanaPrivacidad" [ngModelOptions]="{ standalone: true }">
+        <span>El cliente acepta el Aviso de privacidad: se guardan su nombre, correo y teléfono para su código de cliente de la campaña «{{ campana.nombre }}».
+          <span class="vd-optional">Sin esta casilla no se crea su código QR. Si da correo, ahí se le manda.</span></span>
+      </label>
+
       <div class="vd-error" *ngIf="errorClienteSinRegistro">{{ errorClienteSinRegistro }}</div>
 
       <div class="vd-modal__actions">
         <button type="button" class="vd-btn-limpiar" (click)="closeModalModalSinRegistro()">Cancelar</button>
+        <button type="button" class="vd-btn-limpiar" *ngIf="campana && cobrarPendienteVisible" (click)="noRegistrarYCobrar()"
+                title="El cliente no quiere registrarse: se cobra sin cliente y sin QR">No registrar y cobrar</button>
         <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid || guardandoClienteSinRegistro">
           {{ guardandoClienteSinRegistro ? 'Guardando…' : 'Guardar cliente' }}
         </button>

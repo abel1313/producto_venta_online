@@ -96,7 +96,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
       const Detector = (window as any).BarcodeDetector;
       const soportados: string[] | null = Detector?.getSupportedFormats ? await Promise.resolve(Detector.getSupportedFormats()).catch(() => null) : null;
       const nativo = !!soportados && (soportados.includes('ean_13') || soportados.includes('code_128'));
-      if (nativo) await this.conDetectorNativo(Detector); else await this.conZxing();
+      if (nativo) await this.conDetectorNativo(Detector, soportados); else await this.conZxing();
       if (this.destruido) { this.apagar(); return; }
       this.arrancando = false;
       this.mostrar('Listo: apunta al código de barras', 'ok');
@@ -110,8 +110,10 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async conDetectorNativo(Detector: any): Promise<void> {
-    const detector = new Detector({ formats: FORMATOS });
+  private async conDetectorNativo(Detector: any, soportados: string[] | null): Promise<void> {
+    // También el QR del código de cliente de una campaña, si este celular lo sabe leer (zxing ya lo lee en cualquier caso). Solo se pide lo que el detector soporta.
+    const formatos = soportados && soportados.includes('qr_code') ? [...FORMATOS, 'qr_code'] : FORMATOS;
+    const detector = new Detector({ formats: formatos });
     const video = this.video.nativeElement;
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: false,

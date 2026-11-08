@@ -131,8 +131,10 @@
     return navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 },
       advanced: [{ focusMode: 'continuous' }] } });
   }
-  function conDetectorNativo(Detector) {
-    var detector = new Detector({ formats: FORMATOS }), video = $('video'), temporizador = 0;
+  function conDetectorNativo(Detector, soportados) {
+    // También el QR del código de cliente de una campaña, si este celular lo sabe leer. Solo se pide lo que el detector soporta.
+    var formatos = soportados && soportados.indexOf('qr_code') >= 0 ? FORMATOS.concat(['qr_code']) : FORMATOS;
+    var detector = new Detector({ formats: formatos }), video = $('video'), temporizador = 0;
     return pedirCamara().then(function (s) {
       stream = s; video.srcObject = s; return video.play();
     }).then(function () {
@@ -164,7 +166,7 @@
       ? Promise.resolve(window.BarcodeDetector.getSupportedFormats()).catch(function () { return null; }) : Promise.resolve(null);
     soportados.then(function (lista) {
       var sirve = lista && (lista.indexOf('ean_13') >= 0 || lista.indexOf('code_128') >= 0);
-      return sirve ? conDetectorNativo(window.BarcodeDetector) : conZxing();
+      return sirve ? conDetectorNativo(window.BarcodeDetector, lista) : conZxing();
     }).then(function () {
       arrancando = false;
       estado('Listo: apunta al código de barras', 'ok');

@@ -15,7 +15,7 @@ import { NegocioService } from 'src/app/negocio/negocio.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
 import { onImagenError } from 'src/app/shared/imagen-placeholder';
 import Swal from 'sweetalert2';
-import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
@@ -875,7 +875,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       totalPagado:    d.totalPagado ?? null,
       saldoPendiente: d.saldoPendiente > 0 ? d.saldoPendiente : null,
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
-      articulos:      d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      articulos:      d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,
@@ -958,7 +958,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
-      articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      articulos: d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,

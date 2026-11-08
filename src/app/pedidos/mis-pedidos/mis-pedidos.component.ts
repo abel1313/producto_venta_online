@@ -14,7 +14,7 @@ import { PagoTarjetaService } from '../pago-tarjeta.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
 import * as L from 'leaflet';
-import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
@@ -1737,9 +1737,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
-      articulos: d.detalles.map(det => ({
-        cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal
-      })),
+      articulos: d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,
@@ -1852,7 +1850,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
-      articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      articulos: d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,

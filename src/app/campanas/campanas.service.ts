@@ -25,6 +25,21 @@ export interface IReporteCampana {
   personas: IPersonaReporte[];
 }
 
+/** Respuesta de escanear un QR (`buscar-por-codigo`): a quién pertenece el código y cuánto lleva en la campaña vigente. */
+export interface IBuscarPorCodigo {
+  valido: boolean;
+  /** Cliente registrado de su primera compra (o null). */
+  clienteId: number | null;
+  /** Cliente sin registro de su primera compra (o null). Los dos pueden ser null en códigos anteriores al ligado. */
+  clienteSinRegistroId: number | null;
+  nombre: string;
+  correo: string | null;
+  telefono: string | null;
+  acumulado: number;
+  meta: number;
+  falta: number;
+}
+
 export interface ICampana {
   id?: number;
   nombre: string;
@@ -92,6 +107,11 @@ export class CampanasService {
   /** El botón «Verificar» de Venta directa: ¿este código es de este cliente y cuánto lleva? Si falla (429 de intentos) deja pasar el error. */
   verificarCodigo(codigo: string, correo: string | null, telefono: string | null): Observable<IVerificacionCodigo> {
     return this.http.post<{ data: IVerificacionCodigo }>(`${this.url}/personas/verificar`, { codigo, correo, telefono }).pipe(map(r => r.data));
+  }
+
+  /** Escanear el QR: ¿de quién es este código? Con eso se llenan los datos del cliente de la venta. 429 si se hacen demasiados intentos. */
+  buscarPorCodigo(codigo: string): Observable<IBuscarPorCodigo> {
+    return this.http.post<{ data: IBuscarPorCodigo }>(`${this.url}/personas/buscar-por-codigo`, { codigo }).pipe(map(r => r.data));
   }
 
   /** «Eliminar datos de esta persona» (solo administrador). */

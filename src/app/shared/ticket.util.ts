@@ -4,7 +4,24 @@ export interface ITicketArticulo {
   productoNombre: string;
   talla?:         string | null;
   subTotal:       number;
+  /** Solo si el renglón tuvo descuento (campaña o grupo): el precio de las piezas ANTES del descuento (el total del renglón, no por pieza). Sin esto el ticket sale igual que siempre. */
+  subTotalNormal?: number | null;
+  /** Qué descuento fue: «Precio de campaña», «Precio por cantidad»… Se imprime junto al normal tachado. */
+  etiqueta?:       string | null;
 }
+
+/** Un renglón del detalle de un pedido (del back) hecho renglón de ticket; si trae `precioNormal` con precio de campaña, el ticket lo marca. */
+export function articuloDeDetalle(det: { cantidad: number; productoNombre: string; talla?: string | null; subTotal: number;
+                                         precioNormal?: number | null; conPrecioDeCampana?: boolean | null }): ITicketArticulo {
+  const conDescuento = !!det.conPrecioDeCampana && det.precioNormal != null && det.precioNormal * det.cantidad > det.subTotal + 0.005;
+  return {
+    cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal,
+    subTotalNormal: conDescuento ? +(det.precioNormal! * det.cantidad).toFixed(2) : null,
+    etiqueta: conDescuento ? 'Precio de campaña' : null
+  };
+}
+
+const conDescuento = (a: ITicketArticulo): boolean => a.subTotalNormal != null && a.subTotalNormal > a.subTotal + 0.005;
 
 export interface ITicketAbonoItem {
   monto: number;
@@ -95,6 +112,9 @@ export function generarHtmlTicket(d: ITicketData): string {
 
   const filasArticulos = d.articulos.map(a =>
     `<div class="fila"><span>${esc(a.cantidad)}x ${esc(a.productoNombre)}${a.talla ? ' ' + esc(a.talla) : ''}</span><span>${fmt(a.subTotal)}</span></div>`
+    + (conDescuento(a)
+      ? `<div class="fila" style="font-size:9px"><span>🎁 ${esc(a.etiqueta || 'Descuento')}</span><span><s>${fmt(a.subTotalNormal)}</s></span></div>`
+      : '')
   ).join('');
 
   const filaPago = (d.metodoPago ?? '').toUpperCase() === 'EFECTIVO'
@@ -176,6 +196,7 @@ export function generarTextoWhatsapp(d: ITicketData): string {
     '─────────────────────',
     ...d.articulos.map(a =>
       `• ${a.cantidad}x ${a.productoNombre}${a.talla ? ' ' + a.talla : ''} — ${fmt(a.subTotal)}`
+      + (conDescuento(a) ? ` (${a.etiqueta || 'Descuento'}; antes ${fmt(a.subTotalNormal)})` : '')
     ),
     '─────────────────────',
   ];

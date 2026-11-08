@@ -8,7 +8,7 @@ import { AuthService } from 'src/app/auth/auth.service';
 import { FloresService } from 'src/app/flores/service/flores.service';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { hoyIso } from 'src/app/shared/fecha.util';
-import { generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
+import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketArticulo, ITicketData } from 'src/app/shared/ticket.util';
 import { PedidosService } from '../pedidos.service';
 import { FormularioCobroBase } from './formulario-cobro.base';
 
@@ -117,7 +117,7 @@ export abstract class CobroPedidoBase extends FormularioCobroBase implements OnI
       tipo:           liquida ? 'liquidado' : 'abono',
       numero:         d.pedidoId,
       cliente:        d.clienteNombre,
-      articulos:      d.detalles.map(x => ({ cantidad: x.cantidad, productoNombre: x.productoNombre, talla: x.talla, subTotal: x.subTotal })) as ITicketArticulo[],
+      articulos:      d.detalles.map(x => articuloDeDetalle(x)) as ITicketArticulo[],
       total:          d.totalPedido,
       totalPagado:    liquida ? d.totalPedido : pagadoTras,
       saldoPendiente: liquida ? 0 : Math.max(0, +(d.saldoPendiente - body.monto).toFixed(2)),

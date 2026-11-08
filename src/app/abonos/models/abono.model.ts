@@ -117,6 +117,9 @@ export interface PedidoDetalleItem {
   subTotal:               number;
   promocionId?:           number | null;
   promocionDescripcion?:  string | null;
+  /** Solo en líneas cobradas con precio de campaña (back 2026-11-08): el precio de antes del descuento y la marca. */
+  precioNormal?:          number | null;
+  conPrecioDeCampana?:    boolean | null;
   /**
    * `true` solo en la línea del papel de un ramo. Sustituye a detectarlo por el nombre del
    * producto, que era frágil. Sirve para no mostrársela al cliente: el papel va incluido, él no

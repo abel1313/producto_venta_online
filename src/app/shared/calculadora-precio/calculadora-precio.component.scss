@@ -45,6 +45,8 @@
   &--on { border-color: var(--app-accent); background: var(--app-tint); }
   &:not(.cp-tr--cab):hover { background: var(--app-tint); }
 }
+.cp-alerta { padding: 8px 10px; border-radius: 8px; background: var(--pk-warning-soft, var(--app-tint)); color: var(--pk-warning); }
+.cp-reparto { margin: 8px 0 4px; }
 .cp-vacio { color: var(--app-text-muted); text-align: center; }
 
 .cp-acciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }

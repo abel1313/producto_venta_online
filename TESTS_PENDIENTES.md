@@ -106,6 +106,17 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Campañas: el catálogo para agregar va primero en pantalla angosta
+**Dónde:** `campanas.component.scss` (`.cp-columnas` a 900 px o menos), título y placeholder del catálogo
+**Tipo:** revisión visual · e2e manual
+**Debe comprobar:**
+- [ ] a 900 px o menos: arriba salen «Agregar juguetes: catálogo de productos» con su buscador y sus 12 resultados, y debajo la lista de los ya agregados (con su buscador)
+- [ ] a más de 900 px: sigue en dos columnas (los agregados a la izquierda, el catálogo a la derecha)
+- [ ] buscar por nombre y por código de barras en el catálogo trae el producto y «＋ Agregar» lo pasa a la lista; día y noche
+
+---
+
+
 ### 2026-11-09 — Campañas: buscador en «Juguetes y su precio de campaña»
 **Dónde:** `CampanasComponent.productosFiltrados` / `alEscribirEnCampana` (Catálogo → Campañas, formulario)
 **Tipo:** unitario (componente con el buscador de catálogo simulado) · e2e manual en QA

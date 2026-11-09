@@ -72,9 +72,9 @@
       <!-- Catálogo -->
       <div class="cp-catalogo">
         <div class="cp-catalogo__cab">
-          <h4 class="cp-productos__titulo">Catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
+          <h4 class="cp-productos__titulo">Agregar juguetes: catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
           <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)"
-                 placeholder="Filtrar por nombre o código de barras (ej.: juguete)…">
+                 placeholder="Buscar un juguete para agregarlo: nombre o código de barras…">
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm cp-todos" *ngIf="faltanDeLaPagina > 0" (click)="agregarPagina()">
             ＋ Agregar los {{ faltanDeLaPagina }} de esta página
           </button>

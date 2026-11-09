@@ -72,7 +72,9 @@
 
 // Dos columnas (productos del grupo | catálogo), cada lista con su propio scroll: la pantalla no crece al agregar productos.
 .cp-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-@media (max-width: 900px) { .cp-columnas { grid-template-columns: minmax(0, 1fr); } }
+// En pantalla angosta las columnas se apilan: el catálogo para AGREGAR (corto, 12 por página) va primero, con su buscador a la vista, y debajo la lista de los ya agregados
+// (que puede tener cientos). Así no hay que bajar toda la lista para buscar un juguete por nombre o código de barras.
+@media (max-width: 900px) { .cp-columnas { grid-template-columns: minmax(0, 1fr); > .cp-catalogo { order: -1; } } }
 .cp-productos__lista, .cp-catalogo__lista { max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; padding-right: .25rem; }
 @media (max-width: 900px) { .cp-productos__lista, .cp-catalogo__lista { max-height: 18rem; } }
 .cp-columnas > .cp-catalogo { border-top: 0; padding-top: 0; }

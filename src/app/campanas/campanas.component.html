@@ -47,8 +47,18 @@
 
         <p class="cp-vacio" *ngIf="!c.productos.length">Todavía no hay juguetes: agrégalos desde el catálogo.</p>
 
+        <!-- Buscar entre los juguetes que ya están en la campaña: solo filtra lo que se ve, no cambia la campaña -->
+        <div class="cp-buscar" *ngIf="c.productos.length">
+          <input class="pk-input" name="filtroCampana" [ngModel]="filtroCampana" (ngModelChange)="alEscribirEnCampana($event)"
+                 (keydown.enter)="$event.preventDefault()" autocomplete="off"
+                 placeholder="Buscar en los juguetes de la campaña (nombre o código de barras)…">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="filtroCampana" (click)="limpiarFiltroCampana()">✕ Limpiar</button>
+        </div>
+        <p class="cp-vacio" *ngIf="c.productos.length && filtroCampana.trim()">Mostrando {{ productosFiltrados.length }} de {{ c.productos.length }}</p>
+        <p class="cp-vacio" *ngIf="filtroCampana.trim() && !productosFiltrados.length">{{ mensajeSinCoincidencias }}</p>
+
         <div class="cp-productos__lista" *ngIf="c.productos.length">
-          <div class="cp-fila" *ngFor="let p of c.productos; trackBy: porIdDeProducto">
+          <div class="cp-fila" *ngFor="let p of productosFiltrados; trackBy: porIdDeProducto">
             <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.origen">precio de «{{ p.origen }}»</small></span>
             <label class="cp-fila__precio">
               <span>Precio de campaña $</span>

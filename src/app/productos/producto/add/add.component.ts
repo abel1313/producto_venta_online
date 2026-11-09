@@ -223,7 +223,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.cargandoDesdeUpdate = true;
     this.formProductos.patchValue({
       nombre:        p.nombre,
-      precioCosto:   p.precioVenta,
+      precioCosto:   p.precioCosto ?? '',   // el costo real (antes se precargaba con el precio de venta y se sobreescribía al guardar)
       piezas:        p.piezas,
       color:         p.color,
       precioVenta:   p.precioVenta,

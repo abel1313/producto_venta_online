@@ -5,8 +5,8 @@ import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
+import { forkJoin, of, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
@@ -77,6 +77,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   mensajeError     = '';
   seleccionados    = new Set<number>();
   procesandoLote   = false;
+
+  /** Categorías (MAYÚSCULAS) para el selector; vacío = no se muestra. */
+  categorias: string[] = [];
+  /** Categoría elegida. Vacío = todas. Por defecto JUGUETES la primera vez. */
+  filtroCategoria = '';
+  private static readonly CATEGORIA_POR_DEFECTO = 'JUGUETES';
 
   constructor(
     public iconImagen: IconService,
@@ -464,16 +470,43 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       // Se muestra al instante lo guardado, pero el STOCK cambia al vender o cancelar en otras pantallas: se vuelve a consultar
       // la misma búsqueda (mismo término, página y filtros) para que no se quede el número de la última vez (reportado en QA 2026-11-05).
       this.srvice.invalidarProdCache();
+      this.cargarCategorias();
       this.conOSinBuscar(this.paginaPrimera || 1);
     } else {
       // Sin memoria (recién recargado u otra sesión): el personal arranca con sus filtros
       // guardados; para cualquier otro `obtener` responde null al instante.
-      this.preferenciaFiltro.obtener('productos-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+      // Se esperan las preferencias Y las categorías: JUGUETES solo se pone si existe y nadie eligió otra cosa antes.
+      forkJoin([
+        this.preferenciaFiltro.obtener('productos-buscar'),
+        this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)))
+      ]).pipe(takeUntil(this.destroy$)).subscribe(([f, disponibles]) => {
+        this.categorias = disponibles?.categorias ?? [];
         if (f) this.restaurarFiltros(f);
+        const yaEligio = !!f && 'filtroCategoria' in f;
+        if (!yaEligio && this.categorias.includes(AllComponent.CATEGORIA_POR_DEFECTO)) this.filtroCategoria = AllComponent.CATEGORIA_POR_DEFECTO;
         if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
         else this.getData(1);
       });
     }
+  }
+
+  /** Solo llena el selector (al volver a la pantalla con la memoria); no cambia lo elegido. */
+  private cargarCategorias(): void {
+    this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)), takeUntil(this.destroy$))
+      .subscribe(d => { this.categorias = d?.categorias ?? []; });
+  }
+
+  /** Con texto escrito se busca en TODAS las categorías: la elegida solo manda cuando no hay texto. */
+  private get categoriaParaBackend(): string | undefined {
+    return !this.buscarProd && this.filtroCategoria ? this.filtroCategoria : undefined;
+  }
+
+  get categoriaIgnoradaPorTexto(): boolean { return !!this.filtroCategoria && !!this.buscarProd; }
+
+  onCategoriaChange(valor: string): void {
+    this.filtroCategoria = valor;
+    this.paginaPrimera = 1;
+    this.conOSinBuscar(1);
   }
 
   private restaurarFiltros(f: Record<string, any>): void {
@@ -487,6 +520,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrarCodigoReal    = !!f['mostrarCodigoReal'];
     this.fechaDesde = f['fechaDesde'] ?? '';
     this.fechaHasta = f['fechaHasta'] ?? '';
+    this.filtroCategoria = f['filtroCategoria'] ?? '';
   }
 
   getData(pagina: number) {
@@ -535,7 +569,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         || this.mostrarConImagenes || this.mostrarSinImagenes
         || this.mostrarHabilitados || this.mostrarNoHabilitados
         || this.mostrarCodigoGenerado || this.mostrarCodigoReal
-        || !!this.fechaDesde || !!this.fechaHasta;
+        || !!this.fechaDesde || !!this.fechaHasta
+        || !!this.categoriaParaBackend;
   }
 
   // Ambos marcados o ninguno de un par = no se filtra por esa dimension (se traen los dos casos).
@@ -576,6 +611,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.mostrarCodigoReal = false;
     this.fechaDesde = '';
     this.fechaHasta = '';
+    this.filtroCategoria = '';
     this.buscarProd = '';
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
@@ -594,7 +630,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       habilitado: this.paramHabilitado,
       codigoGenerado: this.paramCodigoGenerado,
       fechaDesde: this.fechaDesde || undefined,
-      fechaHasta: this.fechaHasta || undefined
+      fechaHasta: this.fechaHasta || undefined,
+      categoria: this.categoriaParaBackend
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: (res) => {
         this.sinResultados = false;
@@ -612,7 +649,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
           mostrarCodigoGenerado: this.mostrarCodigoGenerado,
           mostrarCodigoReal: this.mostrarCodigoReal,
           fechaDesde: this.fechaDesde,
-          fechaHasta: this.fechaHasta
+          fechaHasta: this.fechaHasta,
+          filtroCategoria: this.filtroCategoria
         };
         this.srvice.setProdFiltrosCache(filtros);
         this.preferenciaFiltro.guardar('productos-buscar', filtros);
@@ -844,7 +882,8 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         habilitado: this.paramHabilitado,
         codigoGenerado: this.paramCodigoGenerado,
         fechaDesde: this.fechaDesde || undefined,
-        fechaHasta: this.fechaHasta || undefined
+        fechaHasta: this.fechaHasta || undefined,
+        categoria: this.categoriaParaBackend
       }, paginaPrimera, 10).pipe(takeUntil(this.destroy$)).subscribe({
         next: (res) => {
           this.paginaPrimera = this.paginaPrimera + 1;

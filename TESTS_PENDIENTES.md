@@ -17,6 +17,17 @@ Formato de cada entrada:
 
 ---
 
+
+### 2026-11-09 — Filtro Categoría (JUGUETES por defecto) en Tienda → Buscar y Productos → Buscar
+**Dónde:** `variante/buscar/buscar.component.*`, `productos/producto/all/all.component.*`, `VarianteService.buscarFiltrado/adminFiltrar`, `ProductoService.adminFiltrar`.
+**Debe comprobar:**
+- Primera vez (sin filtros guardados ni memoria): ambas pantallas abren con **JUGUETES** elegido y solo juguetes; si no existe la categoría o la lista no carga, abren en todas.
+- Escribir 3+ letras en el buscador busca en **todas** las categorías y sale el aviso «Buscando … en todas las categorías»; al borrar el texto vuelve la categoría elegida.
+- Elegir otra categoría, salir y volver (memoria) y recargar la página (filtro guardado): se conserva. Dejarla vacía (todas) también se conserva mientras haya algún filtro guardado.
+- «✕ Limpiar» (Tienda) y «Limpiar filtros» (Productos) dejan Todas.
+- Paginación y «cargar más» respetan la categoría; los demás filtros se combinan con ella.
+- Se ve igual de día y de noche, escritorio y celular (selector junto a los demás filtros).
+
 ### 2026-11-09 — Modal «Cliente sin registro»: ya no se corta arriba ni abajo (alto máximo, scroll interno, botones fijos)
 **Dónde:** `variante/venta-directa/venta-directa.component.scss` (`.vd-modal-overlay`, `.vd-modal`, `.vd-modal__form`, `.vd-modal__actions`)
 **Tipo:** e2e manual (varios tamaños de pantalla)

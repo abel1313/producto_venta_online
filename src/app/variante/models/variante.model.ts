@@ -98,6 +98,8 @@ export interface IFiltrosDisponibles {
   tallas: string[];
   colores: string[];
   marcas: string[];
+  /** Categorías (en MAYÚSCULAS) de lo que se ve en la tienda. Puede faltar en un back viejo. */
+  categorias?: string[];
   precioMin: number | null;
   precioMax: number | null;
 }

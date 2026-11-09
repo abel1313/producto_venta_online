@@ -15,7 +15,14 @@
   </div>
 
   <!-- Sin imágenes -->
-  <div *ngIf="!cargandoImagenes && displayImages.length === 0" class="ui-imgs__empty">
+  <!-- Falló el listado de imágenes: el formulario de arriba sigue funcionando -->
+  <div *ngIf="errorImagenes" class="ui-imgs__empty">
+    <span>⚠️</span>
+    <p>No se pudieron cargar las imágenes de este producto. Puedes seguir actualizando sus datos.</p>
+    <button type="button" class="pk-btn pk-btn--secondary" (click)="reintentarImagenes()">Reintentar</button>
+  </div>
+
+  <div *ngIf="!cargandoImagenes && !errorImagenes && displayImages.length === 0" class="ui-imgs__empty">
     <span>📷</span>
     <p>Este producto no tiene imágenes cargadas</p>
   </div>

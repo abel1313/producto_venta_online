@@ -547,6 +547,48 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Aviso de privacidad y Términos con la campaña de Reyes
+**Dónde:** `privacidad.component.html`, `terminos.component.html` (rutas públicas `/privacidad` y `/termConditions`)
+**Tipo:** revisión de texto · e2e manual
+**Debe comprobar:**
+- [ ] `/privacidad` muestra la sección «Campaña de temporada (Día de Reyes 2026–2027)», los dos puntos nuevos en «Qué datos recabamos» y «Para lo que tú decides», y el párrafo en «Cuánto tiempo los conservamos»; fecha al pie «9 de noviembre de 2026»
+- [ ] `/termConditions` muestra la sección de la campaña y su liga «Aviso de privacidad» abre `/privacidad`
+- [ ] los dos textos se leen bien de día y de noche y en celular, y siguen abriendo sin iniciar sesión
+- [ ] el contenido coincide con lo que hace el sistema (lo pagado, canceladas y devueltas se descuentan, apartados, «Ir pagando» sin precio especial)
+
+---
+
+### 2026-11-09 — Reportes → «Precios calculados» y el indicador de cálculo en Actualizar producto
+**Dónde:** `PreciosCalculadosComponent` (pestaña nueva de Reportes, solo administrador), `CalculoPrecioService.listar/historial`, bloque «Cálculo de precio» de `AddComponent`
+**Tipo:** unitario (componentes con el servicio simulado) · e2e manual en QA
+**Debe comprobar:**
+- [ ] la pestaña «💲 Precios calculados» solo la ve el administrador y lista el último cálculo de cada producto (calculó, se cobra, ganancia real, costo total, fecha y quién)
+- [ ] filtros por nombre y por fechas (incluye los dos extremos); «Limpiar» regresa todo; fechas al revés muestran aviso y no buscan; páginas Anterior/Siguiente
+- [ ] «Ver cálculos anteriores» abre el historial del producto (del más nuevo al más viejo) y «Ocultar» lo cierra
+- [ ] producto cuyo precio de venta de hoy ya no es el del cálculo → aviso ⚠️ con el precio de hoy
+- [ ] sin la migración o con error del back → mensaje claro y no se rompe la pantalla
+- [ ] Actualizar producto: producto sin cálculo → «Todavía no se ha calculado el precio de este producto»; con cálculo → bloque con lo calculado, aviso si el precio del formulario ya no coincide, y «Ver cálculos anteriores»; al guardar un cálculo nuevo el bloque se actualiza
+- [ ] en Nuevo producto no aparece ningún bloque de cálculo
+- [ ] día y noche, escritorio y celular (400 px)
+
+---
+
+### 2026-11-09 — Calculadora de precio: comisión de la terminal, costo total y guardado del cálculo
+**Dónde:** `CalculadoraPrecioComponent`, `calculo-precio.ts`, `CalculoPrecioService`, `AddComponent` (`usarPrecioCalculado`, `guardarCalculoPrecio`, bloque «Último cálculo de precio»)
+**Tipo:** unitario (funciones puras y componente) · e2e manual en QA
+**Debe comprobar:**
+- [ ] costo $115, margen 30 %, comisión 3.6 % → exacto $173.19; sin comisión → $164.29 / $165
+- [ ] el selector «Comisión de tarjeta» lista las comisiones de la terminal ya dadas de alta (tarifa + IVA); si no se pueden leer, solo «Sin comisión»
+- [ ] casilla «Poner también el costo total real en Precio de compra»: solo sale si hay transporte u otros gastos; marcada, «Usar este precio» pone el costo total en «Precio de compra»; desmarcada, no lo toca
+- [ ] «Usar este precio» + Guardar producto → se guarda el cálculo con el precio de venta que quedó (aunque se haya editado a mano) y en Actualizar aparece «Último cálculo de precio» (calculó vs. se cobra)
+- [ ] «Cerrar» no cambia ni el precio ni el costo, y no guarda ningún cálculo
+- [ ] si falla el guardado del cálculo (por ejemplo, sin la migración) el producto sí queda guardado y sale el aviso
+- [ ] el bloque «Gasto total del viaje / Piezas que trajiste» solo hace la división y no se guarda
+(Comprobado a mano con una página temporal que se borró: el evento `usar` entrega precio, costo total y el cálculo; el modal se ve bien a 1360 y 400 px.)
+
+---
+
+
 ## Tests existentes que quedaron viejos
 
 | Test | Desde | Por qué falla |

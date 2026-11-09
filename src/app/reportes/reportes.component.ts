@@ -30,7 +30,7 @@ function tema(token: string, alfa = 1): string {
 }
 Chart.register(...registerables);
 
-type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones' | 'corte';
+type Tab = 'diario' | 'mensual' | 'cliente' | 'masVendidos' | 'promociones' | 'corte' | 'precios';
 
 @Component({
   selector: 'app-reportes',

@@ -17,9 +17,11 @@ import { AltaArticulosComponent } from './alta-articulos/alta-articulos.componen
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
 
 import { DialogModule } from 'primeng/dialog';
+import { SharedModule as PrimeSharedModule } from 'primeng/api';
 import { QRCodeModule } from 'angularx-qrcode';
 import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
 import { FotoCelularComponent } from './foto-celular/foto-celular.component';
+import { CalculadoraPrecioComponent } from './calculadora-precio/calculadora-precio.component';
 
 @NgModule({
   declarations: [
@@ -37,9 +39,10 @@ import { FotoCelularComponent } from './foto-celular/foto-celular.component';
     AltaArticulosComponent,
     FiltroBuscableComponent,
     EscanerCelularComponent,
-    FotoCelularComponent
+    FotoCelularComponent,
+    CalculadoraPrecioComponent
   ],
-  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
+  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, PrimeSharedModule, QRCodeModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,
@@ -55,7 +58,8 @@ import { FotoCelularComponent } from './foto-celular/foto-celular.component';
     AltaArticulosComponent,
     FiltroBuscableComponent,
     EscanerCelularComponent,
-    FotoCelularComponent
+    FotoCelularComponent,
+    CalculadoraPrecioComponent
   ]
 })
 export class SharedModule {}

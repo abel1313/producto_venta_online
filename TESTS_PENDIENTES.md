@@ -106,6 +106,22 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Reportes → «Precios calculados» y el indicador de cálculo en Actualizar producto
+**Dónde:** `PreciosCalculadosComponent` (pestaña nueva de Reportes, solo administrador), `CalculoPrecioService.listar/historial`, bloque «Cálculo de precio» de `AddComponent`
+**Tipo:** unitario (componentes con el servicio simulado) · e2e manual en QA
+**Debe comprobar:**
+- [ ] la pestaña «💲 Precios calculados» solo la ve el administrador y lista el último cálculo de cada producto (calculó, se cobra, ganancia real, costo total, fecha y quién)
+- [ ] filtros por nombre y por fechas (incluye los dos extremos); «Limpiar» regresa todo; fechas al revés muestran aviso y no buscan; páginas Anterior/Siguiente
+- [ ] «Ver cálculos anteriores» abre el historial del producto (del más nuevo al más viejo) y «Ocultar» lo cierra
+- [ ] producto cuyo precio de venta de hoy ya no es el del cálculo → aviso ⚠️ con el precio de hoy
+- [ ] sin la migración o con error del back → mensaje claro y no se rompe la pantalla
+- [ ] Actualizar producto: producto sin cálculo → «Todavía no se ha calculado el precio de este producto»; con cálculo → bloque con lo calculado, aviso si el precio del formulario ya no coincide, y «Ver cálculos anteriores»; al guardar un cálculo nuevo el bloque se actualiza
+- [ ] en Nuevo producto no aparece ningún bloque de cálculo
+- [ ] día y noche, escritorio y celular (400 px)
+
+---
+
+
 ### 2026-11-09 — Campañas: el juguete llega con el precio que ya tiene en otra campaña
 **Dónde:** `CampanasComponent.agregarProducto` / `precioPrevio` (Catálogo → Campañas)
 **Tipo:** unitario (componente con campañas simuladas) · e2e manual en QA

@@ -21,6 +21,19 @@ export interface ICalculoGuardado extends ICalculoParaGuardar {
   nota: string | null; usuario: string | null; fecha: string;
 }
 
+/** Una fila del listado de cálculos: el último cálculo de un producto con su nombre y el precio de venta de hoy. */
+export interface ICalculoDeProducto {
+  calculo: ICalculoGuardado;
+  nombreProducto: string;
+  precioVentaActual: number | null;
+  /** El precio de venta de hoy ya no es el que se cobró en ese cálculo (se cambió el precio después). */
+  precioCambio: boolean;
+}
+
+export interface IPaginaCalculos { pagina: number; totalPaginas: number; totalRegistros: number; items: ICalculoDeProducto[]; }
+
+export interface IFiltroCalculos { nombre: string; desde: string | null; hasta: string | null; }
+
 /**
  * Cálculos de precio de un producto. Contrato: `CAMBIOS_FRONT.md` del back, sección «Calculadora de precio: se guarda lo que se calculó» (2026-11-09).
  * Todo es solo administrador. Si falla algo (por ejemplo, la migración todavía no corrió) la calculadora sigue funcionando: solo no se guarda el historial.
@@ -46,5 +59,20 @@ export class CalculoPrecioService {
   ultimo(productoId: number): Observable<ICalculoGuardado | null> {
     return this.http.get<{ data: ICalculoGuardado | null } | null>(`${this.url}/producto/${productoId}/ultimo`)
       .pipe(map(r => r?.data ?? null), catchError(() => of(null)));
+  }
+
+  /** El historial de cálculos del producto (del más nuevo al más viejo). Si no se puede leer, lista vacía. */
+  historial(productoId: number, max = 10): Observable<ICalculoGuardado[]> {
+    return this.http.get<{ lista: ICalculoGuardado[] | null }>(`${this.url}/producto/${productoId}?max=${max}`)
+      .pipe(map(r => r?.lista ?? []), catchError(() => of([])));
+  }
+
+  /** Lo calculado en todos los productos: el último cálculo de cada uno, con filtros y páginas (página desde 1). */
+  listar(f: IFiltroCalculos, pagina: number, tamano: number): Observable<IPaginaCalculos> {
+    const q = new URLSearchParams({ page: String(pagina), size: String(tamano) });
+    if (f.nombre.trim()) q.set('nombre', f.nombre.trim());
+    if (f.desde) q.set('desde', f.desde);
+    if (f.hasta) q.set('hasta', f.hasta);
+    return this.http.get<{ data: IPaginaCalculos }>(`${this.url}?${q.toString()}`).pipe(map(r => r.data));
   }
 }

@@ -617,5 +617,8 @@ $t: all 0.22s ease;
   p { margin: 0; line-height: 1.4; }
   &__fecha { font-size: .78rem; color: var(--app-text-muted); }
   &__detalle { font-size: .8rem; color: var(--app-text-muted); }
+  &__aviso { color: var(--pk-warning); }
+  &__enlace { justify-self: start; background: none; border: 0; padding: 0; cursor: pointer; font-weight: 700; font-size: .84rem; color: var(--app-accent-text, var(--app-accent)); text-decoration: underline; }
+  &__historial { list-style: none; margin: .2rem 0 0; padding: 0; display: grid; gap: .3rem; max-height: 12rem; overflow-y: auto; overscroll-behavior: contain; font-size: .82rem; li { line-height: 1.4; } }
 }
 

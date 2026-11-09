@@ -1,0 +1,82 @@
+<section class="pcx" *ngIf="authService.isAdminService">
+
+  <header class="pcx-hero">
+    <p class="pk-kicker">Reportes · solo administrador</p>
+    <h2 class="pcx-titulo">Precios calculados</h2>
+    <p class="pcx-sub">El último cálculo de precio de cada producto: lo que calculó la calculadora, lo que de verdad se cobra y cuánto se gana. Los productos que nunca se calcularon no salen.</p>
+  </header>
+
+  <!-- Filtros -->
+  <form class="pcx-filtros" (ngSubmit)="buscar(1)">
+    <label class="pk-field pcx-campo--ancho">
+      <span class="pk-label">Producto</span>
+      <input class="pk-input" name="nombre" [(ngModel)]="filtros.nombre" placeholder="Parte del nombre (ej.: carro)" autocomplete="off">
+    </label>
+    <label class="pk-field">
+      <span class="pk-label">Calculado desde</span>
+      <input class="pk-input" type="date" name="desde" [(ngModel)]="filtros.desde">
+    </label>
+    <label class="pk-field">
+      <span class="pk-label">Hasta</span>
+      <input class="pk-input" type="date" name="hasta" [(ngModel)]="filtros.hasta">
+    </label>
+    <div class="pcx-acciones">
+      <button type="submit" class="pk-btn pk-btn--primary" [disabled]="cargando || fechasAlReves">Buscar</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="limpiar()" [disabled]="cargando">Limpiar</button>
+    </div>
+  </form>
+  <p class="pk-error" *ngIf="fechasAlReves">La fecha «desde» no puede ser después de «hasta».</p>
+  <p class="pk-error" *ngIf="error">{{ error }}</p>
+  <p class="pcx-vacio" *ngIf="cargando">Cargando…</p>
+
+  <ng-container *ngIf="resultado && !cargando">
+    <p class="pcx-total">{{ resultado.totalRegistros }} {{ resultado.totalRegistros === 1 ? 'producto con cálculo' : 'productos con cálculo' }}</p>
+    <p class="pcx-vacio" *ngIf="!resultado.items.length">No hay cálculos con esos filtros. Los cálculos se guardan al pulsar «Usar este precio» en la calculadora y guardar el producto.</p>
+
+    <ul class="pcx-lista" *ngIf="resultado.items.length">
+      <li class="pcx-fila" *ngFor="let f of resultado.items; trackBy: porIdDeCalculo">
+        <div class="pcx-fila__cab">
+          <strong class="pcx-nombre">{{ f.nombreProducto }}</strong>
+          <span class="pcx-fecha">{{ f.calculo.fecha | date:'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="f.calculo.usuario"> · {{ f.calculo.usuario }}</ng-container></span>
+        </div>
+
+        <div class="pcx-precios">
+          <div><span class="pcx-etq">Calculó</span><strong>{{ f.calculo.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+          <div><span class="pcx-etq">Se cobra</span><strong>{{ f.calculo.precioCobrado | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+          <div><span class="pcx-etq">Ganancia real</span><strong [class.pcx-mal]="f.calculo.gananciaReal < 0">{{ f.calculo.gananciaReal | currency:'MXN':'symbol':'1.2-2' }} <small>({{ f.calculo.margenReal }} %)</small></strong></div>
+          <div><span class="pcx-etq">Costo total</span><strong>{{ f.calculo.costoTotal | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+        </div>
+
+        <p class="pcx-detalle">
+          Compra {{ f.calculo.costoCompra | currency:'MXN':'symbol':'1.2-2' }} + transporte {{ f.calculo.transporte | currency:'MXN':'symbol':'1.2-2' }}
+          + otros {{ f.calculo.otros | currency:'MXN':'symbol':'1.2-2' }} · margen elegido {{ f.calculo.margenPct }} %
+          <ng-container *ngIf="f.calculo.comisionPct"> · comisión {{ f.calculo.comisionPct }} %<ng-container *ngIf="f.calculo.comisionDescripcion"> ({{ f.calculo.comisionDescripcion }})</ng-container></ng-container>
+          <ng-container *ngIf="f.calculo.actualizoPrecioCompra"> · puso el costo total en «Precio de compra»</ng-container>
+        </p>
+
+        <p class="pcx-aviso" *ngIf="f.precioCambio">⚠️ El precio de venta de hoy es <strong>{{ f.precioVentaActual | currency:'MXN':'symbol':'1.2-2' }}</strong>, ya no el del cálculo.</p>
+
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternarHistorial(f)" [attr.aria-expanded]="estaAbierto(f.calculo.productoId)">
+          {{ estaAbierto(f.calculo.productoId) ? 'Ocultar cálculos anteriores' : 'Ver cálculos anteriores' }}
+        </button>
+
+        <div class="pcx-historial" *ngIf="estaAbierto(f.calculo.productoId)">
+          <p class="pcx-vacio" *ngIf="historialDe(f.calculo.productoId) === 'cargando'">Cargando…</p>
+          <ul *ngIf="historialDe(f.calculo.productoId) !== 'cargando'">
+            <li *ngFor="let h of $any(historialDe(f.calculo.productoId)) || []; trackBy: porIdDeHistorial">
+              <span class="pcx-fecha">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+              calculó {{ h.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}, se cobró {{ h.precioCobrado | currency:'MXN':'symbol':'1.2-2' }},
+              ganancia {{ h.gananciaReal | currency:'MXN':'symbol':'1.2-2' }} ({{ h.margenReal }} %)
+            </li>
+          </ul>
+        </div>
+      </li>
+    </ul>
+
+    <div class="pcx-pie" *ngIf="resultado.totalPaginas > 1">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina <= 1" (click)="irAPagina(pagina - 1)">‹ Anterior</button>
+      <span>Página {{ pagina }} de {{ resultado.totalPaginas }}</span>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina >= resultado.totalPaginas" (click)="irAPagina(pagina + 1)">Siguiente ›</button>
+    </div>
+  </ng-container>
+</section>

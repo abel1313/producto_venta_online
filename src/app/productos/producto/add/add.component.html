@@ -61,19 +61,37 @@
           </div>
         </div>
 
-        <!-- ── Último cálculo de precio (solo al actualizar, si ya hubo uno) ──────────── -->
-        <div class="pf-calculo" *ngIf="esActualizar && ultimoCalculo as u">
-          <strong>🧮 Último cálculo de precio</strong>
-          <span class="pf-calculo__fecha">{{ u.fecha | date:'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="u.usuario"> · {{ u.usuario }}</ng-container></span>
-          <p>
-            Calculó <strong>{{ u.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}</strong>
-            <ng-container *ngIf="u.precioCobrado !== u.precioCalculado"> y se cobra <strong>{{ u.precioCobrado | currency:'MXN':'symbol':'1.2-2' }}</strong></ng-container>
-            · margen elegido {{ u.margenPct }} % · ganancia real <strong>{{ u.gananciaReal | currency:'MXN':'symbol':'1.2-2' }}</strong> ({{ u.margenReal }} %).
-          </p>
-          <p class="pf-calculo__detalle">
-            Compra {{ u.costoCompra | currency:'MXN':'symbol':'1.2-2' }} + transporte {{ u.transporte | currency:'MXN':'symbol':'1.2-2' }}
-            + otros {{ u.otros | currency:'MXN':'symbol':'1.2-2' }} = costo total {{ u.costoTotal | currency:'MXN':'symbol':'1.2-2' }}<ng-container *ngIf="u.comisionPct"> · comisión {{ u.comisionPct }} %<ng-container *ngIf="u.comisionDescripcion"> ({{ u.comisionDescripcion }})</ng-container></ng-container>.
-          </p>
+        <!-- ── Cálculo de precio de este producto (solo al actualizar): dice si ya se calculó y qué salió ──────────── -->
+        <div class="pf-calculo" *ngIf="esActualizar && ultimoCalculoCargado">
+          <ng-container *ngIf="ultimoCalculo as u; else sinCalculo">
+            <strong>🧮 Último cálculo de precio</strong>
+            <span class="pf-calculo__fecha">{{ u.fecha | date:'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="u.usuario"> · {{ u.usuario }}</ng-container></span>
+            <p>
+              Calculó <strong>{{ u.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}</strong>
+              <ng-container *ngIf="u.precioCobrado !== u.precioCalculado"> y se cobra <strong>{{ u.precioCobrado | currency:'MXN':'symbol':'1.2-2' }}</strong></ng-container>
+              · margen elegido {{ u.margenPct }} % · ganancia real <strong>{{ u.gananciaReal | currency:'MXN':'symbol':'1.2-2' }}</strong> ({{ u.margenReal }} %).
+            </p>
+            <p class="pf-calculo__detalle">
+              Compra {{ u.costoCompra | currency:'MXN':'symbol':'1.2-2' }} + transporte {{ u.transporte | currency:'MXN':'symbol':'1.2-2' }}
+              + otros {{ u.otros | currency:'MXN':'symbol':'1.2-2' }} = costo total {{ u.costoTotal | currency:'MXN':'symbol':'1.2-2' }}<ng-container *ngIf="u.comisionPct"> · comisión {{ u.comisionPct }} %<ng-container *ngIf="u.comisionDescripcion"> ({{ u.comisionDescripcion }})</ng-container></ng-container>.
+            </p>
+            <p class="pf-calculo__aviso" *ngIf="precioCambioDelCalculo">⚠️ El precio de venta que tiene ahora ya no es el del cálculo ({{ u.precioCobrado | currency:'MXN':'symbol':'1.2-2' }}).</p>
+            <button type="button" class="pf-calculo__enlace" (click)="alternarHistorialCalculos()" [attr.aria-expanded]="historialAbierto">
+              {{ historialAbierto ? 'Ocultar cálculos anteriores' : 'Ver cálculos anteriores' }}
+            </button>
+            <ul class="pf-calculo__historial" *ngIf="historialAbierto">
+              <li *ngIf="historialCalculos === null">Cargando…</li>
+              <li *ngFor="let h of historialCalculos || []">
+                <span class="pf-calculo__fecha">{{ h.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
+                calculó {{ h.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}, se cobró {{ h.precioCobrado | currency:'MXN':'symbol':'1.2-2' }},
+                ganancia {{ h.gananciaReal | currency:'MXN':'symbol':'1.2-2' }} ({{ h.margenReal }} %)
+              </li>
+            </ul>
+          </ng-container>
+          <ng-template #sinCalculo>
+            <strong>🧮 Cálculo de precio</strong>
+            <p>Todavía no se ha calculado el precio de este producto. Usa «🧮 Calcular precio» junto a «Precio de venta»; el cálculo se guarda aquí al guardar el producto.</p>
+          </ng-template>
         </div>
 
         <!-- ── Fila 3: Precio descuento + Stock ──────────────── -->

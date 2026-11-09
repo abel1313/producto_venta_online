@@ -176,6 +176,11 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   private calculoPendiente: ICalculoParaGuardar | null = null;
   /** El último cálculo guardado del producto que se edita (null si nunca tuvo uno): se muestra en «Último cálculo de precio». */
   ultimoCalculo: ICalculoGuardado | null = null;
+  /** Ya se preguntó si el producto tiene cálculo (para distinguir «cargando» de «nunca se calculó»). */
+  ultimoCalculoCargado = false;
+  /** Cálculos anteriores del producto (se leen solo si se pide verlos). */
+  historialCalculos: ICalculoGuardado[] | null = null;
+  historialAbierto = false;
 
   /** El producto que se edita (null en Nuevo producto). */
   get idProductoActual(): number | null { return this.esActualizar ? (this.productoUpdate?.idProducto ?? null) : null; }
@@ -205,7 +210,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.calculoPendiente = null;
     if (!productoId || !calculo || !this.authService.isAdminService) return;
     this.calculoPrecioService.guardar(productoId, { ...calculo, precioCobrado: precioVenta }).subscribe({
-      next: guardado => { if (this.esActualizar) this.ultimoCalculo = guardado; },
+      next: guardado => { if (this.esActualizar) { this.ultimoCalculo = guardado; this.ultimoCalculoCargado = true; this.historialCalculos = null; } },
       error: () => Swal.fire({
         icon: 'warning',
         title: 'El producto se guardó, pero…',
@@ -218,8 +223,26 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   private cargarUltimoCalculo(): void {
     const id = this.idProductoActual;
     this.ultimoCalculo = null;
+    this.ultimoCalculoCargado = false;
+    this.historialCalculos = null;
+    this.historialAbierto = false;
     if (!id || !this.authService.isAdminService) return;
-    this.calculoPrecioService.ultimo(id).subscribe(c => this.ultimoCalculo = c);
+    this.calculoPrecioService.ultimo(id).subscribe(c => { this.ultimoCalculo = c; this.ultimoCalculoCargado = true; });
+  }
+
+  /** «Ver cálculos anteriores»: abre o cierra la lista y la lee la primera vez. */
+  alternarHistorialCalculos(): void {
+    this.historialAbierto = !this.historialAbierto;
+    const id = this.idProductoActual;
+    if (this.historialAbierto && this.historialCalculos === null && id) {
+      this.calculoPrecioService.historial(id, 10).subscribe(h => this.historialCalculos = h);
+    }
+  }
+
+  /** El «Precio de venta» que hay ahora en el formulario ya no es el que se cobró en el último cálculo. */
+  get precioCambioDelCalculo(): boolean {
+    const v = this.valorNumero('precioVenta');
+    return !!this.ultimoCalculo && v !== null && Math.abs(v - this.ultimoCalculo.precioCobrado) > 0.005;
   }
 
   // Cuando cambia precioVenta, copiar a precioRebaja automáticamente

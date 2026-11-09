@@ -49,7 +49,7 @@
 
         <div class="cp-productos__lista" *ngIf="c.productos.length">
           <div class="cp-fila" *ngFor="let p of c.productos; trackBy: porIdDeProducto">
-            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}</span>
+            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.origen">precio de «{{ p.origen }}»</small></span>
             <label class="cp-fila__precio">
               <span>Precio de campaña $</span>
               <input class="pk-input" type="number" step="0.01" min="0.01" [name]="'precio' + p.productoId" [(ngModel)]="p.precio">

@@ -106,6 +106,20 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Campañas: el juguete llega con el precio que ya tiene en otra campaña
+**Dónde:** `CampanasComponent.agregarProducto` / `precioPrevio` (Catálogo → Campañas)
+**Tipo:** unitario (componente con campañas simuladas) · e2e manual en QA
+**Debe comprobar:**
+- [ ] juguete A con $100 en la campaña «Reyes 2026» → agregarlo a otra campaña llega en $100 y la fila dice «precio de «Reyes 2026»»
+- [ ] juguete B que nunca estuvo en una campaña → llega con su precio de venta y sin etiqueta
+- [ ] si el juguete está en varias campañas, toma la de fecha de fin más reciente (y, a igual fecha, la de id mayor)
+- [ ] al editar una campaña, no toma su propio precio guardado como «previo»
+- [ ] «Agregar los N de esta página» mezcla bien los dos casos; el precio se puede cambiar y se guarda el que se ve
+- [ ] el cuerpo que se manda al guardar solo trae `productoId` y `precio` (sin `origen`)
+
+---
+
+
 ### 2026-11-09 — Calculadora de precio: comisión de la terminal, precio de campaña, costo total y guardado del cálculo
 **Dónde:** `CalculadoraPrecioComponent`, `calculo-precio.ts`, `CalculoPrecioService`, `AddComponent` (`usarPrecioCalculado`, `guardarCalculoPrecio`, bloque «Último cálculo de precio»)
 **Tipo:** unitario (funciones puras y componente) · e2e manual en QA

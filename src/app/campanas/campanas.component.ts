@@ -223,7 +223,22 @@ export class CampanasComponent implements OnInit, OnDestroy {
   agregarProducto(p: IProductoCatalogo): void {
     const c = this.edicion;
     if (!c || this.estaAgregado(p)) return;
-    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, precio: p.precioVenta }];
+    // Llega con el precio que ya tiene en su campaña más reciente (si nunca estuvo en una, con su precio de venta: el último que se puso al calcularlo).
+    const previo = this.precioPrevio(p.id);
+    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, precio: previo ? previo.precio : p.precioVenta, origen: previo ? previo.campana : null }];
+  }
+
+  /** El último precio de campaña de un juguete en las OTRAS campañas (la más reciente primero por fecha de fin, luego por id); null si nunca estuvo en una. */
+  private precioPrevio(productoId: number): { precio: number; campana: string } | null {
+    const idEnEdicion = this.edicion?.id;
+    const otras = this.campanas
+      .filter(x => x.id !== idEnEdicion)
+      .sort((a, b) => (b.fechaFin ?? '').localeCompare(a.fechaFin ?? '') || (b.id ?? 0) - (a.id ?? 0));
+    for (const c of otras) {
+      const p = c.productos.find(x => x.productoId === productoId);
+      if (p && p.precio > 0) return { precio: +p.precio, campana: c.nombre };
+    }
+    return null;
   }
 
   /** Todos los de la página que se está viendo (por ejemplo, tras filtrar por «juguete»). */

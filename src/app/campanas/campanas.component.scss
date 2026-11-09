@@ -28,6 +28,7 @@
   display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center;
   padding: .45rem 0; border-bottom: 1px solid var(--app-hairline, var(--app-border));
   &__nombre { min-width: 0; overflow-wrap: anywhere; color: var(--app-text); }
+  &__origen { display: block; font-size: .72rem; color: var(--app-text-muted); }
   &__precio { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--app-text-muted); input { width: 7rem; } }
 }
 @media (max-width: 560px) {

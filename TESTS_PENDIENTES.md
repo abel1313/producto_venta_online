@@ -364,6 +364,18 @@ Formato de cada entrada:
 - [ ] Mensaje de éxito "Se cambiaron 1 pieza(s); quedan 2 del artículo de antes." solo cuando quedan piezas.
 
 ---
+
+### 2026-11-09 — Aviso de privacidad y Términos con la campaña de Reyes
+**Dónde:** `privacidad.component.html`, `terminos.component.html` (rutas públicas `/privacidad` y `/termConditions`)
+**Tipo:** revisión de texto · e2e manual
+**Debe comprobar:**
+- [ ] `/privacidad` muestra la sección «Campaña de temporada (Día de Reyes 2026–2027)», los dos puntos nuevos en «Qué datos recabamos» y «Para lo que tú decides», y el párrafo en «Cuánto tiempo los conservamos»; fecha al pie «9 de noviembre de 2026»
+- [ ] `/termConditions` muestra la sección de la campaña y su liga «Aviso de privacidad» abre `/privacidad`
+- [ ] los dos textos se leen bien de día y de noche y en celular, y siguen abriendo sin iniciar sesión
+- [ ] el contenido coincide con lo que hace el sistema (lo pagado, canceladas y devueltas se descuentan, apartados, «Ir pagando» sin precio especial)
+
+---
+
 ### 2026-11-09 — Reportes → «Precios calculados» y el indicador de cálculo en Actualizar producto
 **Dónde:** `PreciosCalculadosComponent` (pestaña nueva de Reportes, solo administrador), `CalculoPrecioService.listar/historial`, bloque «Cálculo de precio» de `AddComponent`
 **Tipo:** unitario (componentes con el servicio simulado) · e2e manual en QA

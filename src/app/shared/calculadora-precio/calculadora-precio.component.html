@@ -1,0 +1,101 @@
+<!-- appendTo="body": el formulario puede estar dentro de contenedores con efectos que encogen un cuadro «fijo». -->
+<p-dialog header="🧮 Calcular precio de venta" styleClass="cp-dialogo" appendTo="body" [visible]="visible" [modal]="true" [closable]="true" [draggable]="false"
+          [style]="{ width: '560px', maxWidth: '96vw' }" [contentStyle]="{ 'max-height': '78vh' }" (visibleChange)="!$event && cerrar()" (onHide)="cerrar()">
+  <div class="cp">
+
+    <p class="cp-aviso">
+      Esto <strong>solo calcula</strong>: el precio del producto <strong>no cambia</strong> hasta que pulses «Usar este precio».
+      Todo es por <strong>una pieza</strong>. Si prefieres, cierra y escribe el precio a mano.
+    </p>
+
+    <!-- 1. Lo que cuesta -->
+    <section class="cp-bloque">
+      <h4 class="cp-titulo">1 · Lo que te cuesta cada pieza</h4>
+
+      <label class="cp-campo">
+        <span class="cp-etiqueta">Costo de compra</span>
+        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="compra" (ngModelChange)="alCambiarCalculo()" placeholder="0.00"></span>
+        <small class="cp-ayuda">Lo que pagaste por <strong>una</strong> pieza, sin contar el transporte. Ya viene del campo «Precio de compra» si lo habías puesto.</small>
+      </label>
+
+      <label class="cp-campo">
+        <span class="cp-etiqueta">Transporte por pieza</span>
+        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="transporte" (ngModelChange)="alCambiarCalculo()" placeholder="0.00"></span>
+        <small class="cp-ayuda">Lo que gastaste en traer la mercancía, <strong>repartido entre las piezas</strong> del viaje. Cada juguete puede llevar un transporte distinto (uno grande ocupa más lugar que uno chico).</small>
+      </label>
+      <details class="cp-ayudita">
+        <summary>¿No sabes cuánto es por pieza? Calcúlalo aquí</summary>
+        <div class="cp-fila2">
+          <label class="cp-campo"><span class="cp-etiqueta">Gasto total del viaje</span>
+            <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="gastoViaje" placeholder="Ej. 600"></span></label>
+          <label class="cp-campo"><span class="cp-etiqueta">Piezas que trajiste</span>
+            <input class="cp-simple" type="number" min="1" step="1" inputmode="numeric" [(ngModel)]="piezasViaje" placeholder="Ej. 40"></label>
+        </div>
+        <p class="cp-ayuda">Ejemplo: $600 de pasaje y fletes ÷ 40 piezas = $15 por pieza.
+          <button type="button" class="cp-enlace" *ngIf="transporteSugerido" (click)="usarTransporteSugerido()">Usar {{ transporteSugerido | currency:'MXN':'symbol':'1.2-2' }} por pieza</button></p>
+      </details>
+
+      <label class="cp-campo">
+        <span class="cp-etiqueta">Otros gastos por pieza <span class="cp-opcional">(opcional)</span></span>
+        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="otros" (ngModelChange)="alCambiarCalculo()" placeholder="0.00"></span>
+        <small class="cp-ayuda">Bolsa, etiqueta, comisión de la terminal, mercancía que se daña… lo que le toca a cada pieza.</small>
+      </label>
+
+      <div class="cp-total">
+        <span>Costo total real de la pieza</span>
+        <strong>{{ costo | currency:'MXN':'symbol':'1.2-2' }}</strong>
+      </div>
+      <small class="cp-ayuda">Es lo mínimo que tienes que cobrar para <strong>no perder dinero</strong>. Todo precio por debajo de esto es pérdida.</small>
+    </section>
+
+    <!-- 2. Cuánto quieres ganar -->
+    <section class="cp-bloque">
+      <h4 class="cp-titulo">2 · Cuánto quieres ganar</h4>
+      <p class="cp-ayuda">El <strong>margen</strong> es la parte del precio que se queda de ganancia: con 30 %, de cada $100 que cobras $30 son ganancia y $70 recuperan lo que te costó. No hay un porcentaje obligatorio: tú eliges.</p>
+      <div class="cp-chips" role="group" aria-label="Margen de ganancia">
+        <button type="button" class="cp-chip" *ngFor="let m of margenesRapidos" [class.cp-chip--on]="margen === m" (click)="elegirMargen(m)">{{ m }} %</button>
+        <label class="cp-chip cp-chip--libre">Otro <input type="number" min="0" max="99" step="1" inputmode="decimal" [(ngModel)]="margen" (ngModelChange)="alCambiarCalculo()"> %</label>
+      </div>
+      <label class="cp-paso">Redondear al <select [(ngModel)]="paso" (ngModelChange)="alCambiarCalculo()"><option *ngFor="let p of pasos" [ngValue]="p">${{ p }}</option></select> más cercano (hacia arriba o abajo según el caso)</label>
+    </section>
+
+    <!-- 3. Resultado -->
+    <section class="cp-bloque cp-resultado" *ngIf="costo > 0 && exacto !== null; else faltaCosto">
+      <h4 class="cp-titulo">3 · Resultado</h4>
+      <div class="cp-fila"><span>Precio exacto con {{ margen }} % de margen</span><strong>{{ exacto | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      <div class="cp-fila"><span>Redondeado al ${{ paso }} más cercano</span><strong>{{ sugerido | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+
+      <label class="cp-campo cp-campo--final">
+        <span class="cp-etiqueta">Precio que voy a cobrar</span>
+        <span class="cp-dinero cp-dinero--grande"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [ngModel]="precio" (ngModelChange)="precio = $event" placeholder="0.00"></span>
+        <small class="cp-ayuda">Arranca en el precio redondeado, pero <strong>tú decides</strong>: si el cálculo da $110 y quieres cobrarlo en $130, escribe 130.</small>
+      </label>
+
+      <div class="cp-ganancia" *ngIf="resultado as r" [class.cp-ganancia--mal]="pierde">
+        <span *ngIf="!pierde">Ganas <strong>{{ r.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza · margen real <strong>{{ r.margenPct }} %</strong></span>
+        <span *ngIf="pierde">⚠️ Con este precio <strong>pierdes {{ -r.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza (cuesta {{ costo | currency:'MXN':'symbol':'1.2-2' }}).</span>
+      </div>
+      <p class="cp-ayuda" *ngIf="precioActual">Ahora el producto tiene de precio de venta: {{ precioActual | currency:'MXN':'symbol':'1.2-2' }}.</p>
+
+      <h5 class="cp-subtitulo">Comparar márgenes <span class="cp-opcional">(toca una fila para elegirla)</span></h5>
+      <div class="cp-tabla" role="table">
+        <div class="cp-tr cp-tr--cab" role="row"><span>Margen</span><span>Exacto</span><span>Redondeado</span><span>Ganas</span></div>
+        <button type="button" class="cp-tr" *ngFor="let e of tabla" [class.cp-tr--on]="margen === e.margenPct && precio === e.redondeado" (click)="elegirEscenario(e)">
+          <span>{{ e.margenPct }} %</span><span>{{ e.exacto | currency:'MXN':'symbol':'1.2-2' }}</span><strong>{{ e.redondeado | currency:'MXN':'symbol':'1.2-2' }}</strong><span>{{ e.ganancia | currency:'MXN':'symbol':'1.2-2' }}</span>
+        </button>
+      </div>
+    </section>
+    <ng-template #faltaCosto>
+      <section class="cp-bloque cp-vacio">Escribe el <strong>costo de compra</strong> (y el margen) para ver el precio.</section>
+    </ng-template>
+
+  </div>
+
+  <!-- Los botones quedan fuera del scroll: siempre se ven abajo del cuadro -->
+  <ng-template pTemplate="footer">
+    <div class="cp-acciones">
+      <button type="button" class="cp-btn cp-btn--sec" (click)="cerrar()">Cerrar</button>
+      <button type="button" class="cp-btn cp-btn--pri" [disabled]="!precio || precio <= 0" (click)="usarPrecio()">Usar este precio{{ precio ? ' (' + (precio | currency:'MXN':'symbol':'1.2-2') + ')' : '' }}</button>
+    </div>
+  </ng-template>
+</p-dialog>

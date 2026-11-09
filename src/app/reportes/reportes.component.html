@@ -23,6 +23,7 @@
     <button class="rp-tab" [class.rp-tab--active]="tab === 'revision'"    *ngIf="authService.tieneAccion('reportes', 'reporte-revision')" (click)="setTab('revision')">🔎 Revisión</button>
     <!-- Lleva costo y ganancia: solo administrador (el back también lo exige). -->
     <button class="rp-tab" [class.rp-tab--active]="tab === 'corte'"       *ngIf="authService.isAdminService" (click)="setTab('corte')">🧾 Corte de caja</button>
+    <button class="rp-tab" [class.rp-tab--active]="tab === 'precios'"      *ngIf="authService.isAdminService" (click)="setTab('precios')">💲 Precios calculados</button>
   </div>
 
   <!-- ── DIARIO ──────────────────────────────────────────────────────────── -->
@@ -359,5 +360,6 @@
 
   <!-- ── CORTE DE CAJA (solo administrador): su propio componente, con su propio diseño ───────── -->
   <app-corte-caja *ngIf="tab === 'corte' && authService.isAdminService"></app-corte-caja>
+  <app-precios-calculados *ngIf="tab === 'precios' && authService.isAdminService"></app-precios-calculados>
 
 </div>

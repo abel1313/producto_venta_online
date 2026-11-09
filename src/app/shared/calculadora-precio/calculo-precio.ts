@@ -3,7 +3,7 @@
  * Fórmulas de «PROMPT MAESTRO — cálculo de precios para juguetes» (ver CALCULO_PRECIOS_JUGUETES.md en el back):
  *   CT = C + F + E            costo total = compra + transporte por pieza + otros gastos por pieza
  *   PV = CT / (1 − M)         precio de venta con margen M sobre el PRECIO (margen 30 % ⇒ de cada $100 cobrados, $30 son ganancia)
- * v2: la comisión de la terminal es un % DEL PRECIO (k), así que entra al divisor: PV = CT / (1 − M − k). La merma es un % del costo de compra.
+ * v2: la comisión de la terminal es un % DEL PRECIO (k), así que entra al divisor: PV = CT / (1 − M − k).
  * Todo es una ayuda: nada de aquí cambia el precio de un producto por sí solo.
  */
 
@@ -19,16 +19,6 @@ export function costoTotal(compra: number | null | undefined, transporte: number
 /** Transporte por pieza = gasto total del viaje ÷ piezas que se trajeron. 0 si faltan datos. */
 export function transportePorPieza(gastoTotal: number | null | undefined, piezas: number | null | undefined): number {
   return gastoTotal && piezas && gastoTotal > 0 && piezas > 0 ? aDos(gastoTotal / piezas) : 0;
-}
-
-/** Transporte por pieza repartido por VALOR de compra: gasto del viaje × (compra de esta pieza ÷ compra total del viaje). Una pieza cara carga más que una barata. 0 si faltan datos. */
-export function transportePorValor(gastoTotal: number | null | undefined, valorCompraViaje: number | null | undefined, compraPieza: number | null | undefined): number {
-  return gastoTotal && valorCompraViaje && compraPieza && gastoTotal > 0 && valorCompraViaje > 0 && compraPieza > 0 ? aDos(gastoTotal * compraPieza / valorCompraViaje) : 0;
-}
-
-/** Merma por pieza: % del costo de compra que se calcula que se daña o no se vende. */
-export function mermaPorPieza(compra: number | null | undefined, mermaPct: number | null | undefined): number {
-  return compra && mermaPct && compra > 0 && mermaPct > 0 ? aDos(compra * mermaPct / 100) : 0;
 }
 
 const pct = (v: number | null | undefined): number => (typeof v === 'number' && isFinite(v) && v > 0 ? v : 0);

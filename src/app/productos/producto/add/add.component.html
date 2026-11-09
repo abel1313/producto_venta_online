@@ -61,6 +61,21 @@
           </div>
         </div>
 
+        <!-- ── Último cálculo de precio (solo al actualizar, si ya hubo uno) ──────────── -->
+        <div class="pf-calculo" *ngIf="esActualizar && ultimoCalculo as u">
+          <strong>🧮 Último cálculo de precio</strong>
+          <span class="pf-calculo__fecha">{{ u.fecha | date:'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="u.usuario"> · {{ u.usuario }}</ng-container></span>
+          <p>
+            Calculó <strong>{{ u.precioCalculado | currency:'MXN':'symbol':'1.2-2' }}</strong>
+            <ng-container *ngIf="u.precioCobrado !== u.precioCalculado"> y se cobra <strong>{{ u.precioCobrado | currency:'MXN':'symbol':'1.2-2' }}</strong></ng-container>
+            · margen elegido {{ u.margenPct }} % · ganancia real <strong>{{ u.gananciaReal | currency:'MXN':'symbol':'1.2-2' }}</strong> ({{ u.margenReal }} %).
+          </p>
+          <p class="pf-calculo__detalle">
+            Compra {{ u.costoCompra | currency:'MXN':'symbol':'1.2-2' }} + transporte {{ u.transporte | currency:'MXN':'symbol':'1.2-2' }}
+            + otros {{ u.otros | currency:'MXN':'symbol':'1.2-2' }} = costo total {{ u.costoTotal | currency:'MXN':'symbol':'1.2-2' }}<ng-container *ngIf="u.comisionPct"> · comisión {{ u.comisionPct }} %<ng-container *ngIf="u.comisionDescripcion"> ({{ u.comisionDescripcion }})</ng-container></ng-container>.
+          </p>
+        </div>
+
         <!-- ── Fila 3: Precio descuento + Stock ──────────────── -->
         <div class="pf-grid">
           <div class="pf-field">
@@ -293,7 +308,7 @@
 <!-- Calcular precio: solo calcula; el precio de venta no cambia hasta «Usar este precio» -->
 <app-calculadora-precio *ngIf="formProductos" [(visible)]="calculadoraVisible"
                         [costoInicial]="valorNumero('precioCosto')" [precioActual]="valorNumero('precioVenta')"
-                        (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
+                        [productoId]="idProductoActual" (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
 
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"

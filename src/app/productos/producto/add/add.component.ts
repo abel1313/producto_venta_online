@@ -12,6 +12,8 @@ import { IProductoDTORec } from '../models/producto.dto.model';
 import { ProductoService } from '../../service/producto.service';
 import { VarianteService } from 'src/app/variante/service/variante.service';
 import { AceptaMsiService } from 'src/app/shared/acepta-msi.service';
+import { CalculoPrecioService, ICalculoGuardado, ICalculoParaGuardar } from 'src/app/shared/calculadora-precio/calculo-precio.service';
+import { IResultadoCalculo } from 'src/app/shared/calculadora-precio/calculadora-precio.component';
 // Nuevo — palabra clave para categorizar el producto en búsquedas
 import { IPalabraClave } from 'src/app/palabras-clave/models/palabra-clave.model';
 import { mensajeFotoIlegible, mensajeNoEsImagen, puedeSerImagen } from '../../../shared/imagen-comprimir.util';
@@ -93,7 +95,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     public  readonly authService: AuthService,
     private readonly router:  Router,
     private readonly varianteService: VarianteService,
-    private readonly aceptaMsiService: AceptaMsiService
+    private readonly aceptaMsiService: AceptaMsiService,
+    private readonly calculoPrecioService: CalculoPrecioService
   ) {}
 
   // ── Ciclo de vida ──────────────────────────────────────────────────
@@ -169,13 +172,54 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     return isFinite(v) && v > 0 ? v : null;
   }
 
-  /** El dueño eligió un precio en la calculadora: se pone en «Precio de venta» (igual que si lo escribiera; copia a «Precio con descuento» como siempre). */
-  usarPrecioCalculado(precio: number): void {
+  /** El cálculo que se hizo en la calculadora y todavía no se guarda: se manda al back cuando el producto se guarda (el producto nuevo aún no tiene id). */
+  private calculoPendiente: ICalculoParaGuardar | null = null;
+  /** El último cálculo guardado del producto que se edita (null si nunca tuvo uno): se muestra en «Último cálculo de precio». */
+  ultimoCalculo: ICalculoGuardado | null = null;
+
+  /** El producto que se edita (null en Nuevo producto). */
+  get idProductoActual(): number | null { return this.esActualizar ? (this.productoUpdate?.idProducto ?? null) : null; }
+
+  /**
+   * El dueño eligió un precio en la calculadora: se pone en «Precio de venta» (igual que si lo escribiera; copia a «Precio con descuento» como siempre).
+   * Si dejó marcada la casilla, «Precio de compra» pasa a ser el costo total real (compra + transporte + otros). El cálculo se guarda al guardar el producto.
+   */
+  usarPrecioCalculado(r: IResultadoCalculo): void {
     const ctrl = this.formProductos.get('precioVenta');
     if (!ctrl) return;
-    ctrl.setValue(precio.toFixed(2));
+    ctrl.setValue(r.precio.toFixed(2));
     ctrl.markAsDirty();
     ctrl.markAsTouched();
+    if (r.actualizarCosto) {
+      const costo = this.formProductos.get('precioCosto');
+      costo?.setValue(r.costoTotal.toFixed(2));
+      costo?.markAsDirty();
+      costo?.markAsTouched();
+    }
+    this.calculoPendiente = r.calculo;
+  }
+
+  /** Después de guardar el producto: guarda el cálculo de precio (con el precio de venta que de verdad quedó). Si falla, el producto ya está guardado y solo se avisa. */
+  private guardarCalculoPrecio(productoId: number | undefined, precioVenta: number): void {
+    const calculo = this.calculoPendiente;
+    this.calculoPendiente = null;
+    if (!productoId || !calculo || !this.authService.isAdminService) return;
+    this.calculoPrecioService.guardar(productoId, { ...calculo, precioCobrado: precioVenta }).subscribe({
+      next: guardado => { if (this.esActualizar) this.ultimoCalculo = guardado; },
+      error: () => Swal.fire({
+        icon: 'warning',
+        title: 'El producto se guardó, pero…',
+        text: 'No se pudo guardar el cálculo de precio (el historial). El precio del producto sí quedó.'
+      })
+    });
+  }
+
+  /** Carga el último cálculo del producto que se edita para mostrarlo en el bloque «Último cálculo de precio». */
+  private cargarUltimoCalculo(): void {
+    const id = this.idProductoActual;
+    this.ultimoCalculo = null;
+    if (!id || !this.authService.isAdminService) return;
+    this.calculoPrecioService.ultimo(id).subscribe(c => this.ultimoCalculo = c);
   }
 
   // Cuando cambia precioVenta, copiar a precioRebaja automáticamente
@@ -265,6 +309,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
     this.cargandoDesdeUpdate = false;
     this.cargarAceptaMsi(p.idProducto);
+    this.cargarUltimoCalculo();
   }
 
   /** Lee la casilla de meses del producto que se edita; si no está disponible, la oculta. */
@@ -373,6 +418,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       next: (guardado: { id?: number } | null) => {
         this.guardando = false;
         this.guardarAceptaMsi(guardado?.id ?? this.productoUpdate?.idProducto, aceptaMsi);
+        this.guardarCalculoPrecio(guardado?.id ?? this.productoUpdate?.idProducto, productoSave.precioVenta);
         this.resetForm();
         this.service.invalidarProdCache();
         // Modelo nuevo: en vez del aviso, la pregunta "¿Cuántos artículos quieres hacer?"

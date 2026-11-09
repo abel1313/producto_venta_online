@@ -25,21 +25,15 @@
       </label>
       <details class="cp-ayudita">
         <summary>¿No sabes cuánto es por pieza? Calcúlalo aquí</summary>
-        <div class="cp-chips cp-reparto" role="group" aria-label="Cómo repartir el transporte">
-          <button type="button" class="cp-chip" [class.cp-chip--on]="repartoViaje === 'piezas'" (click)="repartoViaje = 'piezas'">Por piezas (parejo)</button>
-          <button type="button" class="cp-chip" [class.cp-chip--on]="repartoViaje === 'valor'" (click)="repartoViaje = 'valor'">Por valor (el caro carga más)</button>
-        </div>
+        <p class="cp-ayuda">Esto <strong>solo hace una división</strong> para llenar «Transporte por pieza»; no se guarda. Cuenta <strong>todos</strong> los juguetes que trajiste en ese viaje, no solo este producto ni su stock.</p>
         <div class="cp-fila2">
           <label class="cp-campo"><span class="cp-etiqueta">Gasto total del viaje</span>
             <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="gastoViaje" placeholder="Ej. 600"></span></label>
-          <label class="cp-campo" *ngIf="repartoViaje === 'piezas'"><span class="cp-etiqueta">Piezas que trajiste</span>
+          <label class="cp-campo"><span class="cp-etiqueta">Piezas que trajiste</span>
             <input class="cp-simple" type="number" min="1" step="1" inputmode="numeric" [(ngModel)]="piezasViaje" placeholder="Ej. 40"></label>
-          <label class="cp-campo" *ngIf="repartoViaje === 'valor'"><span class="cp-etiqueta">Lo que costó toda la mercancía del viaje</span>
-            <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="valorViaje" placeholder="Ej. 4000"></span></label>
         </div>
-        <p class="cp-ayuda" *ngIf="repartoViaje === 'piezas'">Ejemplo: $600 de pasaje y fletes ÷ 40 piezas = $15 por pieza, igual para todas.</p>
-        <p class="cp-ayuda" *ngIf="repartoViaje === 'valor'">Ejemplo: $600 de transporte, mercancía del viaje $4,000 y este juguete costó $100 → le toca 600 × 100 ÷ 4,000 = $15. Usa el «Costo de compra» de arriba.</p>
-        <p class="cp-ayuda"><button type="button" class="cp-enlace" *ngIf="transporteSugerido" (click)="usarTransporteSugerido()">Usar {{ transporteSugerido | currency:'MXN':'symbol':'1.2-2' }} por pieza</button></p>
+        <p class="cp-ayuda">Ejemplo: $600 de pasaje y fletes ÷ 40 piezas = $15 por pieza.
+          <button type="button" class="cp-enlace" *ngIf="transporteSugerido" (click)="usarTransporteSugerido()">Usar {{ transporteSugerido | currency:'MXN':'symbol':'1.2-2' }} por pieza</button></p>
       </details>
 
       <label class="cp-campo">
@@ -48,18 +42,14 @@
         <small class="cp-ayuda">Bolsa, etiqueta, empaque, IVA si facturas… lo que le toca a cada pieza, en pesos.</small>
       </label>
 
-      <div class="cp-fila2">
-        <label class="cp-campo">
-          <span class="cp-etiqueta">Merma % <span class="cp-opcional">(opcional)</span></span>
-          <input class="cp-simple" type="number" min="0" max="100" step="0.5" inputmode="decimal" [(ngModel)]="mermaPct" (ngModelChange)="alCambiarCalculo()" placeholder="Ej. 3">
-          <small class="cp-ayuda">Parte de la compra que calculas que se rompe o no se vende. Se suma al costo{{ merma ? ' (+' + (merma | currency:'MXN':'symbol':'1.2-2') + ')' : '' }}.</small>
-        </label>
-        <label class="cp-campo">
-          <span class="cp-etiqueta">Comisión de tarjeta % <span class="cp-opcional">(opcional)</span></span>
-          <input class="cp-simple" type="number" min="0" max="50" step="0.1" inputmode="decimal" [(ngModel)]="comisionPct" (ngModelChange)="alCambiarCalculo()" placeholder="Ej. 3.6">
-          <small class="cp-ayuda">Lo que se queda la terminal de lo que cobras. Se calcula sobre el precio, no sobre el costo.</small>
-        </label>
-      </div>
+      <label class="cp-campo">
+        <span class="cp-etiqueta">Comisión de tarjeta <span class="cp-opcional">(opcional)</span></span>
+        <select class="cp-simple" [(ngModel)]="comisionId" (ngModelChange)="alCambiarCalculo()">
+          <option [ngValue]="null">Sin comisión (efectivo o transferencia)</option>
+          <option *ngFor="let c of comisiones" [ngValue]="c.pagosYMesesId">{{ c.descripcion }} · {{ c.totalPct }} %</option>
+        </select>
+        <small class="cp-ayuda">Son las comisiones de la terminal que ya tienes dadas de alta para cobrar con tarjeta (tarifa + IVA). Se descuentan de lo que cobras; si no piensas cobrar con tarjeta, déjalo sin comisión.</small>
+      </label>
 
       <div class="cp-total">
         <span>Costo total real de la pieza</span>
@@ -103,6 +93,11 @@
       </div>
       <p class="cp-ayuda cp-alerta" *ngIf="bajoMinimo">⚠️ Este precio deja menos de tu ganancia mínima de {{ gananciaMin | currency:'MXN':'symbol':'1.2-2' }}. Para alcanzarla cobra al menos <strong>{{ precioMinimoGanancia | currency:'MXN':'symbol':'1.2-2' }}</strong>.</p>
       <p class="cp-ayuda" *ngIf="precioMinimoGanancia && !bajoMinimo && !pierde">Tu precio mínimo para ganar {{ gananciaMin | currency:'MXN':'symbol':'1.2-2' }} limpios es {{ precioMinimoGanancia | currency:'MXN':'symbol':'1.2-2' }}.</p>
+      <label class="cp-check" *ngIf="costoCambia">
+        <input type="checkbox" [(ngModel)]="actualizarCosto">
+        <span>Poner también el costo total real (<strong>{{ costo | currency:'MXN':'symbol':'1.2-2' }}</strong>) en «Precio de compra».
+          <small class="cp-ayuda">Así los reportes cuentan el transporte y los otros gastos al calcular tu ganancia. Si lo desmarcas, «Precio de compra» se queda como está.</small></span>
+      </label>
       <p class="cp-ayuda" *ngIf="precioActual">Ahora el producto tiene de precio de venta: {{ precioActual | currency:'MXN':'symbol':'1.2-2' }}.</p>
 
       <h5 class="cp-subtitulo">Comparar márgenes <span class="cp-opcional">(toca una fila para elegirla)</span></h5>
@@ -125,15 +120,14 @@
         <span *ngIf="m.ganancia < 0">⚠️ Igualar ese precio te haría <strong>perder {{ -m.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza. Opciones: bajar tu margen, no venderlo o ponerlo dentro de un paquete.</span>
       </div>
 
-      <label class="cp-campo">
-        <span class="cp-etiqueta">Precio de campaña (cliente recurrente)</span>
-        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="precioCampana" placeholder="0.00"></span>
-        <small class="cp-ayuda">El precio rebajado que le darías a quien ya es recurrente en la campaña. Este cálculo solo te dice cuánto ganas con él; el precio de campaña se pone después en Catálogo → Campañas.</small>
-      </label>
-      <div class="cp-ganancia" *ngIf="enCampana as c" [class.cp-ganancia--mal]="c.ganancia < 0">
-        <span *ngIf="c.ganancia >= 0">Con el precio de campaña ganas <strong>{{ c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza · margen {{ c.margenPct }} %.</span>
-        <span *ngIf="c.ganancia < 0">⚠️ Con el precio de campaña <strong>pierdes {{ -c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza.</span>
-      </div>
+      <ng-container *ngIf="precioCampana !== null">
+        <h5 class="cp-subtitulo">Precio de campaña <span class="cp-opcional">({{ nombreCampana }})</span></h5>
+        <p class="cp-ayuda">Este producto está en la campaña vigente con precio de campaña de <strong>{{ precioCampana | currency:'MXN':'symbol':'1.2-2' }}</strong> para el cliente recurrente (se cambia en Catálogo → Campañas).</p>
+        <div class="cp-ganancia" *ngIf="enCampana as c" [class.cp-ganancia--mal]="c.ganancia < 0">
+          <span *ngIf="c.ganancia >= 0">Con el precio de campaña ganas <strong>{{ c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza · margen {{ c.margenPct }} %.</span>
+          <span *ngIf="c.ganancia < 0">⚠️ Con el precio de campaña <strong>pierdes {{ -c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza.</span>
+        </div>
+      </ng-container>
     </section>
     <ng-template #faltaCosto>
       <section class="cp-bloque cp-vacio">Escribe el <strong>costo de compra</strong> (y el margen) para ver el precio.</section>

@@ -98,6 +98,23 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Calculadora de precio: comisión de la terminal, precio de campaña, costo total y guardado del cálculo
+**Dónde:** `CalculadoraPrecioComponent`, `calculo-precio.ts`, `CalculoPrecioService`, `AddComponent` (`usarPrecioCalculado`, `guardarCalculoPrecio`, bloque «Último cálculo de precio»)
+**Tipo:** unitario (funciones puras y componente) · e2e manual en QA
+**Debe comprobar:**
+- [ ] costo $115, margen 30 %, comisión 3.6 % → exacto $173.19; sin comisión → $164.29 / $165
+- [ ] el selector «Comisión de tarjeta» lista las comisiones de la terminal ya dadas de alta (tarifa + IVA); si no se pueden leer, solo «Sin comisión»
+- [ ] con un producto que está en la campaña vigente aparece su precio de campaña y cuánto se gana (o pérdida); en Nuevo producto y sin campaña no aparece
+- [ ] casilla «Poner también el costo total real en Precio de compra»: solo sale si hay transporte u otros gastos; marcada, «Usar este precio» pone el costo total en «Precio de compra»; desmarcada, no lo toca
+- [ ] «Usar este precio» + Guardar producto → se guarda el cálculo con el precio de venta que quedó (aunque se haya editado a mano) y en Actualizar aparece «Último cálculo de precio» (calculó vs. se cobra)
+- [ ] «Cerrar» no cambia ni el precio ni el costo, y no guarda ningún cálculo
+- [ ] si falla el guardado del cálculo (por ejemplo, sin la migración) el producto sí queda guardado y sale el aviso
+- [ ] el bloque «Gasto total del viaje / Piezas que trajiste» solo hace la división y no se guarda
+(Comprobado a mano con una página temporal que se borró: el evento `usar` entrega precio, costo total y el cálculo; el modal se ve bien a 1360 y 400 px.)
+
+---
+
+
 ### 2026-10-28 — Cobro con tarjeta: terminal (admin) y pago en línea (cliente) con el módulo nuevo
 **Dónde:** `pedidos/pago-tarjeta.service.ts` y `pedidos/models/pago-tarjeta.model.ts` (nuevos); `pedidos/mis-pedidos` (`enviarATerminalNuevo`, `aplicarEstadoTarjeta`, `startPollingTarjeta`, `cancelarTerminal`, `opcionesMesesVisibles`, `motivoSinMeses`, `puedePagarEnLinea`); `pedidos/cobro/cobro-tarjeta` (componente nuevo)
 **Tipo:** unitario (componente y servicio con HttpTestingController) · e2e (Playwright contra QA, pasarela simulada)

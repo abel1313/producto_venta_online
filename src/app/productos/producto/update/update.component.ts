@@ -30,6 +30,8 @@ export class UpdateComponent implements OnInit, OnDestroy {
 
   displayImages:          ImagenVista[] = [];
   cargandoImagenes        = false;
+  /** La lista de imágenes del producto falló (el micro de imágenes respondió con error): el formulario sigue usable y se puede reintentar. */
+  errorImagenes           = false;
   eliminando              = new Set<string>();
   cambiandoPrincipal      = new Set<string>();
 
@@ -98,7 +100,7 @@ export class UpdateComponent implements OnInit, OnDestroy {
     if (!id || this.paginasCargadas.has(pagina)) return;
     this.paginasCargadas.add(pagina);
 
-    if (pagina === 0) this.cargandoImagenes = true;
+    if (pagina === 0) { this.cargandoImagenes = true; this.errorImagenes = false; }
 
     // API es base-1, internamente usamos base-0 igual que detalle-producto
     this.serviceProducto.getImagenesProducto(id, pagina + 1, PAGE_SIZE).subscribe({
@@ -136,10 +138,17 @@ export class UpdateComponent implements OnInit, OnDestroy {
         });
       },
       error: () => {
-        if (pagina === 1) this.cargandoImagenes = false;
+        // La primera página es la 0 (base-0): antes se comparaba con 1 y el indicador «cargando» se quedaba para siempre si el listado fallaba.
+        if (pagina === 0) { this.cargandoImagenes = false; this.errorImagenes = true; }
         this.paginasCargadas.delete(pagina);
       }
     });
+  }
+
+  /** Botón «Reintentar» cuando falló el listado de imágenes. */
+  reintentarImagenes(): void {
+    this.errorImagenes = false;
+    this.cargarPagina(0);
   }
 
   handlePageChange(event: any): void {

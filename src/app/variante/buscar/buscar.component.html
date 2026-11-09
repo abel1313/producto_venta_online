@@ -134,6 +134,7 @@
   <!-- Filtros públicos del catálogo: talla / color / marca / precio -- visitantes sin sesión
        siempre los ven (isAnonymous); cuentas con sesión necesitan el permiso puntual. -->
   <div *ngIf="!modoPorProducto && filtrosDisponibles" class="vb-pub-filtros">
+    <app-filtro-buscable *ngIf="filtrosDisponibles.categorias?.length" etiqueta="Categoría" [opciones]="filtrosDisponibles.categorias ?? []" [valor]="filtroCategoria" (valorChange)="filtroCategoria = $event; onFiltroPublicoChange()"></app-filtro-buscable>
     <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroTalla" etiqueta="Talla" [opciones]="filtrosDisponibles.tallas" [valor]="filtroTalla" (valorChange)="filtroTalla = $event; onFiltroPublicoChange()"></app-filtro-buscable>
     <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroColor" etiqueta="Color" [opciones]="filtrosDisponibles.colores" [valor]="filtroColor" (valorChange)="filtroColor = $event; onFiltroPublicoChange()"></app-filtro-buscable>
     <app-filtro-buscable *ngIf="isAnonymous || puedeFiltroMarca" etiqueta="Marca" [opciones]="filtrosDisponibles.marcas" [valor]="filtroMarca" (valorChange)="filtroMarca = $event; onFiltroPublicoChange()"></app-filtro-buscable>
@@ -147,6 +148,7 @@
              [max]="filtrosDisponibles.precioMax ?? null" />
     </div>
     <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
+    <span class="vb-pub-aviso" *ngIf="categoriaIgnoradaPorTexto">Buscando «{{ terminoBusqueda.trim() }}» en todas las categorías</span>
   </div>
   </div>
   </ng-container>

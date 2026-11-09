@@ -576,6 +576,7 @@ $t:  all 0.22s ease;
   z-index: 9998;
   display: flex; align-items: center; justify-content: center;
   padding: 16px;
+  overflow-y: auto;          // en una pantalla baja el cuadro nunca queda cortado: se puede bajar
 }
 
 .vd-modal {
@@ -584,6 +585,11 @@ $t:  all 0.22s ease;
   width: 100%; max-width: 500px;
   box-shadow: 0 24px 60px rgba(0,0,0,.35);
   overflow: hidden;
+  // Alto máximo = la pantalla: el encabezado queda fijo arriba, el formulario hace scroll adentro y los botones quedan siempre a la vista.
+  display: flex; flex-direction: column;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  margin: auto;
 
   &__header {
     display: flex; align-items: center; gap: 14px;
@@ -602,7 +608,9 @@ $t:  all 0.22s ease;
     &:hover { background: var(--pk-danger-soft); }
   }
 
-  &__form { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+  &__header { flex-shrink: 0; }
+  &__form { padding: 20px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; min-height: 0; flex: 1 1 auto; overscroll-behavior: contain; }
+  .vd-campana__check { font-size: .78rem; line-height: 1.35; color: var(--app-text-muted); }
 
   &__grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
@@ -631,7 +639,13 @@ $t:  all 0.22s ease;
   &__error { font-size: .72rem; color: var(--pk-danger-to); }
   &__hint  { font-size: .72rem; color: var(--app-text-muted); margin-top: 2px; }
 
-  &__actions { display: flex; gap: 10px; }
+  // Los botones se quedan pegados abajo del cuadro aunque el formulario sea largo.
+  &__actions {
+    display: flex; gap: 10px; flex-wrap: wrap;
+    position: sticky; bottom: -20px; z-index: 1;
+    margin: 0 -20px -20px; padding: 12px 20px 16px;
+    background: var(--form-bg); border-top: 1px solid var(--card-border, var(--app-border));
+  }
 
   &__input--codigo {
     text-align: center; font-size: 1.3rem; letter-spacing: 6px;

@@ -17,6 +17,14 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Modal «Cliente sin registro»: ya no se corta arriba ni abajo (alto máximo, scroll interno, botones fijos)
+**Dónde:** `variante/venta-directa/venta-directa.component.scss` (`.vd-modal-overlay`, `.vd-modal`, `.vd-modal__form`, `.vd-modal__actions`)
+**Tipo:** e2e manual (varios tamaños de pantalla)
+**Debe comprobar:**
+- [ ] a 1360×700, 1280×560 y 400×700 el cuadro no toca el borde de arriba, el encabezado se ve, el formulario hace scroll adentro y «Cancelar / No registrar y cobrar / Guardar cliente» siempre se ven abajo
+- [ ] con y sin campaña vigente (con la casilla del Aviso de privacidad), de día y de noche; los pasos «verificar correo» y «código» también caben
+- [ ] clic en el fondo / ✕ se comportan igual que antes (con campaña no se cierra con clic fuera)
+
 ### 2026-11-08 — Venta directa: aviso que distingue «a mano» de «llegó a la meta», marca de versión y recarga cuando hay versión nueva
 **Dónde:** `variante/venta-directa/venta-directa.component.{ts,html}` (`marcaVersion`, `hayVersionNueva`, `revisarVersion`, aviso del bloque de campaña)
 **Tipo:** unitario (componente con `hayVersionNueva` simulado) · e2e manual en QA

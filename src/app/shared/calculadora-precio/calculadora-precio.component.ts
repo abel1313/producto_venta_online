@@ -1,10 +1,24 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { aDos, costoTotal, escenarios, gananciaYMargen, IEscenarioPrecio, mermaPorPieza, precioConGananciaMinima, precioConMargen, recargoSobreCosto, redondearA, transportePorPieza, transportePorValor } from './calculo-precio';
+import { CampanasService } from 'src/app/campanas/campanas.service';
+import { aDos, costoTotal, escenarios, gananciaYMargen, IEscenarioPrecio, precioConGananciaMinima, precioConMargen, recargoSobreCosto, redondearA, transportePorPieza } from './calculo-precio';
+import { CalculoPrecioService, ICalculoParaGuardar, IComisionTerminal } from './calculo-precio.service';
+
+/** Lo que la calculadora entrega al formulario al pulsar «Usar este precio». */
+export interface IResultadoCalculo {
+  /** El precio que el dueño va a cobrar (puede ser distinto del calculado). */
+  precio: number;
+  /** Si dejó marcado poner también el costo total (compra + transporte + otros) en «Precio de compra». */
+  actualizarCosto: boolean;
+  costoTotal: number;
+  /** Lo que se guarda en el historial del producto después de guardarlo. */
+  calculo: ICalculoParaGuardar;
+}
 
 /**
  * «Calcular precio» de un producto (Nuevo producto / Actualizar producto): ayuda para decidir el precio de venta a partir de lo que costó.
  * SOLO calcula: el precio del producto no cambia hasta que se pulsa «Usar este precio» (que emite `usar`); «Cerrar» no cambia nada.
  * Todo es por UNA pieza. Las fórmulas están en `calculo-precio.ts`.
+ * La comisión de tarjeta se elige del catálogo de terminal que ya usa el cobro; el precio de campaña se toma de la campaña vigente.
  */
 @Component({
   selector: 'app-calculadora-precio',
@@ -18,49 +32,68 @@ export class CalculadoraPrecioComponent implements OnChanges {
   @Input() costoInicial: number | null = null;
   /** El «Precio de venta» que ya tiene el formulario (solo para mostrarlo como referencia). */
   @Input() precioActual: number | null = null;
-  /** El dueño eligió «Usar este precio»: el padre lo escribe en «Precio de venta». */
-  @Output() usar = new EventEmitter<number>();
+  /** El producto que se edita (null en Nuevo producto): sirve para buscar su precio en la campaña vigente. */
+  @Input() productoId: number | null = null;
+  /** El dueño eligió «Usar este precio»: el padre lo escribe en «Precio de venta» (y, si se pidió, en «Precio de compra»). */
+  @Output() usar = new EventEmitter<IResultadoCalculo>();
 
   compra: number | null = null;
   transporte: number | null = null;
   otros: number | null = null;
-  /** Ayuda opcional para sacar el transporte por pieza: gasto total del viaje ÷ piezas que se trajeron. */
+  /** Ayuda opcional para sacar el transporte por pieza: gasto total del viaje ÷ piezas que se trajeron (de TODOS los juguetes del viaje). */
   gastoViaje: number | null = null;
   piezasViaje: number | null = null;
-  /** Otra forma de repartir el viaje: por valor (lo que costó todo el viaje de mercancía). Una pieza cara carga más transporte que una barata. */
-  repartoViaje: 'piezas' | 'valor' = 'piezas';
-  valorViaje: number | null = null;
-  /** v2: % de la compra que se calcula que se daña o no se vende (merma) y % que se queda la terminal de tarjeta (sobre el precio). Opcionales. */
-  mermaPct: number | null = null;
-  comisionPct: number | null = null;
-  /** v2: lo mínimo en pesos que quieres ganar por pieza, aunque el % salga chico (en un juguete de $50 el 30 % son solo $15). Opcional. */
-  gananciaMin: number | null = null;
-  /** v2: precio que viste en otras tiendas (lo captura el dueño; la app no busca en internet) y precio de campaña para el cliente recurrente. Opcionales. */
-  precioMercado: number | null = null;
-  precioCampana: number | null = null;
   margen: number | null = 30;
   readonly margenesRapidos = [20, 25, 30, 35];
   /** Redondeo comercial: $1, $5 o $10 más cercano. */
   paso = 5;
   readonly pasos = [1, 5, 10];
+  /** Comisiones de terminal ya dadas de alta (se cargan al abrir); `comisionId` null = sin comisión (efectivo o transferencia). */
+  comisiones: IComisionTerminal[] = [];
+  comisionId: number | null = null;
+  /** Lo mínimo en pesos que quieres ganar por pieza, aunque el % salga chico. Opcional. */
+  gananciaMin: number | null = null;
+  /** Precio que viste en otras tiendas (lo escribe el dueño; la app no busca en internet). Opcional. */
+  precioMercado: number | null = null;
+  /** Precio de este producto en la campaña vigente (null si no hay campaña o el producto no está). Solo lectura. */
+  precioCampana: number | null = null;
+  nombreCampana: string | null = null;
+  /** Poner también el costo total real en «Precio de compra» para que los reportes cuenten el transporte. */
+  actualizarCosto = true;
   /** Precio que el dueño decidió cobrar (null = el redondeado sugerido). */
   private elegido: number | null = null;
+
+  constructor(private readonly calculos: CalculoPrecioService, private readonly campanas: CampanasService) {}
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['visible'] && this.visible) {
       this.compra = this.costoInicial && this.costoInicial > 0 ? this.costoInicial : null;
-      this.transporte = null; this.otros = null; this.gastoViaje = null; this.piezasViaje = null; this.valorViaje = null; this.repartoViaje = 'piezas';
-      this.mermaPct = null; this.comisionPct = null; this.gananciaMin = null; this.precioMercado = null; this.precioCampana = null;
+      this.transporte = null; this.otros = null; this.gastoViaje = null; this.piezasViaje = null;
       this.margen = 30; this.paso = 5; this.elegido = null;
+      this.comisionId = null; this.gananciaMin = null; this.precioMercado = null; this.actualizarCosto = true;
+      this.cargarCatalogos();
     }
   }
 
-  /** Otros gastos + merma (la merma sale del costo de compra). */
-  get merma(): number { return mermaPorPieza(this.compra, this.mermaPct); }
-  get costo(): number { return costoTotal(this.compra, this.transporte, (this.otros && this.otros > 0 ? this.otros : 0) + this.merma); }
-  get transporteSugerido(): number {
-    return this.repartoViaje === 'valor' ? transportePorValor(this.gastoViaje, this.valorViaje, this.compra) : transportePorPieza(this.gastoViaje, this.piezasViaje);
+  /** Lee las comisiones de terminal y, si el producto ya existe, su precio de campaña. Si algo no se puede leer, esa parte simplemente no aparece. */
+  private cargarCatalogos(): void {
+    this.calculos.comisiones().subscribe(l => this.comisiones = l);
+    this.precioCampana = null; this.nombreCampana = null;
+    const id = this.productoId;
+    if (!id) return;
+    this.campanas.activa().subscribe(c => {
+      const p = c?.productos?.find(x => x.productoId === id);
+      this.precioCampana = p ? +p.precio : null;
+      this.nombreCampana = p && c ? c.nombre : null;
+    });
   }
+
+  /** Comisión elegida (% del precio): tarifa + IVA de la terminal. 0 si es sin comisión. */
+  get comisionPct(): number { return this.comisiones.find(x => x.pagosYMesesId === this.comisionId)?.totalPct ?? 0; }
+  get comisionDescripcion(): string | null { return this.comisiones.find(x => x.pagosYMesesId === this.comisionId)?.descripcion ?? null; }
+
+  get costo(): number { return costoTotal(this.compra, this.transporte, this.otros); }
+  get transporteSugerido(): number { return transportePorPieza(this.gastoViaje, this.piezasViaje); }
   get exacto(): number | null { return precioConMargen(this.costo, this.margen, this.comisionPct); }
   get sugerido(): number | null { return this.exacto == null ? null : redondearA(this.exacto, this.paso); }
   get tabla(): IEscenarioPrecio[] { return escenarios(this.costo, this.paso, undefined, this.comisionPct); }
@@ -78,6 +111,8 @@ export class CalculadoraPrecioComponent implements OnChanges {
   get enCampana(): { ganancia: number; margenPct: number } | null {
     return this.precioCampana && this.precioCampana > 0 && this.costo > 0 ? gananciaYMargen(this.precioCampana, this.costo, this.comisionPct) : null;
   }
+  /** Hay algo distinto entre el costo total y el precio de compra (transporte u otros gastos): tiene sentido ofrecer actualizarlo. */
+  get costoCambia(): boolean { return this.costo > 0 && Math.abs(this.costo - (this.compra && this.compra > 0 ? this.compra : 0)) > 0.005; }
 
   get precio(): number | null { return this.elegido ?? this.sugerido; }
   set precio(v: number | null) { this.elegido = v != null && v > 0 ? aDos(v) : null; }
@@ -86,7 +121,7 @@ export class CalculadoraPrecioComponent implements OnChanges {
     const p = this.precio;
     return p && this.costo > 0 ? gananciaYMargen(p, this.costo, this.comisionPct) : null;
   }
-  /** Cobrar menos de lo que cuesta: se pierde dinero por pieza. */
+  /** Cobrar de manera que la ganancia limpia sea negativa: se pierde dinero por pieza. */
   get pierde(): boolean { const r = this.resultado; return !!r && r.ganancia < -0.005; }
 
   usarTransporteSugerido(): void { this.transporte = this.transporteSugerido || null; }
@@ -96,8 +131,18 @@ export class CalculadoraPrecioComponent implements OnChanges {
 
   usarPrecio(): void {
     const p = this.precio;
-    if (!p || p <= 0) return;
-    this.usar.emit(p);
+    if (!p || p <= 0 || !(this.compra && this.compra > 0)) return;
+    this.usar.emit({
+      precio: p,
+      actualizarCosto: this.actualizarCosto && this.costoCambia,
+      costoTotal: this.costo,
+      calculo: {
+        costoCompra: this.compra, transporte: this.transporte || 0, otros: this.otros || 0,
+        comisionPct: this.comisionPct, comisionDescripcion: this.comisionDescripcion,
+        margenPct: this.margen ?? 0, precioCalculado: this.sugerido ?? p, precioCobrado: p,
+        actualizoPrecioCompra: this.actualizarCosto && this.costoCambia
+      }
+    });
     this.cerrar();
   }
 

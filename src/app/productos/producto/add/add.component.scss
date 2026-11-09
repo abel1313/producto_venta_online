@@ -609,3 +609,13 @@ $t: all 0.22s ease;
 // ── Símbolo de dinero adaptativo ────────────────────────────────────
 .pf-input-money__sym { color: var(--app-text-muted); }
 .pf-optional, .pf-hint { color: var(--app-text-muted); }
+
+// Último cálculo de precio (Actualizar producto): solo lectura, con tokens del diseño.
+.pf-calculo {
+  display: grid; gap: .25rem; padding: .7rem .9rem; border: 1px solid var(--card-border, var(--app-border)); border-radius: 12px;
+  background: var(--app-tint, var(--app-accent-soft)); color: var(--app-text); font-size: .88rem;
+  p { margin: 0; line-height: 1.4; }
+  &__fecha { font-size: .78rem; color: var(--app-text-muted); }
+  &__detalle { font-size: .8rem; color: var(--app-text-muted); }
+}
+

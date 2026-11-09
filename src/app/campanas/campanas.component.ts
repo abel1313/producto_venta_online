@@ -1,7 +1,7 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Subject, Subscription } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
+import { Subject, Subscription, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
 import { CampanasService, ICampana, ICampanaProducto, IPersonaReporte, IReporteCampana } from './campanas.service';
@@ -40,14 +40,57 @@ export class CampanasComponent implements OnInit, OnDestroy {
   private readonly buscador$ = new Subject<string>();
   private sub?: Subscription;
 
+  /** Buscador de los juguetes que YA están en la campaña (por nombre o código de barras). Solo es una vista: no cambia la lista de la campaña. */
+  filtroCampana = '';
+  /** Productos del catálogo que coinciden con lo escrito (el buscador del catálogo también busca por código de barras); null = nada que buscar. */
+  private idsDelCatalogo = new Set<number>();
+  private readonly buscadorCampana$ = new Subject<string>();
+  private subCampana?: Subscription;
+
   constructor(private readonly svc: CampanasService, private readonly productos: ProductoService) {}
 
   ngOnInit(): void {
     this.cargar();
     this.sub = this.buscador$.pipe(debounceTime(350), distinctUntilChanged()).subscribe(() => this.cargarCatalogo(1));
+    // Con 3 o más letras se le pregunta al buscador del catálogo (nombre o código de barras) qué productos coinciden; si falla o no hay, solo cuenta el nombre.
+    this.subCampana = this.buscadorCampana$.pipe(
+      debounceTime(300), distinctUntilChanged(),
+      switchMap(t => t.length < 3 ? of([] as number[]) : this.productos.getDataNombreCodigoBarra(1, 50, t, true).pipe(
+        map(r => (r?.t ?? []).map(p => p.idProducto)), catchError(() => of([] as number[]))))
+    ).subscribe(ids => this.idsDelCatalogo = new Set(ids));
   }
 
-  ngOnDestroy(): void { this.sub?.unsubscribe(); }
+  ngOnDestroy(): void { this.sub?.unsubscribe(); this.subCampana?.unsubscribe(); }
+
+  private normalizar(t: string): string {
+    return (t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  alEscribirEnCampana(texto: string): void {
+    this.filtroCampana = texto;
+    this.buscadorCampana$.next(texto.trim());
+  }
+
+  limpiarFiltroCampana(): void {
+    this.filtroCampana = '';
+    this.idsDelCatalogo = new Set<number>();
+    this.buscadorCampana$.next('');
+  }
+
+  /** Los juguetes de la campaña que se ven: todos si no hay texto; si hay, los que coinciden en nombre o que el buscador del catálogo halló por nombre/código de barras. */
+  get productosFiltrados(): ICampanaProducto[] {
+    const lista = this.edicion?.productos ?? [];
+    const t = this.normalizar(this.filtroCampana);
+    if (!t) return lista;
+    return lista.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.idsDelCatalogo.has(p.productoId));
+  }
+
+  /** Qué decir cuando el texto no coincide con ningún juguete de la campaña. */
+  get mensajeSinCoincidencias(): string {
+    return this.idsDelCatalogo.size > 0
+      ? 'Ese producto está en el catálogo, pero todavía no está en la campaña.'
+      : 'Ningún juguete de la campaña coincide con lo que escribiste.';
+  }
 
   cargar(): void {
     this.cargando = true;
@@ -141,16 +184,18 @@ export class CampanasComponent implements OnInit, OnDestroy {
   // ── Formulario ─────────────────────────────────────────────────────────────
 
   nuevo(): void {
+    this.limpiarFiltroCampana();
     this.edicion = { nombre: '', fechaInicio: null, fechaFin: null, metaMonto: 0, productos: [] };
     this.abrirCatalogo();
   }
 
   editar(c: ICampana): void {
+    this.limpiarFiltroCampana();
     this.edicion = { ...c, productos: c.productos.map(p => ({ ...p })) };
     this.abrirCatalogo();
   }
 
-  cancelar(): void { this.edicion = null; }
+  cancelar(): void { this.limpiarFiltroCampana(); this.edicion = null; }
 
   get fechasAlReves(): boolean {
     const c = this.edicion;

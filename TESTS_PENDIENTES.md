@@ -106,6 +106,21 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-09 — Campañas: buscador en «Juguetes y su precio de campaña»
+**Dónde:** `CampanasComponent.productosFiltrados` / `alEscribirEnCampana` (Catálogo → Campañas, formulario)
+**Tipo:** unitario (componente con el buscador de catálogo simulado) · e2e manual en QA
+**Debe comprobar:**
+- [ ] escribir parte de un nombre (sin importar mayúsculas ni acentos) deja solo esos juguetes y el contador dice «Mostrando X de N»
+- [ ] escribir el código de barras de un juguete que está en la campaña → aparece (se halla por el buscador del catálogo)
+- [ ] código de un producto que existe pero no está en la campaña → «Ese producto está en el catálogo, pero todavía no está en la campaña»; texto que no coincide con nada → «Ningún juguete de la campaña coincide…»
+- [ ] «✕ Limpiar» regresa todos; entrar a otra campaña o cancelar limpia el filtro
+- [ ] cambiar el precio o quitar un juguete con el filtro puesto conserva los demás; al guardar se guardan todos los juguetes (no solo los visibles)
+- [ ] Enter dentro del buscador no guarda la campaña
+- [ ] el buscador de catálogo falla o responde 404 → no sale error y sigue filtrando por nombre
+
+---
+
+
 ### 2026-11-09 — Reportes → «Precios calculados» y el indicador de cálculo en Actualizar producto
 **Dónde:** `PreciosCalculadosComponent` (pestaña nueva de Reportes, solo administrador), `CalculoPrecioService.listar/historial`, bloque «Cálculo de precio» de `AddComponent`
 **Tipo:** unitario (componentes con el servicio simulado) · e2e manual en QA

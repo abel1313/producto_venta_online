@@ -23,6 +23,7 @@
 .cp-productos { display: grid; gap: .6rem; }
 .cp-productos__titulo { margin: 0; font-size: .95rem; color: var(--app-text); }
 .cp-vacio { margin: 0; color: var(--app-text-muted); font-size: .9rem; }
+.cp-buscar { display: flex; align-items: center; gap: .5rem; input { flex: 1; min-width: 0; } .pk-btn { white-space: nowrap; } }
 
 .cp-fila {
   display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center;

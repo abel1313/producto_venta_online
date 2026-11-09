@@ -1,0 +1,68 @@
+// Calculadora de precio. Solo tokens del diseño (--app-*, --input-*, --card-*, --pk-*): cambia con Personalización, de día y de noche.
+.cp { display: grid; gap: 14px; color: var(--app-text); font-size: .9rem; }
+.cp-aviso { margin: 0; padding: 10px 12px; border-radius: 10px; background: var(--app-tint, var(--app-accent-soft)); font-size: .84rem; line-height: 1.4; }
+
+.cp-bloque { display: grid; gap: 10px; padding: 12px; border: 1px solid var(--card-border, var(--app-border)); border-radius: 12px; background: var(--card-body-bg, transparent); }
+.cp-titulo { margin: 0; font-size: .95rem; font-weight: 700; }
+.cp-subtitulo { margin: 4px 0 0; font-size: .85rem; font-weight: 700; }
+.cp-opcional { font-weight: 400; color: var(--app-text-muted); }
+.cp-ayuda { margin: 0; font-size: .78rem; line-height: 1.35; color: var(--app-text-muted); }
+
+.cp-campo { display: grid; gap: 4px; min-width: 0; }
+.cp-etiqueta { font-size: .76rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; color: var(--app-text-muted); }
+.cp-dinero {
+  display: flex; align-items: center; gap: 6px; padding: 0 10px; border: 1.5px solid var(--input-border); border-radius: 10px; background: var(--input-bg);
+  > span { color: var(--app-text-muted); font-weight: 700; }
+  input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--input-text); font-size: 1rem; padding: 10px 0; }
+  &:focus-within { border-color: var(--input-focus-border); box-shadow: var(--input-focus-shadow); }
+  &--grande input { font-size: 1.25rem; font-weight: 700; }
+}
+.cp-simple { border: 1.5px solid var(--input-border); border-radius: 10px; background: var(--input-bg); color: var(--input-text); font-size: 1rem; padding: 10px; min-width: 0; width: 100%; box-sizing: border-box; }
+
+.cp-ayudita { font-size: .82rem; summary { cursor: pointer; color: var(--app-accent-text, var(--app-accent)); font-weight: 600; } }
+.cp-fila2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 8px 0 4px; @media (max-width: 420px) { grid-template-columns: 1fr; } }
+.cp-enlace { background: none; border: 0; padding: 0; margin-left: 6px; cursor: pointer; font-weight: 700; color: var(--app-accent-text, var(--app-accent)); text-decoration: underline; }
+
+.cp-total { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--app-tint, var(--app-accent-soft)); strong { font-size: 1.2rem; } }
+
+.cp-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cp-chip {
+  border: 1.5px solid var(--input-border); border-radius: 999px; background: var(--input-bg); color: var(--app-text); padding: 7px 14px; font-weight: 700; cursor: pointer;
+  &--on { background: var(--btn-primary-bg, var(--app-accent)); color: var(--btn-primary-text, var(--app-accent-ink)); border-color: var(--btn-primary-border, var(--app-accent)); }
+  &--libre { display: inline-flex; align-items: center; gap: 6px; cursor: default; input { width: 3.2rem; border: 0; outline: 0; background: transparent; color: inherit; font-weight: 700; text-align: right; } }
+}
+.cp-paso { font-size: .8rem; color: var(--app-text-muted); select { margin: 0 4px; border: 1.5px solid var(--input-border); border-radius: 8px; background: var(--input-bg); color: var(--input-text); padding: 3px 6px; } }
+
+.cp-fila { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; padding: 4px 0; border-bottom: 1px solid var(--app-hairline, var(--app-border)); strong { font-size: 1.05rem; } }
+.cp-campo--final { margin-top: 6px; }
+.cp-ganancia { padding: 10px 12px; border-radius: 10px; background: var(--pk-success-soft, var(--app-tint)); color: var(--pk-success); &--mal { background: var(--pk-danger-soft); color: var(--pk-danger); } strong { font-weight: 800; } }
+
+.cp-tabla { display: grid; gap: 4px; }
+.cp-tr {
+  display: grid; grid-template-columns: .6fr 1fr 1.1fr 1fr; gap: 6px; align-items: center; text-align: left; padding: 8px 10px; border: 1px solid var(--card-border, var(--app-border)); border-radius: 8px;
+  background: transparent; color: var(--app-text); font: inherit; cursor: pointer;
+  &--cab { background: var(--table-header-bg, transparent); color: var(--table-header-text, var(--app-text-muted)); font-size: .72rem; font-weight: 700; text-transform: uppercase; cursor: default; border-color: transparent; }
+  &--on { border-color: var(--app-accent); background: var(--app-tint); }
+  &:not(.cp-tr--cab):hover { background: var(--app-tint); }
+}
+.cp-vacio { color: var(--app-text-muted); text-align: center; }
+
+.cp-acciones { display: flex; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
+.cp-btn { border-radius: 10px; padding: 10px 16px; font-weight: 700; cursor: pointer; border: 1.5px solid var(--app-border);
+  &--sec { background: transparent; color: var(--app-text); }
+  &--pri { background: var(--btn-primary-bg, var(--app-accent)); color: var(--btn-primary-text, var(--app-accent-ink)); border-color: var(--btn-primary-border, var(--app-accent)); &:disabled { opacity: .5; cursor: not-allowed; } } }
+
+// El cuadro va en <body> (appendTo): hay que salir del encapsulado con ::ng-deep sin :host. La clase cp-dialogo es solo de este cuadro.
+::ng-deep .p-dialog.cp-dialogo {
+  // Colores de encabezado/cuerpo/pie: los pone el diseño global (styles.scss, --card-body-bg / --card-footer-bg); aquí solo el espacio.
+  .p-dialog-footer { padding: 12px 20px; }
+  .p-dialog-footer .cp-acciones { justify-content: flex-end; }
+  @media (max-width: 480px) {
+    .p-dialog-footer { padding: 10px 12px; }
+    .p-dialog-footer .cp-acciones { flex-wrap: nowrap; gap: 6px; }
+    .p-dialog-footer .cp-btn { flex: 1 1 0; min-width: 0; padding: 10px 8px; font-size: .85rem; }
+  }
+}
+@media (max-width: 480px) {
+  .cp-tr { grid-template-columns: 3rem 1fr 1.1fr 1fr; gap: 4px; padding: 8px 6px; font-size: .8rem; &--cab { font-size: .62rem; letter-spacing: 0; } }
+}

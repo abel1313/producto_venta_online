@@ -16,11 +16,13 @@ import { AyudaOpcionesComponent } from './ayuda-opciones/ayuda-opciones.componen
 import { AltaArticulosComponent } from './alta-articulos/alta-articulos.component';
 import { FiltroBuscableComponent } from './filtro-buscable/filtro-buscable.component';
 import { DialogModule } from 'primeng/dialog';
+import { SharedModule as PrimeSharedModule } from 'primeng/api';
 import { QRCodeModule } from 'angularx-qrcode';
 import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
 import { EntradaCodigoQrComponent } from './entrada-codigo-qr/entrada-codigo-qr.component';
 import { FotoCelularComponent } from './foto-celular/foto-celular.component';
 import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarjeta.component';
+import { CalculadoraPrecioComponent } from './calculadora-precio/calculadora-precio.component';
 
 @NgModule({
   declarations: [
@@ -40,9 +42,10 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     CobroTarjetaComponent,
     EscanerCelularComponent,
     EntradaCodigoQrComponent,
-    FotoCelularComponent
+    FotoCelularComponent,
+    CalculadoraPrecioComponent
   ],
-  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, QRCodeModule],
+  imports:  [CommonModule, FormsModule, OverlayModule, DialogModule, PrimeSharedModule, QRCodeModule],
   exports:  [
     ImagenSrcPipe,
     PalabraClaveAutocompleteComponent,
@@ -60,7 +63,8 @@ import { CobroTarjetaComponent } from '../pedidos/cobro/cobro-tarjeta/cobro-tarj
     CobroTarjetaComponent,
     EscanerCelularComponent,
     EntradaCodigoQrComponent,
-    FotoCelularComponent
+    FotoCelularComponent,
+    CalculadoraPrecioComponent
   ]
 })
 export class SharedModule {}

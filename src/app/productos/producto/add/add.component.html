@@ -49,7 +49,9 @@
           </div>
 
           <div class="pf-field">
-            <label class="pf-label">Precio de venta <span class="pf-required">*</span></label>
+            <label class="pf-label">Precio de venta <span class="pf-required">*</span>
+              <button type="button" class="pf-calc" (click)="calculadoraVisible = true" title="Calcular el precio a partir de lo que te costó (solo es una ayuda: tú decides cuál usar)">🧮 Calcular precio</button>
+            </label>
             <div class="pf-input-money">
               <span class="pf-input-money__sym">$</span>
               <input class="pf-input pf-input--money" [class.pf-input--error]="isInvalid('precioVenta')"
@@ -288,6 +290,11 @@
 
 <!-- Al guardar o actualizar un modelo con stock libre: "¿Cuántos artículos quieres hacer?"
      (flujo A, 2026-10-08; al actualizar desde QA 2026-10-14) -->
+<!-- Calcular precio: solo calcula; el precio de venta no cambia hasta «Usar este precio» -->
+<app-calculadora-precio *ngIf="formProductos" [(visible)]="calculadoraVisible"
+                        [costoInicial]="valorNumero('precioCosto')" [precioActual]="valorNumero('precioVenta')"
+                        (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
+
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"
                     [preguntarPrimero]="true"

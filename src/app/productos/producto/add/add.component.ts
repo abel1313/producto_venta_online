@@ -160,6 +160,24 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
   }
 
+  // ── Calcular precio (ayuda): abre el modal; solo «Usar este precio» escribe en «Precio de venta» ─────────
+  calculadoraVisible = false;
+
+  /** El número que hay ahora en un campo del formulario (null si está vacío o no es número). */
+  valorNumero(campo: string): number | null {
+    const v = parseFloat(String(this.formProductos?.get(campo)?.value ?? '').replace(',', '.'));
+    return isFinite(v) && v > 0 ? v : null;
+  }
+
+  /** El dueño eligió un precio en la calculadora: se pone en «Precio de venta» (igual que si lo escribiera; copia a «Precio con descuento» como siempre). */
+  usarPrecioCalculado(precio: number): void {
+    const ctrl = this.formProductos.get('precioVenta');
+    if (!ctrl) return;
+    ctrl.setValue(precio.toFixed(2));
+    ctrl.markAsDirty();
+    ctrl.markAsTouched();
+  }
+
   // Cuando cambia precioVenta, copiar a precioRebaja automáticamente
   private initPrecioVenta(): void {
     this.formProductos.get('precioVenta')!.valueChanges.subscribe(valor => {

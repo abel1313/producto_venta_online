@@ -383,6 +383,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       codigoBarras:   { codigoBarras: raw.codigoBarras, id: 0 },
       listImagenes:      this.imagenesCargadas,
       palabraClaveId:    this.palabraClaveSeleccionada?.id ?? null,
+      // Actualizar con la categoría quitada: el back ignora un id nulo (otras pantallas no mandan el campo), así que hay que decírselo.
+      ...(this.esActualizar && !this.palabraClaveSeleccionada ? { quitarPalabraClave: true } : {}),
       imagenPrincipalId: this.productoUpdate?.imagenPrincipalId ?? null,
       // Requerido desde el fix del back (2026-07-21): sin id, save/update
       // vuelve a matchear por código de barras y puede duplicar el producto

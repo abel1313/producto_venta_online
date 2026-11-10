@@ -22,5 +22,7 @@ export interface IProducto extends IdGenerico{
     codigoBarras: ICodigoBarra;
     listImagenes: IImagenDto[];
     palabraClaveId?: number | null;
+    /** Solo al actualizar: true = quitarle la categoría al producto. */
+    quitarPalabraClave?: boolean;
     imagenPrincipalId?: string | null;
 }

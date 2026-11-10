@@ -6,7 +6,7 @@ import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
 import { CampanasService, ICampana, ICampanaProducto, IPersonaReporte, IReporteCampana } from './campanas.service';
 
-interface IProductoCatalogo { id: number; nombre: string; precioVenta: number; stock: number; categoria: string | null; }
+interface IProductoCatalogo { id: number; nombre: string; codigoBarras: string | null; precioVenta: number; precioRebaja: number; stock: number; categoria: string | null; }
 
 /**
  * Campañas (solo administrador): un evento con nombre y fechas; se eligen los juguetes y se le pone a cada uno su precio de campaña.
@@ -39,7 +39,11 @@ export class CampanasComponent implements OnInit, OnDestroy {
   errorCatalogo: string | null = null;
   private readonly buscador$ = new Subject<string>();
   /** Cada carga del catálogo pasa por aquí: switchMap descarta la respuesta vieja si llega después de una más nueva (escribir rápido, cambiar de página). */
-  private readonly pedirCatalogo$ = new Subject<{ pagina: number; filtro: string }>();
+  private readonly pedirCatalogo$ = new Subject<{ pagina: number; filtro: string; categoria: string }>();
+  /** Categorías para elegir los juguetes (solo JUGUETES, o todas). Se cargan una vez; si falla, el selector no se muestra y se ve todo el catálogo. */
+  categorias: string[] = [];
+  /** Categoría del catálogo: «JUGUETES» de entrada (si existe); '' = todas. */
+  categoria = '';
   /** El texto con el que se pidió la última página del catálogo (para no repetir la misma búsqueda). */
   private filtroPedido = '';
   private readonly destroy$ = new Subject<void>();
@@ -48,9 +52,6 @@ export class CampanasComponent implements OnInit, OnDestroy {
 
   /** Buscador de los juguetes que YA están en la campaña (por nombre o código de barras). Solo es una vista: no cambia la lista de la campaña. */
   filtroCampana = '';
-  /** Productos del catálogo que coinciden con lo escrito (el buscador del catálogo también busca por código de barras); null = nada que buscar. */
-  private idsDelCatalogo = new Set<number>();
-  private readonly buscadorCampana$ = new Subject<string>();
 
   constructor(private readonly svc: CampanasService, private readonly productos: ProductoService) {}
 
@@ -60,9 +61,9 @@ export class CampanasComponent implements OnInit, OnDestroy {
     // Se compara contra lo último que se PIDIÓ, no contra lo último que se escribió.
     this.buscador$.pipe(debounceTime(350), takeUntil(this.destroy$)).subscribe(t => { if (t !== this.filtroPedido) this.cargarCatalogo(1); });
     this.pedirCatalogo$.pipe(
-      switchMap(({ pagina, filtro }) =>
-        // `todos`: el administrador ve también los productos sin stock o deshabilitados (un juguete puede estar agotado hoy y entrar a la campaña).
-        this.productos.getDataNombreCodigoBarra(pagina, this.porPagina, filtro, true).pipe(
+      switchMap(({ pagina, filtro, categoria }) =>
+        // adminFiltrar: nombre o código de barras + categoría; sin más filtros trae también los productos sin stock o deshabilitados (un juguete puede estar agotado hoy y entrar a la campaña).
+        this.productos.adminFiltrar({ nombreOCodigo: filtro || undefined, categoria: categoria || undefined }, pagina, this.porPagina).pipe(
           map(r => ({ pagina, r, error: null as HttpErrorResponse | null })),
           catchError((e: HttpErrorResponse) => of({ pagina, r: null, error: e })))),
       takeUntil(this.destroy$)
@@ -77,19 +78,17 @@ export class CampanasComponent implements OnInit, OnDestroy {
         return;
       }
       this.catalogo = (r?.t ?? []).map(p => ({
-        id: p.idProducto, nombre: p.nombre, precioVenta: p.precioVenta, stock: p.stock, categoria: p.palabraClave?.nombre ?? null
+        id: p.idProducto, nombre: p.nombre, codigoBarras: p.codigoBarras ?? null, precioVenta: p.precioVenta, precioRebaja: +(p.precioRebaja ?? 0),
+        stock: p.stock, categoria: p.palabraClave?.nombre ?? (this.categoria || null)
       }));
       this.pagina = r?.pagina ?? pagina;
       this.totalPaginas = Math.max(1, r?.totalPaginas ?? 1);
       this.totalRegistros = r?.totalRegistros ?? this.catalogo.length;
     });
-    // Con 3 o más letras se le pregunta al buscador del catálogo (nombre o código de barras) qué productos coinciden; si falla o no hay, solo cuenta el nombre.
-    this.buscadorCampana$.pipe(
-      debounceTime(300), distinctUntilChanged(),
-      switchMap(t => t.length < 3 ? of([] as number[]) : this.productos.getDataNombreCodigoBarra(1, 50, t, true).pipe(
-        map(r => (r?.t ?? []).map(p => p.idProducto)), catchError(() => of([] as number[])))),
-      takeUntil(this.destroy$)
-    ).subscribe(ids => this.idsDelCatalogo = new Set(ids));
+    this.productos.categoriasAdmin().pipe(catchError(() => of([] as string[])), takeUntil(this.destroy$)).subscribe(cs => {
+      this.categorias = cs;
+      if (cs.includes('JUGUETES')) this.categoria = 'JUGUETES';
+    });
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
@@ -100,15 +99,10 @@ export class CampanasComponent implements OnInit, OnDestroy {
 
   alEscribirEnCampana(texto: string): void {
     this.filtroCampana = texto;
-    // Lo que halló el catálogo era para el texto anterior: no debe seguir mostrando juguetes que ya no coinciden mientras llega la respuesta nueva.
-    this.idsDelCatalogo = new Set<number>();
-    this.buscadorCampana$.next(texto.trim());
   }
 
   limpiarFiltroCampana(): void {
     this.filtroCampana = '';
-    this.idsDelCatalogo = new Set<number>();
-    this.buscadorCampana$.next('');
   }
 
   /** Los juguetes de la campaña que se ven: todos si no hay texto; si hay, los que coinciden en nombre o que el buscador del catálogo halló por nombre/código de barras. */
@@ -116,14 +110,12 @@ export class CampanasComponent implements OnInit, OnDestroy {
     const lista = this.edicion?.productos ?? [];
     const t = this.normalizar(this.filtroCampana);
     if (!t) return lista;
-    return lista.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.idsDelCatalogo.has(p.productoId));
+    return lista.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.normalizar(p.codigoBarras ?? '').includes(t));
   }
 
   /** Qué decir cuando el texto no coincide con ningún juguete de la campaña. */
   get mensajeSinCoincidencias(): string {
-    return this.idsDelCatalogo.size > 0
-      ? 'Ese producto está en el catálogo, pero todavía no está en la campaña.'
-      : 'Ningún juguete de la campaña coincide con lo que escribiste.';
+    return 'Ningún juguete de la campaña coincide con lo que escribiste.';
   }
 
   cargar(): void {
@@ -393,6 +385,12 @@ export class CampanasComponent implements OnInit, OnDestroy {
     this.cargarCatalogo(1);
   }
 
+  /** Cambió la categoría del catálogo: vuelve a la página 1 con ese filtro. */
+  alCambiarCategoria(c: string): void {
+    this.categoria = c;
+    this.cargarCatalogo(1);
+  }
+
   alEscribir(texto: string): void {
     this.filtro = texto;
     this.buscador$.next(texto.trim());
@@ -402,7 +400,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
     this.cargandoCatalogo = true;
     this.errorCatalogo = null;
     this.filtroPedido = this.filtro.trim();
-    this.pedirCatalogo$.next({ pagina, filtro: this.filtroPedido });
+    this.pedirCatalogo$.next({ pagina, filtro: this.filtroPedido, categoria: this.categoria });
   }
 
   irAPagina(p: number): void {
@@ -417,11 +415,14 @@ export class CampanasComponent implements OnInit, OnDestroy {
   agregarProducto(p: IProductoCatalogo): void {
     const c = this.edicion;
     if (!c || this.estaAgregado(p)) return;
-    // Llega con el precio que ya tiene en su campaña más reciente (si nunca estuvo en una, con su precio de venta: el último que se puso al calcularlo).
+    // Llega con el precio de DESCUENTO que ya tiene el producto (su «Precio con descuento»); si no tiene, el de su campaña más reciente; si tampoco,
+    // el precio de venta. Sin ninguno llega vacío (no en 0): así se ve que falta ponerlo. Siempre se puede cambiar.
     const previo = this.precioPrevio(p.id);
-    // Sin precio previo ni precio de venta llega vacío (no en 0): así se ve que falta ponerlo.
-    const precio = previo ? previo.precio : (p.precioVenta > 0 ? p.precioVenta : (null as unknown as number));
-    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, precio, origen: previo ? previo.campana : null }];
+    let precio: number; let origen: string | null;
+    if (p.precioRebaja > 0) { precio = p.precioRebaja; origen = 'precio con descuento del producto'; }
+    else if (previo) { precio = previo.precio; origen = `precio de «${previo.campana}»`; }
+    else { precio = p.precioVenta > 0 ? p.precioVenta : (null as unknown as number); origen = null; }
+    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, precio, origen }];
   }
 
   /** El último precio de campaña de un juguete en las OTRAS campañas (la más reciente primero por fecha de fin, luego por id); null si nunca estuvo en una. */

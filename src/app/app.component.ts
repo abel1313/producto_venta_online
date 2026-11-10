@@ -12,7 +12,7 @@ import { ITokenData } from './login/models/ITokenData.model';
 import { AuthService } from './auth/auth.service';
 import { ThemeService } from './services/theme/theme.service';
 import { TemaService } from './services/tema/tema.service';
-import { NavigationEnd, Router } from '@angular/router';
+import { NavigationEnd, NavigationError, Router } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { DatosLegalesService, telefonoLegible } from './legal/datos-legales.service';
 import { fijarDatosNegocioTicket } from './shared/ticket.util';
@@ -54,6 +54,19 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.router.events.pipe(filter(e => e instanceof NavigationEnd)).subscribe(e => {
       const ruta = (e as NavigationEnd).urlAfterRedirects.split(/[?#]/)[0];
       document.body.classList.toggle('sin-diseno', RUTAS_SIN_DISENO.some(r => ruta === r || ruta.startsWith(r + '/')));
+    });
+
+    // Después de un despliegue, una pestaña que ya estaba abierta sigue pidiendo los archivos de la versión anterior (ya no existen): al abrir una
+    // pantalla que se carga bajo demanda (ej. Campañas) la navegación falla y el menú «no hace nada» hasta recargar. Aquí se recarga sola, una vez.
+    this.router.events.pipe(filter(e => e instanceof NavigationError)).subscribe(e => {
+      const err = (e as NavigationError).error;
+      const msg = String(err?.message ?? err ?? '');
+      if (!/Loading chunk|ChunkLoadError|dynamically imported module|Importing a module script failed/i.test(msg)) return;
+      try {
+        if (sessionStorage.getItem('recarga.chunk') === (e as NavigationError).url) return;   // ya se intentó con esta ruta: no hacer bucle
+        sessionStorage.setItem('recarga.chunk', (e as NavigationError).url);
+      } catch { /* sin almacenamiento: se recarga igual una vez por navegación */ }
+      window.location.assign((e as NavigationError).url);
     });
 
     // Select-on-focus global para TODOS los inputs de precio/monto/cantidad

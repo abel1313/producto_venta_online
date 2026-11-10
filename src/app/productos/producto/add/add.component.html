@@ -310,7 +310,7 @@
 <!-- Calcular precio: solo calcula; el precio de venta no cambia hasta «Usar este precio» -->
 <app-calculadora-precio *ngIf="formProductos" [(visible)]="calculadoraVisible"
                         [costoInicial]="valorNumero('precioCosto')" [precioActual]="valorNumero('precioVenta')"
-                        [productoId]="idProductoActual" (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
+                        (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
 
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"

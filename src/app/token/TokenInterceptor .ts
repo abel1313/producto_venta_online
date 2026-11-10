@@ -6,6 +6,13 @@ import { AuthService } from '../auth/auth.service';
 import { catchError, switchMap, filter, take, timeout, finalize } from 'rxjs/operators';
 import { renovarAccessToken } from './refresh-token';
 import { Router } from '@angular/router';
+import { environment } from 'src/environments/environment';
+
+// El token y las cookies SOLO viajan a nuestros servidores. Antes se agregaban a cualquier peticion de HttpClient (ya paso con Nominatim):
+// si una URL llega de un dato o de un cambio futuro, el token del administrador se iba a un tercero (auditoria de seguridad 2026-11-03).
+const ORIGENES_PROPIOS: string[] = [environment.api_Url, (environment as { api_imagenes?: string }).api_imagenes]
+  .filter((u): u is string => !!u);
+const esNuestro = (url: string): boolean => ORIGENES_PROPIOS.some(o => url.startsWith(o)) || (url.startsWith('/') && !url.startsWith('//'));
 
 const AUTH_ENDPOINTS = ['/auth/login', '/auth/refresh', '/auth/registrar', '/auth/logout'];
 
@@ -40,6 +47,9 @@ export class TokenInterceptor implements HttpInterceptor {
   ) {}
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+    if (!esNuestro(req.url)) {
+      return next.handle(req);   // un tercero (mapas, QR, etc.): sin token ni cookies
+    }
     const isAuthEndpoint = AUTH_ENDPOINTS.some(e => req.url.includes(e));
     if (isAuthEndpoint) {
       return next.handle(req.clone({

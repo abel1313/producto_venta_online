@@ -1,5 +1,4 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
-import { CampanasService } from 'src/app/campanas/campanas.service';
 import { aDos, costoTotal, escenarios, gananciaYMargen, IEscenarioPrecio, precioConGananciaMinima, precioConMargen, recargoSobreCosto, redondearA, transportePorPieza } from './calculo-precio';
 import { CalculoPrecioService, ICalculoParaGuardar, IComisionTerminal } from './calculo-precio.service';
 
@@ -18,7 +17,7 @@ export interface IResultadoCalculo {
  * «Calcular precio» de un producto (Nuevo producto / Actualizar producto): ayuda para decidir el precio de venta a partir de lo que costó.
  * SOLO calcula: el precio del producto no cambia hasta que se pulsa «Usar este precio» (que emite `usar`); «Cerrar» no cambia nada.
  * Todo es por UNA pieza. Las fórmulas están en `calculo-precio.ts`.
- * La comisión de tarjeta se elige del catálogo de terminal que ya usa el cobro; el precio de campaña se toma de la campaña vigente.
+ * La comisión de tarjeta se elige del catálogo de terminal que ya usa el cobro.
  */
 @Component({
   selector: 'app-calculadora-precio',
@@ -32,8 +31,6 @@ export class CalculadoraPrecioComponent implements OnChanges {
   @Input() costoInicial: number | null = null;
   /** El «Precio de venta» que ya tiene el formulario (solo para mostrarlo como referencia). */
   @Input() precioActual: number | null = null;
-  /** El producto que se edita (null en Nuevo producto): sirve para buscar su precio en la campaña vigente. */
-  @Input() productoId: number | null = null;
   /** El dueño eligió «Usar este precio»: el padre lo escribe en «Precio de venta» (y, si se pidió, en «Precio de compra»). */
   @Output() usar = new EventEmitter<IResultadoCalculo>();
 
@@ -55,15 +52,12 @@ export class CalculadoraPrecioComponent implements OnChanges {
   gananciaMin: number | null = null;
   /** Precio que viste en otras tiendas (lo escribe el dueño; la app no busca en internet). Opcional. */
   precioMercado: number | null = null;
-  /** Precio de este producto en la campaña vigente (null si no hay campaña o el producto no está). Solo lectura. */
-  precioCampana: number | null = null;
-  nombreCampana: string | null = null;
   /** Poner también el costo total real en «Precio de compra» para que los reportes cuenten el transporte. */
   actualizarCosto = true;
   /** Precio que el dueño decidió cobrar (null = el redondeado sugerido). */
   private elegido: number | null = null;
 
-  constructor(private readonly calculos: CalculoPrecioService, private readonly campanas: CampanasService) {}
+  constructor(private readonly calculos: CalculoPrecioService) {}
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['visible'] && this.visible) {
@@ -75,17 +69,9 @@ export class CalculadoraPrecioComponent implements OnChanges {
     }
   }
 
-  /** Lee las comisiones de terminal y, si el producto ya existe, su precio de campaña. Si algo no se puede leer, esa parte simplemente no aparece. */
+  /** Lee las comisiones de terminal ya dadas de alta. Si no se pueden leer, solo queda «Sin comisión». */
   private cargarCatalogos(): void {
     this.calculos.comisiones().subscribe(l => this.comisiones = l);
-    this.precioCampana = null; this.nombreCampana = null;
-    const id = this.productoId;
-    if (!id) return;
-    this.campanas.activa().subscribe(c => {
-      const p = c?.productos?.find(x => x.productoId === id);
-      this.precioCampana = p ? +p.precio : null;
-      this.nombreCampana = p && c ? c.nombre : null;
-    });
   }
 
   /** Comisión elegida (% del precio): tarifa + IVA de la terminal. 0 si es sin comisión. */
@@ -106,10 +92,6 @@ export class CalculadoraPrecioComponent implements OnChanges {
   /** Ganancia y margen si vendes al precio del mercado, para ver si te conviene igualarlo. */
   get alMercado(): { ganancia: number; margenPct: number } | null {
     return this.precioMercado && this.precioMercado > 0 && this.costo > 0 ? gananciaYMargen(this.precioMercado, this.costo, this.comisionPct) : null;
-  }
-  /** Ganancia y margen con el precio de campaña (cliente recurrente): debe dejar ganancia también. */
-  get enCampana(): { ganancia: number; margenPct: number } | null {
-    return this.precioCampana && this.precioCampana > 0 && this.costo > 0 ? gananciaYMargen(this.precioCampana, this.costo, this.comisionPct) : null;
   }
   /** Hay algo distinto entre el costo total y el precio de compra (transporte u otros gastos): tiene sentido ofrecer actualizarlo. */
   get costoCambia(): boolean { return this.costo > 0 && Math.abs(this.costo - (this.compra && this.compra > 0 ? this.compra : 0)) > 0.005; }

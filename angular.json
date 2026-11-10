@@ -66,6 +66,7 @@
           },
           "configurations": {
             "production": {
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "budgets": [
                 {
                   "type": "initial",
@@ -87,6 +88,7 @@
               "outputHashing": "all"
             },
             "qa": {
+              "optimization": { "scripts": true, "styles": { "minify": true, "inlineCritical": false }, "fonts": true },
               "budgets": [
                 {
                   "type": "initial",

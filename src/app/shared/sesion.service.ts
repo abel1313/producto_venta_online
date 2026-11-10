@@ -35,6 +35,8 @@ export class SesionService {
     // se muestra en el sidebar pero sigue viviendo en localStorage.
     this.carrito.limpiarCarrito();
     this.carritoVariante.limpiar();
+    // El enlace del escaner con el celular es de la persona que inicio sesion: no se queda en el navegador para la siguiente.
+    try { localStorage.removeItem('escaner.sesion'); } catch { /* sin almacenamiento */ }
     this.router.navigate([destino]);
   }
 }

@@ -45,7 +45,8 @@ export class AuthService {
 
   setRolesFromToken(token: string) {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
+      // El JWT va en base64url (- y _); atob solo entiende base64 normal.
+      const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
       this.userRoles.next(payload.roles || []);
       this.userUser.next(payload.sub || '');
       this.userId.next(payload.idUsuario || null);

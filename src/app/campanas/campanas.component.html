@@ -1,6 +1,6 @@
 <section class="pk-page cp">
 
-  <app-boton-volver anchoContenido="1180px" margen="16px" fallback="/productos/buscar"></app-boton-volver>
+  <app-boton-volver fallback="/productos/buscar"></app-boton-volver>
 
   <header class="cp-hero">
     <p class="pk-kicker">Catálogo · solo administrador</p>
@@ -54,11 +54,15 @@
                  placeholder="Buscar en los juguetes de la campaña (nombre o código de barras)…">
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="filtroCampana" (click)="limpiarFiltroCampana()">✕ Limpiar</button>
         </div>
-        <p class="cp-vacio" *ngIf="c.productos.length && filtroCampana.trim()">Mostrando {{ productosFiltrados.length }} de {{ c.productos.length }}</p>
+        <p class="cp-vacio" *ngIf="c.productos.length && filtroCampana.trim()">{{ productosFiltrados.length }} de {{ c.productos.length }} coinciden</p>
+
+        <ng-container *ngIf="c.productos.length && productosFiltrados.length">
+          <ng-container *ngTemplateOutlet="pie; context: { pagina: paginaActualCampana, total: totalPaginasCampana, resumen: rangoCampana, ocupado: false, ir: irAPaginaCampana.bind(this) }"></ng-container>
+        </ng-container>
         <p class="cp-vacio" *ngIf="filtroCampana.trim() && !productosFiltrados.length">{{ mensajeSinCoincidencias }}</p>
 
         <div class="cp-productos__lista" *ngIf="c.productos.length">
-          <div class="cp-fila" *ngFor="let p of productosFiltrados; trackBy: porIdDeProducto">
+          <div class="cp-fila" *ngFor="let p of productosDeLaPagina; trackBy: porIdDeProducto">
             <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.codigoBarras">Código: {{ p.codigoBarras }}</small><small class="cp-fila__origen" *ngIf="p.origen">{{ p.origen }}</small></span>
             <label class="cp-fila__precio">
               <span>Precio de campaña $</span>
@@ -68,6 +72,9 @@
             <button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
           </div>
         </div>
+        <ng-container *ngIf="c.productos.length && productosFiltrados.length > porPaginaCampana">
+          <ng-container *ngTemplateOutlet="pie; context: { pagina: paginaActualCampana, total: totalPaginasCampana, resumen: rangoCampana, ocupado: false, ir: irAPaginaCampana.bind(this) }"></ng-container>
+        </ng-container>
       </div>
 
       <!-- Catálogo -->
@@ -90,6 +97,10 @@
         <p class="pk-error" *ngIf="errorCatalogo">{{ errorCatalogo }}</p>
         <p class="cp-vacio" *ngIf="!cargandoCatalogo && !errorCatalogo && !catalogo.length">No hay productos con ese filtro.</p>
 
+        <ng-container *ngIf="catalogo.length">
+          <ng-container *ngTemplateOutlet="pie; context: { pagina: pagina, total: totalPaginas, resumen: totalRegistros + ' productos', ocupado: cargandoCatalogo, ir: irAPagina.bind(this) }"></ng-container>
+        </ng-container>
+
         <ul class="cp-catalogo__lista" *ngIf="catalogo.length" [class.cp-catalogo__lista--carga]="cargandoCatalogo">
           <li class="cp-catalogo__fila" *ngFor="let p of catalogo; trackBy: porIdDeCatalogo">
             <div class="cp-catalogo__datos">
@@ -103,11 +114,9 @@
           </li>
         </ul>
 
-        <div class="cp-catalogo__pie" *ngIf="totalPaginas > 1">
-          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina <= 1 || cargandoCatalogo" (click)="irAPagina(pagina - 1)">‹ Anterior</button>
-          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
-          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina >= totalPaginas || cargandoCatalogo" (click)="irAPagina(pagina + 1)">Siguiente ›</button>
-        </div>
+        <ng-container *ngIf="catalogo.length">
+          <ng-container *ngTemplateOutlet="pie; context: { pagina: pagina, total: totalPaginas, resumen: totalRegistros + ' productos', ocupado: cargandoCatalogo, ir: irAPagina.bind(this) }"></ng-container>
+        </ng-container>
       </div>
 
     </div><!-- /cp-columnas -->
@@ -186,5 +195,14 @@
       <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminar(c)" [disabled]="ocupadaId !== null">Eliminar</button>
     </div>
   </article>
+
+  <!-- Paginador compartido (juguetes de la campaña y catálogo) -->
+  <ng-template #pie let-pagina="pagina" let-total="total" let-resumen="resumen" let-ocupado="ocupado" let-ir="ir">
+    <div class="cp-pie">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina <= 1 || ocupado" (click)="ir(pagina - 1)">‹ Anterior</button>
+      <span>Página {{ pagina }} de {{ total }} · {{ resumen }}</span>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina >= total || ocupado" (click)="ir(pagina + 1)">Siguiente ›</button>
+    </div>
+  </ng-template>
 
 </section>

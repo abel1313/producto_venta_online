@@ -1,8 +1,8 @@
 // Campañas. Solo tokens del diseño (--app-*, --card-*, --input-*, --pk-*): cambia con Personalización, de día y de noche.
-.cp { max-width: 1180px; margin-inline: auto; display: grid; gap: 1rem; }
+.cp { max-width: 1180px; margin-inline: auto; display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; > * { min-width: 0; } }
 .cp-hero { display: grid; gap: .35rem; }
 .cp-titulo { font-size: 1.6rem; }
-.cp-barra { display: flex; justify-content: flex-end; }
+.cp-barra { display: flex; justify-content: flex-end; @media (max-width: 560px) { .pk-btn { width: 100%; } } }
 
 .cp-form, .cp-card {
   background: var(--card-body-bg);
@@ -69,15 +69,15 @@
 .cp-catalogo__nombre { color: var(--app-text); overflow-wrap: anywhere; }
 .cp-catalogo__meta { color: var(--app-text-muted); }
 .cp-catalogo__estado { font-size: .78rem; font-weight: 700; color: var(--pk-success); white-space: nowrap; &--otro { color: var(--app-text-muted); font-weight: 500; } }
-.cp-catalogo__pie { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; color: var(--app-text-muted); font-size: .85rem; }
+.cp-pie, .cp-catalogo__pie { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; color: var(--app-text-muted); font-size: .85rem; }
 
 // Dos columnas (productos del grupo | catálogo), cada lista con su propio scroll: la pantalla no crece al agregar productos.
 .cp-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
 // En pantalla angosta las columnas se apilan: el catálogo para AGREGAR (corto, 12 por página) va primero, con su buscador a la vista, y debajo la lista de los ya agregados
 // (que puede tener cientos). Así no hay que bajar toda la lista para buscar un juguete por nombre o código de barras.
 @media (max-width: 900px) { .cp-columnas { grid-template-columns: minmax(0, 1fr); > .cp-catalogo { order: -1; } } }
-.cp-productos__lista, .cp-catalogo__lista { max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; padding-right: .25rem; }
-@media (max-width: 900px) { .cp-productos__lista, .cp-catalogo__lista { max-height: 18rem; } }
+// Con páginas de 12, las listas ya no necesitan scroll propio en escritorio; en pantalla angosta se limita para que el paginador quede a la vista.
+@media (max-width: 900px) { .cp-productos__lista, .cp-catalogo__lista { max-height: 22rem; overflow-y: auto; overscroll-behavior: contain; } }
 .cp-columnas > .cp-catalogo { border-top: 0; padding-top: 0; }
 .cp-columnas > .cp-productos, .cp-columnas > .cp-catalogo { align-content: start; }
 .cp-todos { justify-self: start; }

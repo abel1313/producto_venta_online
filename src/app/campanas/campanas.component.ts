@@ -99,10 +99,12 @@ export class CampanasComponent implements OnInit, OnDestroy {
 
   alEscribirEnCampana(texto: string): void {
     this.filtroCampana = texto;
+    this.paginaCampana = 1;
   }
 
   limpiarFiltroCampana(): void {
     this.filtroCampana = '';
+    this.paginaCampana = 1;
   }
 
   /** Los juguetes de la campaña que se ven: todos si no hay texto; si hay, los que coinciden en nombre o que el buscador del catálogo halló por nombre/código de barras. */
@@ -112,6 +114,25 @@ export class CampanasComponent implements OnInit, OnDestroy {
     if (!t) return lista;
     return lista.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.normalizar(p.codigoBarras ?? '').includes(t));
   }
+
+  // ── Páginas de los juguetes de la campaña (en el navegador: la lista ya está completa en memoria) ──
+  readonly porPaginaCampana = 12;
+  paginaCampana = 1;
+
+  get totalPaginasCampana(): number { return Math.max(1, Math.ceil(this.productosFiltrados.length / this.porPaginaCampana)); }
+  /** La página que se ve: si se quitaron juguetes y la última página desapareció, se queda en la última que existe. */
+  get paginaActualCampana(): number { return Math.min(Math.max(1, this.paginaCampana), this.totalPaginasCampana); }
+  get productosDeLaPagina(): ICampanaProducto[] {
+    const i = (this.paginaActualCampana - 1) * this.porPaginaCampana;
+    return this.productosFiltrados.slice(i, i + this.porPaginaCampana);
+  }
+  get rangoCampana(): string {
+    const n = this.productosFiltrados.length;
+    if (!n) return '0';
+    const i = (this.paginaActualCampana - 1) * this.porPaginaCampana;
+    return `${i + 1}–${Math.min(i + this.porPaginaCampana, n)} de ${n}`;
+  }
+  irAPaginaCampana(p: number): void { this.paginaCampana = Math.min(Math.max(1, p), this.totalPaginasCampana); }
 
   /** Qué decir cuando el texto no coincide con ningún juguete de la campaña. */
   get mensajeSinCoincidencias(): string {

@@ -807,3 +807,9 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 1. Un modelo con **1** de stock y sin artículos → «🧩 Agregar artículos». ✅ El Artículo 1 ya trae **Stock 1** y «Guardar 1 artículo» está activo, sin pulsar Aplicar.
 2. Un modelo con 5 de stock → el stock del artículo sigue **vacío** (hay que elegirlo).
 3. Guarda el de stock 1: el artículo queda con stock 1 y al modelo le quedan 0 libres.
+### 2026-11-10 — Campañas: pantalla acomodada y paginación en los dos lados
+**Dónde:** `campanas/campanas.component.{ts,html,scss}`, `precio-cantidad/grupos-precio.component.{html,scss}`.
+- [ ] «Volver» queda a la izquierda con el contenido y «＋ Nueva campaña» no se corta (1136, 1360 y 400 px; sin scroll horizontal), de día y de noche.
+- [ ] Juguetes de la campaña: de 12 en 12 con «Página X de N · a–b de total», arriba y abajo; el buscador reinicia a la página 1; al quitar el último de la última página no queda en blanco.
+- [ ] Catálogo: paginador arriba y abajo con la categoría JUGUETES y con «Todas las categorías».
+- [ ] Grupos de precio por cantidad: «Volver» alineado y sin cortes (mismo arreglo).

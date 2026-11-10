@@ -25,7 +25,7 @@ export class TerminosComponent {
    * Se muestra al pie. Actualizar cuando cambie el contenido de los términos (el registro guarda
    * la fecha en que cada cliente los aceptó, así se sabe qué versión aceptó).
    */
-  readonly ultimaActualizacion = '9 de noviembre de 2026';
+  readonly ultimaActualizacion = '10 de noviembre de 2026';
 
   constructor(private readonly datosLegales: DatosLegalesService) {}
 }

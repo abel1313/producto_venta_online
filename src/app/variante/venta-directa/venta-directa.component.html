@@ -1,7 +1,7 @@
 ﻿<!-- ── Visor de imagen ────────────────────────────────────────────── -->
 <div class="vd-visor" *ngIf="mostrarVisor" (click)="cerrarVisor()">
   <div class="vd-visor__box" (click)="$event.stopPropagation()">
-    <button class="vd-visor__close" (click)="cerrarVisor()">✕</button>
+    <button type="button" class="vd-visor__close" aria-label="Cerrar imagen" (click)="cerrarVisor()">✕</button>
     <img [src]="imagenVisor | imagenSrc | async" [alt]="nombreVisor" class="vd-visor__img">
     <p class="vd-visor__nombre">{{ nombreVisor }}</p>
   </div>
@@ -43,7 +43,7 @@
                autocomplete="off"
                appUppercase>
         <app-escaner-celular (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
-        <button *ngIf="terminoVariante" class="vd-search__clear"
+        <button type="button" aria-label="Borrar búsqueda" *ngIf="terminoVariante" class="vd-search__clear"
                 (click)="terminoVariante = ''; resultados = []">✕</button>
       </div>
 
@@ -70,7 +70,7 @@
             </div>
             <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras | uppercase }}</span>
           </div>
-          <button class="vd-btn-add"
+          <button type="button" class="vd-btn-add" aria-label="Agregar a la venta"
                   [disabled]="(v.stock ?? 0) === 0"
                   (click)="agregarAVenta(v)" title="Agregar a la venta">
             ➕
@@ -351,7 +351,7 @@
           <span *ngIf="clienteSinRegistroModal.numero_Telefonico" class="vd-client-chip__phone">
             📱 {{ clienteSinRegistroModal.numero_Telefonico }}
           </span>
-          <button class="vd-client-chip__clear" (click)="limpiarClienteSinRegistro()">✕</button>
+          <button type="button" class="vd-client-chip__clear" aria-label="Quitar cliente" (click)="limpiarClienteSinRegistro()">✕</button>
         </div>
 
         <!-- Chip: cliente registrado -->
@@ -364,7 +364,7 @@
           <span *ngIf="clienteSeleccionado.numeroTelefonico" class="vd-client-chip__phone">
             📱 {{ clienteSeleccionado.numeroTelefonico }}
           </span>
-          <button class="vd-client-chip__clear" (click)="limpiarCliente()">✕</button>
+          <button type="button" class="vd-client-chip__clear" aria-label="Quitar cliente" (click)="limpiarCliente()">✕</button>
         </div>
 
         <!-- Búsqueda + botón sin registro (cuando no hay ninguno asignado) -->
@@ -422,7 +422,7 @@
           </div>
           <div class="vd-line__right">
             <span class="vd-line__subtotal">{{ (p.precioTotal * p.cantidadCombos) | currency:'$' }}</span>
-            <button class="vd-line__del" (click)="quitarPromo(i)">✕</button>
+            <button type="button" class="vd-line__del" aria-label="Quitar combo" (click)="quitarPromo(i)">✕</button>
           </div>
         </div>
 
@@ -438,9 +438,9 @@
           <div class="vd-line__body">
             <span class="vd-line__nombre">{{ labelVariante(l.variante) }}</span>
             <div class="vd-line__controls">
-              <button class="vd-qty-btn" (click)="decrementar(l)">−</button>
+              <button type="button" class="vd-qty-btn" aria-label="Una pieza menos" (click)="decrementar(l)">−</button>
               <span class="vd-qty-val">{{ l.cantidad }}</span>
-              <button class="vd-qty-btn" [disabled]="l.cantidad >= (l.variante.stock ?? 0)" (click)="incrementar(l)">+</button>
+              <button type="button" class="vd-qty-btn" aria-label="Una pieza más" [disabled]="l.cantidad >= (l.variante.stock ?? 0)" (click)="incrementar(l)">+</button>
             </div>
           </div>
           <div class="vd-line__right">
@@ -453,7 +453,7 @@
                   [title]="'Grupo «' + l.grupo?.grupo + '»: ' + l.grupo?.piezasDelGrupo + ' piezas (mínimo ' + l.grupo?.minimoPiezas + ')'">
               <s>{{ (l.variante.precio ?? 0) * l.cantidad | currency:'$' }}</s> · ahorra {{ ahorroDe(l) | currency:'$' }}
             </span>
-            <button class="vd-line__del" (click)="quitarLinea(i)">✕</button>
+            <button type="button" class="vd-line__del" aria-label="Quitar artículo" (click)="quitarLinea(i)">✕</button>
           </div>
         </div>
 
@@ -508,18 +508,18 @@
         </div>
 
         <div class="vd-terminal__actions">
-          <button class="vd-btn-terminal vd-btn-terminal--enviar"
+          <button type="button" class="vd-btn-terminal vd-btn-terminal--enviar"
                   [disabled]="estadoTerminal === 'procesando' || estadoTerminal === 'aprobado' || estadoTerminal === 'bloqueado'"
                   (click)="enviarATerminal()">
             <i class="pi pi-send"></i>
             {{ estadoTerminal === 'rechazado' || estadoTerminal === 'cancelado' ? 'Reintentar' : 'Enviar a terminal' }}
           </button>
-          <button class="vd-btn-terminal vd-btn-terminal--cancelar"
+          <button type="button" class="vd-btn-terminal vd-btn-terminal--cancelar"
                   *ngIf="estadoTerminal === 'procesando'"
                   (click)="cancelarTerminal()">
             <i class="pi pi-times"></i> Cancelar
           </button>
-          <button class="vd-btn-terminal vd-btn-terminal--cerrar"
+          <button type="button" class="vd-btn-terminal vd-btn-terminal--cerrar"
                   *ngIf="estadoTerminal !== 'procesando' && estadoTerminal !== 'aprobado'"
                   (click)="cerrarTerminal()">
             Cerrar
@@ -545,7 +545,7 @@
         <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'form'">Datos para asignar a esta venta</small>
         <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'verificar'">Verificar correo (opcional)</small>
       </div>
-      <button class="vd-modal__close" (click)="closeModalModalSinRegistro()">&#10005;</button>
+      <button type="button" class="vd-modal__close" aria-label="Cerrar" (click)="closeModalModalSinRegistro()">&#10005;</button>
     </div>
 
     <!-- Paso 1: datos del cliente -->
@@ -622,16 +622,20 @@
       <label class="vd-campana__check" *ngIf="campana">
         <input type="checkbox" [(ngModel)]="campanaPrivacidad" [ngModelOptions]="{ standalone: true }">
         <span>El cliente acepta el Aviso de privacidad: se guardan su nombre, correo y teléfono para su código de cliente de la campaña «{{ campana.nombre }}».
-          <span class="vd-optional">Sin esta casilla no se crea su código QR. Si da correo, ahí se le manda.</span></span>
+          <span class="vd-optional">Obligatoria para registrarlo (si no acepta, «Cancelar» o «No registrar y cobrar»). Si da correo, ahí se le manda su código.</span></span>
       </label>
 
       <div class="vd-error" *ngIf="errorClienteSinRegistro">{{ errorClienteSinRegistro }}</div>
 
+      <!-- Regla del dueño (2026-11-10): «No registrar y cobrar» siempre cobra a precio normal, aunque esté marcada «Cliente recurrente». -->
+      <p class="vd-campana__aviso" *ngIf="campana && cobrarPendienteVisible">Sin datos del cliente no se aplica el precio de campaña.</p>
+
       <div class="vd-modal__actions">
         <button type="button" class="vd-btn-limpiar" (click)="closeModalModalSinRegistro()">Cancelar</button>
         <button type="button" class="vd-btn-limpiar" *ngIf="campana && cobrarPendienteVisible" (click)="noRegistrarYCobrar()"
-                title="El cliente no quiere registrarse: se cobra sin cliente y sin QR">No registrar y cobrar</button>
-        <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid || guardandoClienteSinRegistro">
+                title="El cliente no quiere registrarse: se cobra sin cliente, sin QR y a precio normal">No registrar y cobrar</button>
+        <button type="submit" class="vd-btn-cobrar" [disabled]="clienteForm.invalid || guardandoClienteSinRegistro || (!!campana && !campanaPrivacidad)"
+                [title]="campana && !campanaPrivacidad ? 'Para registrar al cliente marca la casilla del Aviso de privacidad (o usa «No registrar»)' : ''">
           {{ guardandoClienteSinRegistro ? 'Guardando…' : 'Guardar cliente' }}
         </button>
       </div>

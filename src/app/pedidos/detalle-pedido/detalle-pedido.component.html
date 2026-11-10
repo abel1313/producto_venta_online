@@ -170,7 +170,7 @@
       </div>
 
       <p class="dp-tipo-aviso" *ngIf="tipoForm.tipoPedido === 'FIADO' && detalle?.tieneJuguetesConPrecioDeCampana">
-        🎁 Con Ir pagando no entra el descuento de campaña: los juguetes regresan a su precio normal y el total sube.
+        {{ avisoIrPagandoCampana }}
       </p>
 
       <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">

@@ -1,3 +1,5 @@
+import { escaparHtml } from './escapar-html.util';
+
 /**
  * El ticket para el CORREO. `generarHtmlTicket` arma el de la impresora térmica con clases CSS (`.fila`, `.total`…) que solo existen en la ventana de
  * impresión; en un correo esas clases no existen y todo sale como texto suelto. Esta función toma ese mismo HTML y lo rehace con estilos EN LÍNEA y
@@ -12,7 +14,8 @@ const LINEA = '#e5e7eb';
 const TEXTO = '#1f2937';
 const FUENTE = 'Arial,Helvetica,sans-serif';
 
-const esc = (t: string): string => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+// También comillas: el texto llega a atributos (`src`, `alt`) del correo.
+const esc = (t: string): string => escaparHtml(t);
 
 /** Convierte el HTML del ticket de impresión en uno apto para correo. Si algo no se puede leer, devuelve el original (nunca se pierde el ticket). */
 export function htmlTicketParaCorreo(htmlImpresion: string): string {
@@ -50,7 +53,8 @@ function filaDeCorreo(el: HTMLElement): string {
   if (c.contains('fila')) {
     const hijos = Array.from(el.children) as HTMLElement[];
     const izq = hijos[0]?.textContent?.trim() ?? '';
-    const der = hijos[1]?.innerHTML ?? '';
+    // El precio normal tachado se rehace desde el TEXTO (nunca se copia HTML del ticket tal cual al correo).
+    const tachado = !!hijos[1]?.querySelector('s');
     const derTexto = hijos[1]?.textContent?.trim() ?? '';
     const chica = (el.getAttribute('style') ?? '').includes('font-size:9px');     // la línea de «Precio de campaña» bajo un artículo
     if (c.contains('total')) {
@@ -61,7 +65,7 @@ function filaDeCorreo(el: HTMLElement): string {
     if (chica) {
       return `<tr><td style="padding:0 0 6px;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;"><tr>`
         + `<td style="font-size:12px;color:${VERDE};font-weight:700;">${esc(izq)}</td>`
-        + `<td align="right" style="font-size:12px;color:${GRIS};white-space:nowrap;">${der}</td></tr></table></td></tr>`;
+        + `<td align="right" style="font-size:12px;color:${GRIS};white-space:nowrap;">${tachado ? `<s>${esc(derTexto)}</s>` : esc(derTexto)}</td></tr></table></td></tr>`;
     }
     // renglón normal: «2x NOMBRE» a la izquierda, el importe a la derecha
     const esArticulo = /^\d+x\s/i.test(izq);

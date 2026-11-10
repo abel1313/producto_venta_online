@@ -494,10 +494,14 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     pedido: { detalles: [], estado_pedido: '', fecha_pedido: '', id: 0 }
   };
 
-  irDetalle(item: IPedidoGenerico) {
+  irDetalle(item: IPedidoGenerico, abrirCambioDeTipo: 'FIADO' | null = null) {
+    this.abrirCambioDeTipo = abrirCambioDeTipo;
     this.mostrarDetalle = true;
     this.item = item;
   }
+
+  /** El detalle se abre ya en «🔁 Cambiar forma de cobro» con este tipo (con su aviso de campaña); null = detalle normal. */
+  abrirCambioDeTipo: 'FIADO' | null = null;
 
   /**
    * Desde el detalle se abre otro pedido del grupo. Los que no son titulares no salen en la lista,
@@ -1056,7 +1060,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   /** "¿Dejó solo una parte?" en Liquidar: el detalle tiene 🔁 Cambiar forma de cobro. */
   irAlDetalleDesdeCobro(item: IPedidoGenerico): void {
     this.cobroCredito = null;
-    this.irDetalle(item);
+    // Directo al cambio a Ir pagando del detalle: ahí sale el mismo aviso de campaña y, al confirmar, el total se recalcula (regla 2026-11-10).
+    this.irDetalle(item, 'FIADO');
   }
 
   /** El tipo se supo por el detalle (la card no lo traía): se abre el formulario que le toca. */

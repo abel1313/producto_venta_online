@@ -227,6 +227,15 @@ export class ProductoService {
         return this.http.get(`${this.url}/admin/diagnostico-imagenes/${productoId}`);
     }
 
+    /**
+     * Categorías para el selector de Productos → Buscar (back 2026-11-10): arreglo JSON plano de strings en MAYÚSCULAS, incluye productos sin
+     * artículos o deshabilitados (filtros-disponibles solo trae las de artículos a la venta). Quien llama hace el fallback si falla.
+     */
+    categoriasAdmin(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.url}/admin/categorias`).pipe(
+            map(r => Array.isArray(r) ? r.filter((c): c is string => typeof c === 'string' && !!c.trim()) : []));
+    }
+
     compartirImagenesVariante(compartirImagenesVarianteDto: CompartirImagenesVarianteDto): Observable<any> {
         return this.http.post(`${this.url}/compartir-imagenes-articulos`, compartirImagenesVarianteDto);
     }

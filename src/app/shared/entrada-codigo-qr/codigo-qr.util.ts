@@ -2,6 +2,7 @@ import { BrowserQRCodeReader } from '@zxing/browser';
 import { DecodeHintType } from '@zxing/library';
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+const UUID_CON_APOSTROFE = /[0-9a-f]{8}['-][0-9a-f]{4}['-][0-9a-f]{4}['-][0-9a-f]{4}['-][0-9a-f]{12}/i;
 const UUID_EXACTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** ¿Este texto es exactamente un código de cliente (UUID)? Los códigos de barras NO lo son. */
@@ -16,7 +17,10 @@ export function esUuid(texto: string | null | undefined): boolean {
 export function extraerCodigo(texto: string | null | undefined): string {
   const t = (texto ?? '').trim();
   const m = t.match(UUID);
-  return m ? m[0].toLowerCase() : t;
+  if (m) return m[0].toLowerCase();
+  // Un lector USB con otra distribución de teclado escribe `'` donde va `-` (también dentro de la liga): se corrige solo dentro del código.
+  const conApostrofe = t.match(UUID_CON_APOSTROFE);
+  return conApostrofe ? conApostrofe[0].replace(/'/g, '-').toLowerCase() : t;
 }
 
 /** Un lector de QR que se esfuerza más (TRY_HARDER): tarda un poco más pero lee imágenes comprimidas por WhatsApp o capturas con ruido. */

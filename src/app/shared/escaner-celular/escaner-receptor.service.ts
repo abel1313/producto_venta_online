@@ -9,6 +9,11 @@ type AlRecibirFoto = (fotoDataUrl: string) => void;
 interface Receptora { codigo?: AlRecibir; foto?: AlRecibirFoto; /** Si la tiene, esta receptora solo toma los códigos que acepta (y tiene prioridad sobre las que no filtran). */ acepta?: (codigo: string) => boolean; }
 
 const CLAVE_LIDER = 'escaner.pestana';
+/** Un código de cliente de campaña (UUID). Va aquí (y no de codigo-qr.util) para no cargar el lector de QR en el servicio raíz. */
+const UUID_EXACTO = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** Con este UUID de muestra se pregunta a una receptora con filtro si recibe códigos de cliente. */
+const UUID_DE_MUESTRA = '00000000-0000-4000-8000-000000000000';
+const esUuid = (codigo: string): boolean => UUID_EXACTO.test((codigo ?? '').trim());
 /** Si una respuesta vacía llega antes de esto, la pregunta fue desplazada (hay otras preguntas abiertas de la cuenta): se espera antes de repetir. */
 const RESPUESTA_VACIA_RAPIDA_MS = 1000;
 const PAUSA_TRAS_VACIA_RAPIDA_MS = 1500;
@@ -77,23 +82,35 @@ export class EscanerReceptorService implements OnDestroy {
     };
   }
 
-  /** Qué hay que pedirle al servidor según las pantallas registradas: `codigo`, `foto` o `codigo,foto`. */
+  /**
+   * Qué hay que pedirle al servidor según las pantallas registradas: `codigo`, `foto`, y `uuid` cuando hay abierta una receptora de código de
+   * cliente (el campo «Código del cliente» de Venta directa con campaña vigente). Con `uuid` el servidor puede contestarle al celular que nadie
+   * recibió el QR del cliente; un servidor que aún no lo conoce lo ignora («lo desconocido se ignora»).
+   */
   private acepta(): string {
     const partes: string[] = [];
     if (this.receptoras.some(r => r.codigo)) partes.push('codigo');
     if (this.receptoras.some(r => r.foto)) partes.push('foto');
+    if (this.receptoras.some(r => this.recibeUuid(r))) partes.push('uuid');
     return partes.join(',') || 'codigo';
+  }
+
+  private recibeUuid(r: Receptora): boolean {
+    try { return !!r.codigo && !!r.acepta && r.acepta(UUID_DE_MUESTRA); } catch { return false; }
   }
 
   /**
    * A quién se entrega un código. Primero, la última receptora con FILTRO que lo acepta (ej. el campo del código de cliente de una campaña, que solo
    * quiere UUID); si ninguna, la última que recibe códigos sin filtro (el buscador de siempre). Así los códigos de barras siguen yendo al buscador.
+   * Un código de cliente (UUID) NUNCA va a una receptora sin filtro (regla 2026-11-10): solo al campo «Código del cliente»; si no está abierto, se descarta
+   * (antes caía en el buscador de artículos/juguetes).
    */
   private destinoDelCodigo(codigo: string): AlRecibir | undefined {
     for (let i = this.receptoras.length - 1; i >= 0; i--) {
       const r = this.receptoras[i];
       if (r.codigo && r.acepta && r.acepta(codigo)) return r.codigo;
     }
+    if (esUuid(codigo)) return undefined;
     for (let i = this.receptoras.length - 1; i >= 0; i--) {
       const r = this.receptoras[i];
       if (r.codigo && !r.acepta) return r.codigo;

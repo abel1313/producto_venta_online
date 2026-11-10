@@ -64,6 +64,8 @@ $transition:   all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 
   &__aviso { font-size: 12px; color: var(--app-text-muted); }
 }
+// Dentro del panel de Filtros es una celda más de la cuadrícula: sin margen propio y sin forzar el ancho de la columna.
+.pl-filtros .pl-categoria { margin-bottom: 0; min-width: 0; }
 
 // ── Buscador ───────────────────────────────────────────────────────
 .pl-search {

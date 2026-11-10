@@ -17,6 +17,17 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-10 — Cámara de los buscadores: mismo lector que el escáner del celular
+**Dónde:** `shared/barcode-scanner.util.ts` (`iniciarEscanerConAutofoco`; lo usan Tienda → Buscar, Productos → Buscar, Nuevo producto, carga de imágenes y «Código del cliente»), `escaner-celular/escaner-celular-pagina.component.ts` (opción `soloZxing` en su respaldo).
+**Debe comprobar (en el celular, Chrome y también Safari/iPhone):**
+- [ ] Tienda → Buscar → 📷: la cámara abre en 1280×720, enfoca igual de rápido que el menú «Escáner» y al leer el código lo pone en el buscador y busca; la cámara se apaga sola.
+- [ ] Lo mismo en Productos → Buscar, Nuevo producto (código de barras) y carga de imágenes.
+- [ ] iPhone / Safari (sin lector nativo): sigue funcionando con zxing (puede tardar más; ahora también pide 1280×720).
+- [ ] «Código del cliente» (QR en Venta directa): sigue leyendo el QR con la cámara.
+- [ ] Menú «Escáner» y «Escáner QR» del celular: sin cambios (siguen mandando a la PC).
+- [ ] Cerrar el cuadro de la cámara sin escanear apaga la luz de la cámara.
+- [ ] Enfoque: al abrir la cámara pide autoenfoque continuo; al TOCAR la imagen reenfoca al instante en ese punto y vuelve al continuo (Chrome Android). En iPhone no hay control: enfoca solo.
+
 ### 2026-11-10 — Paquete de campaña para PRODUCCIÓN (hotfix/campana-prod-front, desde master)
 **Dónde:** `campanas/**` (+ `codigo-publico`), `precio-cantidad/**`, `variante/venta-directa/**`, `variante/venta-variante/*`, `pedidos/detalle-pedido/*`, `pedidos/mis-pedidos/*`, `pedidos/cobro/liquidar-apartado/*`, `pedidos/aviso-ir-pagando-campana.ts`, `shared/entrada-codigo-qr/**`, `shared/escaner-celular/*`, `escaner-celular/*`, `assets/escaner/escaner.html`, `shared/ticket.util.ts`, `shared/ticket-correo.util.ts`, `shared/version-nueva.util.ts`, `shared/calculadora-precio/*`, `variante/buscar/*`, `productos/producto/all/*`, `legal/privacidad/*`, `legal/terminos/*`, `navbar/*`, `app-routing.module.ts`.
 **Tipo:** e2e (Playwright contra producción con back simulado y después contra el back real) · unitario de componente/servicio (HttpTestingController)

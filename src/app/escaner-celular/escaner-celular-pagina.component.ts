@@ -156,7 +156,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   }
 
   private async conZxing(): Promise<void> {
-    this.controlesZxing = await iniciarEscanerConAutofoco(this.video.nativeElement, result => { if (result) this.alLeer(result.getText()); });
+    this.controlesZxing = await iniciarEscanerConAutofoco(this.video.nativeElement, result => { if (result) this.alLeer(result.getText()); }, { soloZxing: true });
   }
 
   private camaraViva(): boolean {

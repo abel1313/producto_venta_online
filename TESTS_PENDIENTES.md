@@ -813,3 +813,10 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 - [ ] Juguetes de la campaña: de 12 en 12 con «Página X de N · a–b de total», arriba y abajo; el buscador reinicia a la página 1; al quitar el último de la última página no queda en blanco.
 - [ ] Catálogo: paginador arriba y abajo con la categoría JUGUETES y con «Todas las categorías».
 - [ ] Grupos de precio por cantidad: «Volver» alineado y sin cortes (mismo arreglo).
+
+### 2026-11-10 — Productos → Buscar: la categoría va dentro del panel de Filtros, antes de «Limpiar filtros»
+**Dónde:** `productos/producto/all/all.component.{html,ts,scss}`.
+- [ ] Con el panel de Filtros abierto, «JUGUETES» (selector de Categoría) sale justo antes de «✕ Limpiar filtros», como una celda más; con el panel cerrado ya no sale suelto arriba.
+- [ ] El contador del botón Filtros cuenta también la categoría («2 activos» = JUGUETES + un filtro).
+- [ ] Quien no tiene ningún permiso de filtros (no ve el panel) sigue viendo el selector de categoría suelto, como antes.
+- [ ] Cambiar o quitar la categoría sigue filtrando igual; con texto en el buscador sigue buscando en todas.

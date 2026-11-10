@@ -604,7 +604,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   get filtrosActivos(): number {
     return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
             this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
-            !!this.fechaDesde, !!this.fechaHasta].filter(Boolean).length;
+            !!this.fechaDesde, !!this.fechaHasta, !!this.filtroCategoria].filter(Boolean).length;
   }
 
   get hayFiltrosAdminActivos(): boolean {

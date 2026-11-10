@@ -830,3 +830,8 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 - [ ] Con JUGUETES elegido, escribir «BOLS» muestra solo los productos JUGUETES que coincidan (si ninguno, «sin resultados»); con la categoría quitada (✕) busca en todas.
 - [ ] Texto + categoría + con stock + habilitados + con imágenes se combinan con «Y»; el contador de Filtros cuenta la categoría.
 - [ ] Sin categoría y sin texto, la lista sale igual que antes; el escáner (código de barras) sigue encontrando el producto.
+
+### 2026-11-10 — Productos → Buscar: la lista no pasaba de la primera página
+**Dónde:** `productos/producto/all/all.component.ts` (`onScroll`, `buscarProductoScroll`).
+- [ ] Con JUGUETES/«Con stock»/«Habilitados» (o sin filtros) y más de 12 resultados, al bajar la lista se cargan las siguientes páginas hasta el final; en pantalla con zoom o alta densidad también.
+- [ ] Al llegar al final no se piden dos veces la misma página (sin productos repetidos).

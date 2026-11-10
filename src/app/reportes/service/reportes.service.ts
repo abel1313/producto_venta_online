@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
@@ -151,6 +151,46 @@ export interface RevisionVentas {
   noRevisados:    string[];
 }
 
+// ── Reporte por categoría / por productos elegidos (solo administrador) ───────────────────────────────────────────────────────
+
+export type VistaReporteCategoria = 'TODOS' | 'VENDIDOS' | 'NO_VENDIDOS';
+
+/** Lo que se pide: categoría vacía = todo; sinCategoria = «Otros»; productoIds = solo esos productos. */
+export interface FiltroReporteCategoria {
+  desde:          string;
+  hasta:          string;
+  categoria?:     string;
+  sinCategoria?:  boolean;
+  productoIds?:   number[];
+  vista:          VistaReporteCategoria;
+}
+
+export interface FilaReporteCategoria {
+  productoId: number; nombre: string; codigoBarras: string | null; categoria: string | null;
+  precioCompra: number | null; precioVenta: number | null; precioRebaja: number | null; precioRebajaCampana: number | null;
+  piezasVendidas: number; ventas: number; totalVendido: number; costoVendido: number; gananciaVendida: number;
+  porcentajeCalculado: number | null; calculoNuevo: boolean; porcentajeReal: number | null;
+  fletePorPieza: number; sinFlete: boolean;
+  porVender: number; gananciaPorVender: number; gananciaTotal: number;
+}
+
+export interface TotalesReporteCategoria {
+  productos: number; productosVendidos: number; productosSinVender: number;
+  piezas: number; total: number; costo: number; gananciaVendida: number; margenRealPct: number | null;
+  piezasPorVender: number; gananciaPorVender: number; gananciaTotal: number;
+}
+
+export interface PaginaReporteCategoria {
+  descripcion: string; filas: FilaReporteCategoria[]; pagina: number; totalPaginas: number; totalRegistros: number; totales: TotalesReporteCategoria;
+}
+
+export type EstadoReporteGenerado = 'PENDIENTE' | 'GENERANDO' | 'LISTO' | 'ERROR';
+
+export interface ReporteGenerado {
+  id: number; estado: EstadoReporteGenerado; formato: 'XLSX' | 'PDF'; descripcion: string; nombreArchivo: string | null; error: string | null;
+  creado: string; terminado: string | null; expira: string; bytes: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ReportesService {
   private readonly base = `${environment.api_Url}/v1/reportes/ventas`;
@@ -213,5 +253,38 @@ export class ReportesService {
     return this.http
       .get<{ data: CorteDeCaja }>(`${environment.api_Url}/v1/reportes/corte-caja?${params.join('&')}`)
       .pipe(map(r => r.data));
+  }
+
+  // ── Reporte por categoría / productos elegidos ──
+  private get baseCategoria(): string { return `${this.base}/por-categoria`; }
+
+  /** El reporte en pantalla (paginado, solo lectura). El back responde 400 con `mensaje` si algo del filtro no es válido. */
+  getPorCategoria(f: FiltroReporteCategoria, pagina: number, size: number): Observable<PaginaReporteCategoria> {
+    let params = new HttpParams().set('desde', f.desde).set('hasta', f.hasta).set('vista', f.vista)
+      .set('pagina', String(pagina)).set('size', String(size));
+    if (f.productoIds?.length) params = params.set('productoIds', f.productoIds.join(','));
+    else if (f.sinCategoria) params = params.set('sinCategoria', 'true');
+    else if (f.categoria) params = params.set('categoria', f.categoria);
+    return this.http.get<{ data: PaginaReporteCategoria }>(this.baseCategoria, { params }).pipe(map(r => r.data));
+  }
+
+  /** Pide el Excel o PDF: el back lo arma en segundo plano y responde al instante con su id (PENDIENTE). */
+  generarReporteCategoria(f: FiltroReporteCategoria, formato: 'XLSX' | 'PDF'): Observable<ReporteGenerado> {
+    return this.http.post<{ data: ReporteGenerado }>(`${this.baseCategoria}/generar`, {
+      desde: f.desde, hasta: f.hasta, categoria: f.categoria || null, sinCategoria: !!f.sinCategoria, productoIds: f.productoIds ?? [], vista: f.vista, formato
+    }).pipe(map(r => r.data));
+  }
+
+  /** Mis últimos reportes pedidos (la lista viene en `lista`; vacía responde 404). */
+  getReportesGenerados(): Observable<ReporteGenerado[]> {
+    return this.http.get<{ lista: ReporteGenerado[] }>(`${this.baseCategoria}/generados`).pipe(map(r => r.lista ?? []));
+  }
+
+  getEstadoReporteGenerado(id: number): Observable<ReporteGenerado> {
+    return this.http.get<{ data: ReporteGenerado }>(`${this.baseCategoria}/generados/${id}`).pipe(map(r => r.data));
+  }
+
+  descargarReporteGenerado(id: number): Observable<Blob> {
+    return this.http.get(`${this.baseCategoria}/generados/${id}/archivo`, { responseType: 'blob' });
   }
 }

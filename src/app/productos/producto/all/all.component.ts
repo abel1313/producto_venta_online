@@ -890,8 +890,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       });
   }
 
+  /** Hay una página «más» pidiéndose: con el margen de 120 px llegan varios eventos de scroll seguidos y no debe pedirse la misma página dos veces. */
+  private cargandoMas = false;
+
   buscarProductoScroll(paginaPrimera: number): void {
+    if (this.cargandoMas) return;
     if( this.totalPaginas >= paginaPrimera){
+    this.cargandoMas = true;
     // BUG 2026-09-05: esta funcion ignoraba los filtros de admin (conImagenes, conStock, etc.)
     // Y el texto de busqueda -- siempre pedia mas paginas con getDataNombreCodigoBarra(nombre="")
     // sin importar que el usuario tuviera activo "solo con imagen" o estuviera buscando por
@@ -911,11 +916,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         categoria: this.categoriaParaBackend
       }, paginaPrimera, 10).pipe(takeUntil(this.destroy$)).subscribe({
         next: (res) => {
+          this.cargandoMas = false;
           this.paginaPrimera = this.paginaPrimera + 1;
           this.totalPaginas = res.totalPaginas;
           this.rows = [...this.rows, ...res.t]; // Agrega sin borrar los anteriores
         },
         error: (err) => {
+          this.cargandoMas = false;
           Swal.fire({ icon: 'error', title: 'Error al cargar más productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar más productos.' });
         }
       });
@@ -924,11 +931,13 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.srvice.getDataNombreCodigoBarra(paginaPrimera, 10, this.buscarProd)
       .subscribe({
         next: (res) => {
+          this.cargandoMas = false;
           this.paginaPrimera = this.paginaPrimera +1;
           this.paginacion = res;
           this.rows = [...this.rows, ...this.paginacion.t]; // Agrega sin borrar los anteriores
         },
         error: (err) => {
+          this.cargandoMas = false;
           Swal.fire({ icon: 'error', title: 'Error al cargar más productos', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo cargar más productos.' });
         }
       });
@@ -937,7 +946,9 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   onScroll(event: any): void {
     const element = event.target;
-    if (element.scrollHeight - element.scrollTop === element.clientHeight) {
+    // Antes era una igualdad exacta: con zoom o pantallas de alta densidad scrollTop trae decimales y nunca coincidía, así que la lista se quedaba en
+    // la primera página. Ahora basta con estar a menos de 120 px del final.
+    if (element.scrollHeight - element.scrollTop - element.clientHeight < 120) {
       this.loadMore(); // Carga más datos
     }
   }

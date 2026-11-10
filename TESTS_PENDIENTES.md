@@ -820,3 +820,7 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 - [ ] El contador del botón Filtros cuenta también la categoría («2 activos» = JUGUETES + un filtro).
 - [ ] Quien no tiene ningún permiso de filtros (no ve el panel) sigue viendo el selector de categoría suelto, como antes.
 - [ ] Cambiar o quitar la categoría sigue filtrando igual; con texto en el buscador sigue buscando en todas.
+
+### 2026-11-10 — Actualizar producto: quitar la categoría
+**Dónde:** `productos/producto/add/add.component.ts` (manda `quitarPalabraClave: true` al actualizar sin categoría), `producto.model.ts`.
+- [ ] Productos → Buscar → Actualizar: quitar la categoría (✕ del campo) y guardar; al volver a abrirlo no la trae. Si no se toca, la conserva.

@@ -17,6 +17,11 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-10 — Tienda → Buscar: la categoría se combina con el texto
+**Dónde:** `variante/buscar/buscar.component.{ts,html}` (`categoriaParaBackend`; se quitó el aviso «Buscando en todas las categorías»).
+**Debe comprobar:**
+- [ ] Con JUGUETES elegido y «bolsa» escrito no sale ninguna bolsa; si nada coincide, «sin resultados». Con «Todas» sí salen. «Limpiar» deja Todas.
+
 
 
 ### 2026-11-10 — La compra en curso cuenta para la meta (solo lo que NO son juguetes)

@@ -104,16 +104,11 @@ export class BuscarComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * La categoría viaja solo cuando no hay texto: si se escribe algo para buscar, se busca en TODAS las categorías
-   * (así un juguete se encuentra por nombre aunque la categoría elegida sea otra).
+   * La categoría viaja SIEMPRE, junto con el texto y los demás filtros (se combinan: todo tiene que cumplirse).
+   * Regla del dueño (2026-11-10): «bolsa» con JUGUETES elegido solo muestra lo que sea bolsa Y juguete.
    */
   private get categoriaParaBackend(): string | undefined {
-    return !this.terminoParaBackend && this.filtroCategoria ? this.filtroCategoria : undefined;
-  }
-
-  /** Hay texto buscando y también una categoría elegida: se avisa que el texto manda. */
-  get categoriaIgnoradaPorTexto(): boolean {
-    return !!this.filtroCategoria && !!this.terminoParaBackend;
+    return this.filtroCategoria || undefined;
   }
 
   /** id del modelo que se esta dando de baja, para no disparar dos veces. */

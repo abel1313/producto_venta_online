@@ -35,11 +35,15 @@
       <app-escaner-celular *ngIf="puedeEscanear" (codigo)="alRecibirCodigoDelCelular($event)"></app-escaner-celular>
     </div>
 
-    <!-- Categoría: por defecto JUGUETES; con texto en el buscador se busca en todas. -->
-    <div class="pl-categoria" *ngIf="categorias.length">
-      <app-filtro-buscable etiqueta="Categoría" [opciones]="categorias" [valor]="filtroCategoria" (valorChange)="onCategoriaChange($event)"></app-filtro-buscable>
-      <span class="pl-categoria__aviso" *ngIf="categoriaIgnoradaPorTexto">Buscando «{{ buscarProd }}» en todas las categorías</span>
-    </div>
+    <!-- Categoría: por defecto JUGUETES; con texto en el buscador se busca en todas. Va dentro del panel de Filtros (antes de «Limpiar filtros»);
+         quien no tiene filtros no ve ese panel, así que a esa persona se le muestra aquí, suelta. -->
+    <ng-template #categoriaTpl>
+      <div class="pl-categoria">
+        <app-filtro-buscable etiqueta="Categoría" [opciones]="categorias" [valor]="filtroCategoria" (valorChange)="onCategoriaChange($event)"></app-filtro-buscable>
+        <span class="pl-categoria__aviso" *ngIf="categoriaIgnoradaPorTexto">Buscando «{{ buscarProd }}» en todas las categorías</span>
+      </div>
+    </ng-template>
+    <ng-container *ngIf="!puedeVerAlgunFiltro && categorias.length"><ng-container *ngTemplateOutlet="categoriaTpl"></ng-container></ng-container>
 
     <!-- Filtros admin: cada checkbox es independiente (no excluyente). Se pueden marcar varios
          a la vez, incluso los dos de un mismo par (ej. "con stock" + "sin stock" = trae ambos,
@@ -112,6 +116,7 @@
                               (ngModelChange)="fechaHasta = $event; onFechaFiltroChange()"></app-selector-fecha>
         </label>
       </ng-container>
+      <ng-container *ngIf="categorias.length"><ng-container *ngTemplateOutlet="categoriaTpl"></ng-container></ng-container>
       <button class="pl-filtro-btn" *ngIf="puedeVerAlgunFiltro && hayFiltrosAdminActivos" (click)="limpiarFiltrosAdmin()">✕ Limpiar filtros</button>
     </div>
 

@@ -1,0 +1,178 @@
+<section class="rc" *ngIf="authService.isAdminService">
+
+  <header class="rc-hero">
+    <p class="pk-kicker">Reportes · solo administrador</p>
+    <h2 class="rc-titulo">Reporte por categoría</h2>
+    <p class="rc-sub">Lo vendido entre dos fechas, por categoría o por los productos que elijas. Solo cuentan las ventas ya pagadas; las canceladas no. Si un producto se vendió varias veces, sus piezas se suman. Incluye también lo que aún no se vende, para ver la ganancia real y la que falta por ganar.</p>
+  </header>
+
+  <div class="rc-modos" role="tablist">
+    <button type="button" role="tab" class="pk-chip" [class.is-on]="modo === 'categoria'" [attr.aria-selected]="modo === 'categoria'" (click)="cambiarModo('categoria')">Por categoría</button>
+    <button type="button" role="tab" class="pk-chip" [class.is-on]="modo === 'productos'" [attr.aria-selected]="modo === 'productos'" (click)="cambiarModo('productos')">Productos elegidos</button>
+  </div>
+
+  <form class="rc-filtros" (ngSubmit)="consultar(1)">
+    <label class="pk-field">
+      <span class="pk-label">Desde</span>
+      <input class="pk-input" type="date" name="desde" [(ngModel)]="desde" required>
+    </label>
+    <label class="pk-field">
+      <span class="pk-label">Hasta (incluido)</span>
+      <input class="pk-input" type="date" name="hasta" [(ngModel)]="hasta" required>
+    </label>
+    <label class="pk-field" *ngIf="modo === 'categoria'">
+      <span class="pk-label">Categoría</span>
+      <select class="pk-input" name="categoria" [(ngModel)]="categoria">
+        <option value="">Todas (con o sin categoría)</option>
+        <option [value]="OTROS">Otros (sin categoría)</option>
+        <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+      </select>
+    </label>
+    <label class="pk-field">
+      <span class="pk-label">Qué mostrar</span>
+      <select class="pk-input" name="vista" [(ngModel)]="vista">
+        <option value="TODOS">Vendido y por vender</option>
+        <option value="VENDIDOS">Solo lo vendido</option>
+        <option value="NO_VENDIDOS">Solo lo que no se ha vendido</option>
+      </select>
+    </label>
+
+    <div class="rc-acciones">
+      <button type="submit" class="pk-btn pk-btn--primary" [disabled]="cargando || !puedeConsultar">Ver reporte</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="pedirArchivo('XLSX')" [disabled]="!puedeConsultar || armandoArchivo">⬇ Excel</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="pedirArchivo('PDF')" [disabled]="!puedeConsultar || armandoArchivo">⬇ PDF</button>
+    </div>
+  </form>
+  <p class="pk-error" *ngIf="fechasAlReves">La fecha «desde» no puede ser después de «hasta».</p>
+
+  <!-- Elegir productos -->
+  <div class="rc-elegir" *ngIf="modo === 'productos'">
+    <label class="pk-field">
+      <span class="pk-label">Buscar producto (nombre o código de barras)</span>
+      <input class="pk-input" name="busqueda" [(ngModel)]="busqueda" (ngModelChange)="alEscribir($event)" autocomplete="off" placeholder="Escribe al menos 2 letras">
+    </label>
+    <p class="rc-vacio" *ngIf="buscando">Buscando…</p>
+    <ul class="rc-resultados" *ngIf="resultadosBusqueda.length">
+      <li *ngFor="let p of resultadosBusqueda; trackBy: porId">
+        <span class="rc-prod">
+          <strong>{{ p.nombre }}</strong>
+          <small>{{ p.codigoBarras || 'sin código' }}<ng-container *ngIf="p.categoria"> · {{ p.categoria }}</ng-container></small>
+        </span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="elegir(p)" [disabled]="estaElegido(p)">{{ estaElegido(p) ? 'Agregado' : 'Agregar' }}</button>
+      </li>
+    </ul>
+    <div class="rc-elegidos" *ngIf="elegidos.length">
+      <p class="rc-etq">{{ elegidos.length }} {{ elegidos.length === 1 ? 'producto elegido' : 'productos elegidos' }}
+        <button type="button" class="rc-link" (click)="quitarTodos()">Quitar todos</button></p>
+      <ul>
+        <li *ngFor="let p of elegidos; trackBy: porId">
+          <span>{{ p.nombre }}</span>
+          <button type="button" class="rc-x" (click)="quitar(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
+        </li>
+      </ul>
+    </div>
+    <p class="rc-vacio" *ngIf="!elegidos.length">Elige al menos un producto para ver el reporte.</p>
+  </div>
+
+  <!-- Avisos del archivo en segundo plano -->
+  <p class="rc-aviso" *ngIf="avisoArchivo"><span class="rc-spin" *ngIf="armandoArchivo" aria-hidden="true"></span>{{ avisoArchivo }}</p>
+  <p class="pk-error" *ngIf="errorArchivo">{{ errorArchivo }}</p>
+  <p class="pk-error" *ngIf="error">{{ error }}</p>
+  <p class="rc-vacio" *ngIf="cargando">Armando el reporte…</p>
+
+  <!-- Resultado -->
+  <ng-container *ngIf="resultado && !cargando">
+    <p class="rc-desc">{{ resultado.descripcion }}</p>
+
+    <div class="rc-tarjetas">
+      <div><span class="rc-etq">Productos</span><strong>{{ resultado.totales.productos }}</strong><small>{{ resultado.totales.productosVendidos }} vendidos · {{ resultado.totales.productosSinVender }} sin vender</small></div>
+      <div><span class="rc-etq">Piezas vendidas</span><strong>{{ resultado.totales.piezas | number:'1.0-0' }}</strong></div>
+      <div><span class="rc-etq">Total vendido</span><strong>{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      <div><span class="rc-etq">Costo vendido</span><strong>{{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      <div><span class="rc-etq">Ganancia vendida</span><strong class="rc-ok">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</strong><small *ngIf="resultado.totales.margenRealPct !== null">{{ resultado.totales.margenRealPct | number:'1.2-2' }} % real</small></div>
+      <div><span class="rc-etq">Ganancia por vender</span><strong>{{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasPorVender | number:'1.0-0' }} piezas en stock</small></div>
+      <div><span class="rc-etq">Ganancia total</span><strong class="rc-ok">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+    </div>
+
+    <p class="rc-vacio" *ngIf="!resultado.filas.length">No hay productos con esos filtros.</p>
+
+    <div class="rc-tabla-wrap" *ngIf="resultado.filas.length">
+      <table class="rc-tabla">
+        <thead>
+          <tr>
+            <th class="rc-izq">Producto</th><th>Código de barras</th><th>Categoría</th>
+            <th class="rc-num">Compra</th><th class="rc-num">Venta</th><th class="rc-num">Rebaja</th><th class="rc-num">Rebaja campaña</th>
+            <th class="rc-num">Piezas vendidas</th><th class="rc-num">Ventas</th><th class="rc-num">Total vendido</th><th class="rc-num">Costo</th><th class="rc-num">Ganancia</th>
+            <th class="rc-num">% calculado</th><th class="rc-num">% real</th><th class="rc-num">Flete x pieza</th><th>¿Flete?</th>
+            <th class="rc-num">Por vender</th><th class="rc-num">Ganancia por vender</th><th class="rc-num">Ganancia total</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let f of resultado.filas; trackBy: porId" [class.rc-sin-ventas]="f.piezasVendidas === 0">
+            <td class="rc-izq rc-nombre">{{ f.nombre }}</td>
+            <td>{{ f.codigoBarras || '—' }}</td>
+            <td>{{ f.categoria || 'Otros' }}</td>
+            <td class="rc-num">{{ f.precioCompra | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.precioVenta | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.precioRebaja | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.precioRebajaCampana !== null ? (f.precioRebajaCampana | currency:'MXN':'symbol':'1.2-2') : '—' }}</td>
+            <td class="rc-num">{{ f.piezasVendidas | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.ventas | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.costoVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num" [class.rc-mal]="f.gananciaVendida < 0">{{ f.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.porcentajeCalculado !== null ? ((f.porcentajeCalculado | number:'1.2-2') + ' %') : '—' }}</td>
+            <td class="rc-num">{{ f.porcentajeReal !== null ? ((f.porcentajeReal | number:'1.2-2') + ' %') : '—' }}</td>
+            <td class="rc-num">{{ f.fletePorPieza | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td><span class="rc-tag" [class.rc-tag--aviso]="f.sinFlete">{{ f.sinFlete ? 'Sin flete' : 'Con flete' }}</span></td>
+            <td class="rc-num">{{ f.porVender | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
+          </tr>
+        </tbody>
+        <tfoot>
+          <tr>
+            <th class="rc-izq" colspan="7">Totales ({{ resultado.totales.productos }} productos, todas las páginas)</th>
+            <th class="rc-num">{{ resultado.totales.piezas | number:'1.0-0' }}</th>
+            <th></th>
+            <th class="rc-num">{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th></th>
+            <th class="rc-num">{{ resultado.totales.margenRealPct !== null ? ((resultado.totales.margenRealPct | number:'1.2-2') + ' %') : '—' }}</th>
+            <th></th><th></th>
+            <th class="rc-num">{{ resultado.totales.piezasPorVender | number:'1.0-0' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+
+    <div class="rc-pie" *ngIf="resultado.filas.length">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina - 1)" [disabled]="pagina <= 1">‹ Anterior</button>
+      <span>Página {{ pagina }} de {{ resultado.totalPaginas }} · {{ resultado.totalRegistros }} productos</span>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina + 1)" [disabled]="pagina >= resultado.totalPaginas">Siguiente ›</button>
+      <label class="rc-porpag">Por página
+        <select class="pk-input" name="porPagina" [(ngModel)]="porPagina" (ngModelChange)="cambiarPorPagina()">
+          <option *ngFor="let n of opcionesPorPagina" [ngValue]="n">{{ n }}</option>
+        </select>
+      </label>
+    </div>
+  </ng-container>
+
+  <!-- Mis reportes -->
+  <div class="rc-generados" *ngIf="generados.length">
+    <h3 class="rc-sub2">Mis reportes <small>(se borran solos a los 7 días)</small></h3>
+    <ul>
+      <li *ngFor="let g of generados; trackBy: porId">
+        <span class="rc-prod">
+          <strong>{{ g.formato === 'PDF' ? 'PDF' : 'Excel' }} · {{ etiquetaEstado(g.estado) }}</strong>
+          <small>{{ g.descripcion }} · {{ g.creado | date:'dd/MM/yyyy HH:mm' }}<ng-container *ngIf="g.estado === 'LISTO'"> · {{ tam(g.bytes) }}</ng-container></small>
+          <small class="rc-mal" *ngIf="g.estado === 'ERROR' && g.error">{{ g.error }}</small>
+        </span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="g.estado === 'LISTO'" (click)="descargar(g)">Descargar</button>
+      </li>
+    </ul>
+  </div>
+</section>

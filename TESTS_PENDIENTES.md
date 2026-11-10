@@ -433,3 +433,10 @@ Formato de cada entrada:
 |---|---|---|
 | `e2e/tests/login.spec.ts`, `e2e/tests/modelo.spec.ts` | 2026-10-08 (rama `rename/variante-a-articulo`) | Buscan el buscador de Modelos por `'Buscar nombre o código…'`; en la rama dice `'Buscar modelo por nombre o código…'`. |
 | `e2e/support/articulo.ts` → `crearArticulo()` (lo usa `descuento.spec.ts`) | 2026-10-08 (rama `rename/variante-a-articulo`) | Busca el botón `/Guardar producto/`; en la rama dice "💾 Guardar artículo". **Ojo:** el workflow de e2e corre solo después del deploy de QA, así que cuando la rama llegue a `qa` estas 3 pruebas van a salir en rojo hasta que se ajusten. |
+
+### 2026-11-10 — Campañas: pantalla acomodada y paginación en los dos lados
+**Dónde:** `campanas/campanas.component.{ts,html,scss}`, `precio-cantidad/grupos-precio.component.{html,scss}`.
+- [ ] «Volver» queda a la izquierda con el contenido y «＋ Nueva campaña» no se corta (1136, 1360 y 400 px; sin scroll horizontal), de día y de noche.
+- [ ] Juguetes de la campaña: de 12 en 12 con «Página X de N · a–b de total», arriba y abajo; el buscador reinicia a la página 1; al quitar el último de la última página no queda en blanco.
+- [ ] Catálogo: paginador arriba y abajo con la categoría JUGUETES y con «Todas las categorías».
+- [ ] Grupos de precio por cantidad: «Volver» alineado y sin cortes (mismo arreglo).

@@ -17,6 +17,17 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-10 — Cámara de los buscadores: mismo lector que el escáner del celular
+**Dónde:** `shared/barcode-scanner.util.ts` (`iniciarEscanerConAutofoco`; lo usan Tienda → Buscar, Productos → Buscar, Nuevo producto, carga de imágenes y «Código del cliente»), `escaner-celular/escaner-celular-pagina.component.ts` (opción `soloZxing` en su respaldo).
+**Debe comprobar (en el celular, Chrome y también Safari/iPhone):**
+- [ ] Tienda → Buscar → 📷: la cámara abre en 1280×720, enfoca igual de rápido que el menú «Escáner», lee el código, lo pone en el buscador y busca; la cámara se apaga sola.
+- [ ] Lo mismo en Productos → Buscar, Nuevo producto (código de barras) y carga de imágenes.
+- [ ] iPhone / Safari (sin lector nativo): sigue funcionando con zxing.
+- [ ] «Código del cliente» (QR en Venta directa): sigue leyendo el QR con la cámara.
+- [ ] Menú «Escáner» y «Escáner QR» del celular: sin cambios (siguen mandando a la PC).
+- [ ] Cerrar el cuadro de la cámara sin escanear apaga la luz de la cámara.
+- [ ] Enfoque: al TOCAR la imagen reenfoca al instante y vuelve al continuo (Chrome Android).
+
 ### 2026-11-10 — Tienda → Buscar: la categoría se combina con el texto
 **Dónde:** `variante/buscar/buscar.component.{ts,html}` (`categoriaParaBackend`; se quitó el aviso «Buscando en todas las categorías»).
 **Debe comprobar:**

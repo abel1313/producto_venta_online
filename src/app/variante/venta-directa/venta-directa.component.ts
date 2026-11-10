@@ -20,7 +20,7 @@ import { correoOpcional, cumpleMinLetras, minLetras, MIN_LETRAS_NOMBRE, telefono
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
 import { generarHtmlTicket, imprimirTicket, ITicketArticulo } from 'src/app/shared/ticket.util';
-import { hayVersionNueva, MARCA_VERSION_PRUEBA } from 'src/app/shared/marca-version';
+import { hayVersionNueva } from 'src/app/shared/version-nueva.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
@@ -372,8 +372,6 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.campanaPrivacidad = false;
     this.recalcularSubtotales();
   }
-  /** TEMPORAL: versión del front cargada en esta pestaña (ver `shared/marca-version.ts`); se quita al terminar. */
-  readonly marcaVersion = MARCA_VERSION_PRUEBA;
   /** Hay una versión nueva del front publicada y esta pestaña sigue con la vieja (se avisa; se recarga sola cuando el carrito está vacío). */
   hayVersionNueva = false;
   private vigiaVersion: ReturnType<typeof setInterval> | null = null;

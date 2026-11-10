@@ -158,7 +158,6 @@
       <div class="vd-campana" *ngIf="campana">
         <p class="vd-panel__title" style="font-size:0.8rem;margin-bottom:6px">
           🎁 Campaña «{{ campana.nombre }}» <span class="vd-optional">(hasta {{ campana.fechaFin }})</span>
-          <span class="vd-optional" title="Versión del front cargada en esta pestaña">· {{ marcaVersion }}</span>
         </p>
         <p class="vd-campana__aviso" *ngIf="hayVersionNueva">Hay una versión nueva: recarga la página (Ctrl+F5) cuando termines esta venta.</p>
         <p class="vd-campana__nota">

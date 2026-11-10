@@ -44,7 +44,6 @@ Formato de cada entrada:
 - [ ] Campañas: «Apagar» una vigente pide confirmación (advierte que corta los descuentos); una encendida fuera de fechas se apaga sin preguntar. Guardar/activar una campaña cuyas fechas se enciman con otra → toast informativo «Esta campaña se encima con «X» (fechas)» sin bloquear. «Eliminar» una con compras ligadas → 409 del back: se muestra su mensaje + «Apágala para conservar el historial» y ofrece «Apagarla» si está encendida (texto plano, nada de html).
 - [ ] Mis pedidos → Liquidar Apartado con juguetes a precio de campaña: se ve el aviso de Ir pagando; «Cámbialo a Ir pagando» abre el detalle ya en «Cambiar forma de cobro» con Ir pagando elegido y el mismo aviso; al confirmar el total se refresca de inmediato (y la card al volver a la lista).
 - [ ] Términos y Privacidad: textos nuevos (Ir pagando a precio normal, Apartado→Ir pagando regresa a precio normal y recalcula, Ir pagando→Apartado no devuelve el precio especial; sin datos no hay precio especial, participación voluntaria, reconocimiento por QR/correo/teléfono, borrado solo a petición e historial conservado); «Última actualización: 10 de noviembre de 2026».
-- [ ] Marcas QR-4/QR-5/QR-6 (`marca-version.ts`) siguen visibles.
 
 **Depende del back (no se pudo hacer solo en el front):**
 - `POST /v1/ventas/save` de contado debe devolver `pedidoId` (hoy solo lo trae en crédito/tarjeta nueva): sin él no hay a qué pedido mandar `/v1/pedidos/{id}/notificar`.
@@ -119,13 +118,11 @@ precio tachado desde texto; `escaner.html` (zxing) ya no reinicia la cámara en 
 - [ ] clic en el fondo / ✕ se comportan igual que antes (con campaña no se cierra con clic fuera)
 
 ### 2026-11-08 — Venta directa: aviso que distingue «a mano» de «llegó a la meta», marca de versión y recarga cuando hay versión nueva
-**Dónde:** `variante/venta-directa/venta-directa.component.{ts,html}` (`marcaVersion`, `hayVersionNueva`, `revisarVersion`, aviso del bloque de campaña)
+**Dónde:** `variante/venta-directa/venta-directa.component.{ts,html}` (`hayVersionNueva`, `revisarVersion`, aviso del bloque de campaña)
 **Tipo:** unitario (componente con `hayVersionNueva` simulado) · e2e manual en QA
 **Debe comprobar:**
 - [ ] casilla «Cliente recurrente» marcada → el aviso dice «recurrente a mano (casilla marcada)»; desmarcada y con $1,000 de $1,499 → «le faltan $499 pagados…»; con lo pagado ≥ meta → «ya es recurrente (llegó a la meta)»
-- [ ] el título del bloque «🎁 Campaña» muestra la versión («· QR-6»)
 - [ ] con una versión nueva publicada y el carrito vacío, al volver a la pestaña (o en ≤ 10 min) Venta directa se recarga sola; con artículos en el carrito o cobrando NO se recarga y muestra «Hay una versión nueva: recarga la página…»
-- [ ] **QUITAR AL TERMINAR:** la marca (`marcaVersion` y su span); la recarga puede quedarse
 
 ### 2026-11-08 — Ticket por correo con diseño (estilos en línea) y QR de «Síguenos» incrustados
 **Dónde:** `shared/ticket-correo.util.ts` (`htmlTicketParaCorreo`) · `pedidos/pedidos.service.ts` (`reenviarComprobante`) · `venta-directa`, `abonos` y `cobro-pedido.base` (`notificacion.ticketHtml`) · back `EmailService.enviarTicket` (`incrustarQrRemotos`)
@@ -145,13 +142,11 @@ precio tachado desde texto; `escaner.html` (zxing) ya no reinicia la cámara en 
 - [ ] con lo ya pagado ≥ la meta dice «ya es recurrente» y los juguetes bajan; con la casilla «Cliente recurrente» también
 
 ### 2026-11-08 — Marca de versión temporal (QR-4) y recarga automática de la página del escáner del celular
-**Dónde:** `shared/marca-version.ts` (`MARCA_VERSION_PRUEBA`, `hayVersionNueva`) · `escaner-celular-pagina.component.{ts,html}` · `navbar.component.{ts,html}`
+**Dónde:** `shared/version-nueva.util.ts` (`hayVersionNueva`) · `escaner-celular-pagina.component.{ts,html}` · `navbar.component.{ts,html}`
 **Tipo:** unitario (`hayVersionNueva` con `fetch` simulado) · e2e manual en QA
 **Debe comprobar:**
-- [ ] la página del escáner muestra «Versión: QR-4» y el menú «Escáner QR» muestra «QR-4» (si no sale, el navegador tiene la versión vieja: recargar)
 - [ ] con la página del celular abierta, se publica una versión nueva → al volver a primer plano o en ≤ 10 min la página se recarga sola y sigue conectada
 - [ ] `hayVersionNueva()` devuelve false sin red, sin hash en el nombre (desarrollo) o si es la misma versión; no recarga mientras hay una foto en vista previa
-- [ ] **QUITAR AL TERMINAR:** `MARCA_VERSION_PRUEBA` y sus usos (cambiarla en cada subida: QR-5, QR-6…); la recarga automática puede quedarse
 
 ### 2026-11-08 — «Escáner QR» del celular (menú aparte): QR de cliente con cámara o foto → campo «Código del cliente» de Venta directa
 **Dónde:** `escaner-celular/escaner-celular-pagina.component.{ts,html}` (`modoQr`, `alLeer`, `alElegirFotoQr`) · ruta `escaner-qr` (`app-routing.module.ts`, `data: { modo: 'qr' }`) · `navbar.component.html` («Escáner QR»)

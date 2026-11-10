@@ -6,7 +6,7 @@ import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import { EscanerCelularService } from '../shared/escaner-celular/escaner-celular.service';
 import { esUuid, extraerCodigo, leerQrDeImagen } from '../shared/entrada-codigo-qr/codigo-qr.util';
-import { hayVersionNueva, MARCA_VERSION_PRUEBA } from '../shared/marca-version';
+import { hayVersionNueva } from '../shared/version-nueva.util';
 
 type Tono = 'ok' | 'warn' | 'bad' | '';
 
@@ -38,8 +38,6 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
 
   /** `/escaner-qr`: lee solo el QR del código de cliente de una campaña (con la cámara o con una foto) y lo manda a la computadora como código. */
   readonly modoQr: boolean;
-  /** TEMPORAL: versión del front que corre en este celular (ver `shared/marca-version.ts`). */
-  readonly marca = MARCA_VERSION_PRUEBA;
 
   private stream: MediaStream | null = null;
   private controlesZxing: IScannerControls | null = null;

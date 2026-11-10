@@ -1,10 +1,4 @@
 /**
- * TEMPORAL (2026-11-08): se imprime pequeña en la página del escáner del celular y en el menú «Escáner QR» para saber qué versión del front está corriendo.
- * Cambiarla en cada subida (QR-4, QR-5…) y QUITARLA (con sus usos) al terminar. Ver TESTS_PENDIENTES.md.
- */
-export const MARCA_VERSION_PRUEBA = 'QR-6';
-
-/**
  * ¿Hay una versión nueva del front publicada? Compara el archivo principal (`main.<hash>.js`) del `index.html` actual con el que esta pestaña cargó.
  * Sin red, sin hash en el nombre (desarrollo) o con cualquier duda devuelve false: nunca recarga por error.
  */

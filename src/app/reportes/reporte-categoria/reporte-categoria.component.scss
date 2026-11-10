@@ -42,12 +42,17 @@
 .rc-desc { margin: 0; color: var(--app-text-muted); font-size: .9rem; }
 
 .rc-tarjetas {
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: .7rem;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .7rem;
   > div { display: grid; gap: .15rem; background: var(--card-body-bg); border: 1px solid var(--card-border); border-radius: var(--card-radius, 14px); box-shadow: var(--card-shadow); padding: .7rem .9rem; min-width: 0; }
   strong { font-size: 1.25rem; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
   small { color: var(--app-text-muted); font-size: .78rem; }
 }
 .rc-ok { color: var(--pk-success); }
+.rc-leyenda {
+  background: var(--card-body-bg); border: 1px solid var(--card-border); border-radius: 10px; padding: .6rem .9rem; font-size: .85rem; color: var(--app-text-muted);
+  summary { cursor: pointer; color: var(--app-text); font-weight: 600; }
+  p { margin: .4rem 0 0; line-height: 1.45; max-width: 90ch; }
+}
 .rc-mal { color: var(--pk-danger); }
 
 .rc-tabla-wrap {

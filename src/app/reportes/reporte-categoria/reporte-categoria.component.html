@@ -86,13 +86,22 @@
 
     <div class="rc-tarjetas">
       <div><span class="rc-etq">Productos</span><strong>{{ resultado.totales.productos }}</strong><small>{{ resultado.totales.productosVendidos }} vendidos · {{ resultado.totales.productosSinVender }} sin vender</small></div>
-      <div><span class="rc-etq">Piezas vendidas</span><strong>{{ resultado.totales.piezas | number:'1.0-0' }}</strong></div>
-      <div><span class="rc-etq">Total vendido</span><strong>{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
-      <div><span class="rc-etq">Costo vendido</span><strong>{{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      <div><span class="rc-etq">Piezas vendidas</span><strong>{{ resultado.totales.piezas | number:'1.0-0' }}</strong><small>{{ resultado.totales.piezasPorVender | number:'1.0-0' }} en stock por vender</small></div>
+      <div><span class="rc-etq">Total vendido</span><strong>{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Costo {{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Ganancia vendida</span><strong class="rc-ok">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</strong><small *ngIf="resultado.totales.margenRealPct !== null">{{ resultado.totales.margenRealPct | number:'1.2-2' }} % real</small></div>
-      <div><span class="rc-etq">Ganancia por vender</span><strong>{{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasPorVender | number:'1.0-0' }} piezas en stock</small></div>
-      <div><span class="rc-etq">Ganancia total</span><strong class="rc-ok">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</strong></div>
+      <div><span class="rc-etq">Flete llevamos</span><strong>{{ resultado.totales.fleteVendido | currency:'MXN':'symbol':'1.2-2' }}</strong><small>En stock: {{ resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</small></div>
+      <div><span class="rc-etq">Total con precio venta</span><strong class="rc-ok">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</small></div>
+      <div><span class="rc-etq">Total con rebaja</span><strong class="rc-ok">{{ resultado.totales.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVenderRebaja | currency:'MXN':'symbol':'1.2-2' }}</small></div>
+      <div><span class="rc-etq">Total con campaña</span><strong class="rc-ok">{{ resultado.totales.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVenderCampana | currency:'MXN':'symbol':'1.2-2' }}</small></div>
     </div>
+
+    <details class="rc-leyenda">
+      <summary>¿Cómo leer las columnas?</summary>
+      <p><strong>Total vendido</strong> y <strong>ganancia vendida</strong> son lo que realmente se cobró en las ventas del periodo, a su precio de ese día; la ganancia ya descuenta la comisión de tarjeta.</p>
+      <p><strong>Por vender</strong> = piezas en stock × (precio − compra), si se venden al precio de <em>venta</em>, de <em>rebaja</em> o de <em>campaña</em> (si el producto no tiene rebaja o campaña usa el de venta). No descuenta flete ni comisión.</p>
+      <p><strong>Total</strong> = ganancia vendida + por vender, con cada uno de los tres precios.</p>
+      <p><strong>Flete</strong>: el flete por pieza del último cálculo de precio de cada producto × las piezas vendidas (o las que siguen en stock). «Sin flete» = ese producto no lo trae capturado.</p>
+    </details>
 
     <p class="rc-vacio" *ngIf="!resultado.filas.length">No hay productos con esos filtros.</p>
 
@@ -104,7 +113,9 @@
             <th class="rc-num">Compra</th><th class="rc-num">Venta</th><th class="rc-num">Rebaja</th><th class="rc-num">Rebaja campaña</th>
             <th class="rc-num">Piezas vendidas</th><th class="rc-num">Ventas</th><th class="rc-num">Total vendido</th><th class="rc-num">Costo</th><th class="rc-num">Ganancia</th>
             <th class="rc-num">% calculado</th><th class="rc-num">% real</th><th class="rc-num">Flete x pieza</th><th>¿Flete?</th>
-            <th class="rc-num">Por vender</th><th class="rc-num">Ganancia por vender</th><th class="rc-num">Ganancia total</th>
+            <th class="rc-num">Flete en lo vendido</th><th class="rc-num">Flete en stock</th>
+            <th class="rc-num">Por vender (stock)</th><th class="rc-num">Por vender: venta</th><th class="rc-num">Por vender: rebaja</th><th class="rc-num">Por vender: campaña</th>
+            <th class="rc-num">Total: venta</th><th class="rc-num">Total: rebaja</th><th class="rc-num">Total: campaña</th>
           </tr>
         </thead>
         <tbody>
@@ -125,9 +136,15 @@
             <td class="rc-num">{{ f.porcentajeReal !== null ? ((f.porcentajeReal | number:'1.2-2') + ' %') : '—' }}</td>
             <td class="rc-num">{{ f.fletePorPieza | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td><span class="rc-tag" [class.rc-tag--aviso]="f.sinFlete">{{ f.sinFlete ? 'Sin flete' : 'Con flete' }}</span></td>
+            <td class="rc-num">{{ f.fleteEnLoVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num">{{ f.porVender | number:'1.0-0' }}</td>
             <td class="rc-num">{{ f.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.gananciaPorVenderRebaja | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.gananciaPorVenderCampana | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num">{{ f.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</td>
           </tr>
         </tbody>
         <tfoot>
@@ -141,9 +158,15 @@
             <th></th>
             <th class="rc-num">{{ resultado.totales.margenRealPct !== null ? ((resultado.totales.margenRealPct | number:'1.2-2') + ' %') : '—' }}</th>
             <th></th><th></th>
+            <th class="rc-num">{{ resultado.totales.fleteVendido | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.piezasPorVender | number:'1.0-0' }}</th>
             <th class="rc-num">{{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaPorVenderRebaja | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaPorVenderCampana | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</th>
           </tr>
         </tfoot>
       </table>

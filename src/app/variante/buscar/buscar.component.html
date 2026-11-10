@@ -67,7 +67,7 @@
     <span>⚙️ Filtros</span>
     <span class="vb-filtros-toggle__cuenta" *ngIf="filtrosActivos > 0">{{ filtrosActivos }} {{ filtrosActivos === 1 ? 'activo' : 'activos' }}</span>
     <!-- La categoría (JUGUETES por defecto para el personal) se ve aunque el panel esté cerrado: si no, la lista sale recortada sin explicación. -->
-    <span class="vb-filtros-toggle__cuenta" *ngIf="filtroCategoria">{{ categoriaIgnoradaPorTexto ? 'Todas las categorías (buscando)' : filtroCategoria }}</span>
+    <span class="vb-filtros-toggle__cuenta" *ngIf="filtroCategoria">{{ filtroCategoria }}</span>
     <span class="vb-filtros-toggle__flecha" aria-hidden="true">▾</span>
   </button>
   <div id="vb-filtros-panel" *ngIf="filtrosAbiertos">
@@ -149,9 +149,7 @@
              [(ngModel)]="filtroPrecioMax" (ngModelChange)="onPrecioChange()"
              [max]="filtrosDisponibles.precioMax ?? null" />
     </div>
-    <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>
-    <span class="vb-pub-aviso" *ngIf="categoriaIgnoradaPorTexto">Buscando «{{ terminoBusqueda.trim() }}» en todas las categorías</span>
-  </div>
+    <button class="vb-filtro-btn" *ngIf="hayFiltrosPublicosActivos" (click)="limpiarFiltrosPublicos()">✕ Limpiar</button>  </div>
   </div>
   </ng-container>
   </div><!-- /vb-header__content -->

@@ -17,6 +17,21 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-10 — Reportes → pestaña «🗂️ Por categoría» (solo administrador)
+**Dónde:** `reportes/reporte-categoria/*` (componente nuevo), `reportes/service/reportes.service.ts` (`getPorCategoria`, `generarReporteCategoria`, `getReportesGenerados`, `getEstadoReporteGenerado`, `descargarReporteGenerado`), `reportes.component.{ts,html}` (pestaña), `reportes.module.ts`, `loading.interceptor.ts` (`/v1/reportes/ventas/por-categoria/generados` sin overlay).
+**Tipo:** e2e (Playwright contra QA) · unitario de componente (HttpTestingController).
+**Debe comprobar:**
+- [ ] La pestaña solo la ve el administrador (los demás no la ven ni por URL: el back responde 401/403).
+- [ ] Modo «Por categoría»: con fechas y categoría trae lo vendido; «Otros (sin categoría)» trae solo productos sin categoría; «Todas» trae todo, paginado; los totales de arriba y de la fila final son de TODAS las páginas.
+- [ ] Un producto vendido 2 veces (cantidad 2 y 3) sale con 5 piezas; una venta cancelada («Devuelta») no cuenta; el último día de las fechas sí.
+- [ ] «Solo lo vendido» / «Solo lo que no se ha vendido» / «Vendido y por vender» cambian las filas y la ganancia por vender.
+- [ ] Modo «Productos elegidos»: buscar por nombre o código de barras, agregar/quitar, «Quitar todos»; el reporte suma solo esos productos; sin elegir ninguno no deja consultar.
+- [ ] Columnas: precio de compra, venta, rebaja, rebaja de campaña, piezas, ventas, total, costo, ganancia, % calculado, % real, flete, «Sin flete», por vender, ganancia por vender, ganancia total.
+- [ ] «⬇ Excel» y «⬇ PDF»: aparece «Armando tu reporte…», la pantalla sigue usable, y al estar listo se descarga solo; «Mis reportes» lista los últimos con «Descargar»; un reporte con error muestra el motivo. El Excel y el PDF traen los mismos números que la pantalla y la fila de totales al final.
+- [ ] Pedir 4 reportes seguidos → aviso de que hay muchos armándose.
+- [ ] Día y noche, 1360 y 400 px: sin scroll horizontal de la página (la tabla hace su propio scroll).
+- [ ] Efecto en la base (back): el reporte generado guarda en el historial de cálculos los productos que no tenían (sin flete); la pantalla no guarda nada.
+
 ### 2026-11-10 — Cámara de los buscadores: mismo lector que el escáner del celular
 **Dónde:** `shared/barcode-scanner.util.ts` (`iniciarEscanerConAutofoco`; lo usan Tienda → Buscar, Productos → Buscar, Nuevo producto, carga de imágenes y «Código del cliente»), `escaner-celular/escaner-celular-pagina.component.ts` (opción `soloZxing` en su respaldo).
 **Debe comprobar (en el celular, Chrome y también Safari/iPhone):**

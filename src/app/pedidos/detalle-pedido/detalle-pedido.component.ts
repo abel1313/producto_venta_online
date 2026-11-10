@@ -1,4 +1,5 @@
 import { CampanasService } from 'src/app/campanas/campanas.service';
+import { AVISO_IR_PAGANDO_CAMPANA } from '../aviso-ir-pagando-campana';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { Constants } from 'src/app/Constants';
@@ -55,6 +56,11 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Output() regresarProductos = new EventEmitter<boolean>();
   /** Abrir otro pedido del grupo: la lista lo busca por número y abre su detalle. */
   @Output() abrirPedido = new EventEmitter<number>();
+  /** Abrir el detalle ya en «🔁 Cambiar forma de cobro» con ese tipo elegido (Mis pedidos → Liquidar Apartado → «Cámbialo a Ir pagando»). */
+  @Input() abrirCambioDeTipo: TipoPedido | null = null;
+
+  /** El aviso de campaña al pasar a Ir pagando (el mismo texto que Mis pedidos). */
+  readonly avisoIrPagandoCampana = AVISO_IR_PAGANDO_CAMPANA;
 
   // Base correcta del microservicio de imágenes: GET /v1/imagenes/{productoId}
   public env: string = environment.api_Url + '/v1/imagenes/';
@@ -586,6 +592,13 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       next: r => {
         this.detalle = r?.data ?? null;
         this.cargandoDetalle = false;
+        // Se pidió entrar directo a cambiar la forma de cobro: una sola vez, ya con el detalle (el aviso de campaña depende de él).
+        const tipo = this.abrirCambioDeTipo;
+        if (tipo && this.puedeCambiarTipo && this.puedeAbrirFormTipo && tipo !== this.tipoVigente) {
+          this.abrirCambioDeTipo = null;
+          this.abrirFormTipo();
+          this.seleccionarTipo(tipo);
+        }
       },
       error: () => { this.cargandoDetalle = false; }
     });
@@ -1167,20 +1180,25 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       usuarioId:    this.idUsuario || undefined
     };
 
+    const teniaCampana = !!this.detalle?.tieneJuguetesConPrecioDeCampana;
     this.pedidosService.cambiarTipoPedido(this.pedido.pedido.id, body).subscribe({
       next: r => {
         this.cambiandoTipo   = false;
         this.mostrarFormTipo = false;
         this.detalle = r?.data ?? this.detalle;
+        // El total (y los precios de las líneas) se refrescan ya, no hasta cerrar el aviso: con Ir pagando el precio de campaña sale (2026-11-10).
+        this.cargarDetalleCompleto();
         // Se queda hasta que lo cierren y dice qué sigue: con 3 segundos no se alcanzaba a leer (QA 2026-10-08).
         const cobro = body.montoCobrado ?? 0;
+        const sinCampana = body.tipoPedido === 'FIADO' && teniaCampana;
         Swal.fire({
           icon: 'success',
           title: `Quedó como ${this.etiquetaTipo(body.tipoPedido)}`,
           html: (cobro > 0 ? `<p>Se registró el cobro de <b>$${cobro.toFixed(2)}</b>.</p>` : '')
+            + (sinCampana ? `<p>Los artículos regresaron a su precio normal: el total ahora es <b>$${this.totalGeneral.toFixed(2)}</b>.</p>` : '')
             + `<p>${this.queSigueTrasCambiarTipo(body.tipoPedido)}</p>`,
           confirmButtonText: 'Entendido'
-        }).then(() => this.cargarDetalleCompleto());
+        });
       },
       error: err => {
         this.cambiandoTipo = false;
@@ -1211,7 +1229,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
             + (monto > 0 ? `<p>Se registró el abono del grupo de <b>$${monto.toFixed(2)}</b>.</p>` : '')
             + `<p>${sigue}</p>`,
           confirmButtonText: 'Entendido'
-        }).then(() => this.cargarDetalleCompleto());
+        });
+        this.cargarDetalleCompleto();       // el total se refresca ya (antes hasta cerrar el aviso)
       },
       error: err => {
         this.cambiandoTipo = false;

@@ -23,6 +23,8 @@
         <span class="cb-monto-fijo">${{ monto | number:'1.2-2' }}</span>
         <small class="cb-nota">Un Apartado se paga completo cuando lo recogen.</small>
         <button type="button" class="cb-link" (click)="irAlDetalle.emit()">¿Dejó solo una parte? Cámbialo a Ir pagando</button>
+        <!-- El mismo aviso que Detalle del pedido (regla 2026-11-10): con Ir pagando sale el precio de campaña. -->
+        <small class="cb-aviso" *ngIf="detalle.tieneJuguetesConPrecioDeCampana">{{ avisoIrPagandoCampana }}</small>
       </div>
 
       <app-campo-pago [(metodoPago)]="metodoPago" [(montoDado)]="montoDado" [monto]="monto" [cambio]="cambio"></app-campo-pago>

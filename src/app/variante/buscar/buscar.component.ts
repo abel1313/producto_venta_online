@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { forkJoin, Observable, of, Subject } from 'rxjs';
-import { catchError, debounceTime, takeUntil } from 'rxjs/operators';
+import { catchError, debounceTime, shareReplay, takeUntil } from 'rxjs/operators';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../shared/barcode-scanner.util';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -120,6 +120,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   dandoDeBajaId: number | null = null;
 
   private busquedaSubject = new Subject<string>();
+  private filtrosDisponibles$?: Observable<IFiltrosDisponibles | null>;
   /** $ mín / $ máx: buscan cuando terminas de escribir, no con cada tecla (con "100" salían 1, 10 y 100). */
   private precioSubject = new Subject<void>();
   private destroy$        = new Subject<void>();
@@ -186,10 +187,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
 
-    this.varianteService.filtrosDisponibles().pipe(takeUntil(this.destroy$)).subscribe({
-      next: f => { this.filtrosDisponibles = f; },
-      error: () => { this.filtrosDisponibles = null; }
-    });
+    // Una sola petición a filtros-disponibles: la comparten el selector y el arranque (que espera las categorías para elegir JUGUETES).
+    this.filtrosDisponibles$ = this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)), shareReplay(1));
+    this.filtrosDisponibles$.pipe(takeUntil(this.destroy$)).subscribe(f => { this.filtrosDisponibles = f; });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
       .subscribe(() => this.aplicarFiltros(1));
@@ -261,14 +261,15 @@ export class BuscarComponent implements OnInit, OnDestroy {
     // Se esperan las preferencias Y las categorías disponibles: JUGUETES solo se pone si existe y nadie eligió otra cosa antes.
     forkJoin([
       this.preferenciaFiltro.obtener('tienda-buscar'),
-      this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)))
+      this.filtrosDisponibles$ ?? this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)))
     ]).pipe(takeUntil(this.destroy$)).subscribe(([f, disponibles]) => {
       if (disponibles) this.filtrosDisponibles = disponibles;
       if (f) {
         this.restaurarFiltros(f);
         if (!this.puedeVerAlgunFiltro) this.apagarFiltrosAdmin();
       }
-      const yaEligio = !!f && 'filtroCategoria' in f;
+      // Solo cuenta una categoría guardada de verdad: «Todas» (vacía) no se recuerda y al recargar vuelve a JUGUETES (regla 2026-11-10).
+      const yaEligio = !!f?.['filtroCategoria'];
       const hayJuguetes = !!disponibles?.categorias?.includes(BuscarComponent.CATEGORIA_POR_DEFECTO);
       if (!yaEligio && hayJuguetes) this.filtroCategoria = BuscarComponent.CATEGORIA_POR_DEFECTO;
       this.aplicarFiltros(1);
@@ -350,7 +351,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
             this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
             !!this.fechaDesde, !!this.fechaHasta,
-            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca,
+            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca, !!this.filtroCategoria,
             this.filtroPrecioMin !== null, this.filtroPrecioMax !== null].filter(Boolean).length;
   }
 
@@ -579,6 +580,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       // término y página, y buscarPagina la reusaría tal cual.
       this.varianteService.invalidarCache();
       this.varianteService.setFiltrosCache(null);
+      // Regla del dueño (2026-11-10): «Todas» NO se recuerda entre recargas; sin otra categoría guardada, al recargar abre en JUGUETES.
       this.preferenciaFiltro.borrar('tienda-buscar');
       // terminoParaBackend y no el termino crudo: un termino de 1-2 letras no sale a buscar.
       this.buscarPagina(this.terminoParaBackend, pagina);
@@ -1004,7 +1006,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   confirmarDarDeBaja(v: IVarianteResumen): void {
     if (this.dandoDeBajaId) return;
     Swal.fire({
-      title: `¿Dar de baja ${[v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · ') || 'este artículo'}?`,
+      titleText: `¿Dar de baja ${[v.nombreProducto, v.talla, v.color].filter(Boolean).join(' · ') || 'este artículo'}?`,
       html: 'Deja de mostrarse en la tienda y <b>pierde sus fotos</b>.<br>'
           + 'El historial de ventas y pedidos se conserva.',
       icon: 'warning',

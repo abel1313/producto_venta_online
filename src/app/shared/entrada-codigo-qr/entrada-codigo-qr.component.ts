@@ -87,26 +87,37 @@ export class EntradaCodigoQrComponent implements OnInit, OnDestroy {
   }
 
   // ── Cámara ─────────────────────────────────────────────────────────────────
+  /** Cuenta las aperturas de la cámara: si se cerró (o se destruyó el componente) mientras arrancaba, la cámara que llega tarde se apaga. */
+  private aperturaCamara = 0;
+
   async abrirCamara(): Promise<void> {
+    if (this.camaraAbierta) return;                  // doble clic: una sola cámara
+    const miApertura = ++this.aperturaCamara;
     this.errorCamara = '';
     this.camaraAbierta = true;
     setTimeout(async () => {
       const el = this.video?.nativeElement;
-      if (!el) return;
+      if (!el || miApertura !== this.aperturaCamara) return;
       try {
-        this.controles = await iniciarEscanerConAutofoco(el, (resultado) => {
-          if (resultado) {
-            this.poner(resultado.getText());
-            this.cerrarCamara();
-          }
+        const controles = await iniciarEscanerConAutofoco(el, (resultado) => {
+          if (!resultado || miApertura !== this.aperturaCamara) return;
+          // La cámara lee cualquier código: aquí solo vale el QR del código de cliente (un código de barras no se pone en este campo).
+          const codigo = extraerCodigo(resultado.getText());
+          if (!esUuid(codigo)) { this.errorCamara = 'Ese código no es el QR de un cliente.'; return; }
+          this.poner(codigo);
+          this.cerrarCamara();
         });
+        // Revisión 2026-11-09: si se cerró el cuadro o se salió de la pantalla mientras arrancaba, antes la cámara se quedaba encendida.
+        if (miApertura !== this.aperturaCamara) { controles.stop(); return; }
+        this.controles = controles;
       } catch {
-        this.errorCamara = 'No se pudo abrir la cámara. Revisa el permiso del navegador.';
+        if (miApertura === this.aperturaCamara) this.errorCamara = 'No se pudo abrir la cámara. Revisa el permiso del navegador.';
       }
     });
   }
 
   cerrarCamara(): void {
+    this.aperturaCamara++;
     this.controles?.stop();
     this.controles = null;
     this.camaraAbierta = false;

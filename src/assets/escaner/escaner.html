@@ -183,7 +183,9 @@
   }
   // Al volver de segundo plano o de la pantalla bloqueada la cámara puede haberse detenido (sobre todo en iPhone): se revisa y se reinicia.
   function camaraViva() {
-    var pista = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+    // Con zxing el stream no se guarda en `stream` (lo abre la librería): se toma del video. Antes con zxing parecía apagada y se reiniciaba siempre.
+    var fuente = stream || $('video').srcObject;
+    var pista = fuente && fuente.getVideoTracks && fuente.getVideoTracks()[0];
     return !!pista && pista.readyState === 'live' && !pista.muted && !$('video').paused;
   }
   document.addEventListener('visibilitychange', function () {

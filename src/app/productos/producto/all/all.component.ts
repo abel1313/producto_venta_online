@@ -5,8 +5,8 @@ import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../../shared/barcode-scanner.util';
 import { AgGridAngular } from 'ag-grid-angular';
 import { CellContextMenuEvent } from 'ag-grid-community';
-import { forkJoin, of, Subject } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, filter, takeUntil } from 'rxjs/operators';
+import { forkJoin, Observable, of, Subject } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, filter, map, switchMap, takeUntil } from 'rxjs/operators';
 import { AuthService } from 'src/app/auth/auth.service';
 import { IconService } from 'src/app/Icon/icon.service';
 import { IDetalleProducto } from 'src/app/models';
@@ -478,11 +478,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       // Se esperan las preferencias Y las categorías: JUGUETES solo se pone si existe y nadie eligió otra cosa antes.
       forkJoin([
         this.preferenciaFiltro.obtener('productos-buscar'),
-        this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)))
-      ]).pipe(takeUntil(this.destroy$)).subscribe(([f, disponibles]) => {
-        this.categorias = disponibles?.categorias ?? [];
+        this.categorias$()
+      ]).pipe(takeUntil(this.destroy$)).subscribe(([f, categorias]) => {
+        this.categorias = categorias;
         if (f) this.restaurarFiltros(f);
-        const yaEligio = !!f && 'filtroCategoria' in f;
+        // Solo cuenta una categoría guardada de verdad: «Todas» (vacía) no se recuerda y al recargar vuelve a JUGUETES (regla 2026-11-10).
+        const yaEligio = !!f?.['filtroCategoria'];
         if (!yaEligio && this.categorias.includes(AllComponent.CATEGORIA_POR_DEFECTO)) this.filtroCategoria = AllComponent.CATEGORIA_POR_DEFECTO;
         if (this.hayFiltrosAdminActivos) this.aplicarFiltrosAdmin(1);
         else this.getData(1);
@@ -492,21 +493,63 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   /** Solo llena el selector (al volver a la pantalla con la memoria); no cambia lo elegido. */
   private cargarCategorias(): void {
-    this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)), takeUntil(this.destroy$))
-      .subscribe(d => { this.categorias = d?.categorias ?? []; });
+    this.categorias$().pipe(takeUntil(this.destroy$)).subscribe(c => { this.categorias = c; });
   }
+
+  /**
+   * Las categorías del selector: las de GET /v1/productos/admin/categorias (todas, también las de productos sin artículos o deshabilitados).
+   * Si ese endpoint falla, no existe aún o viene vacío, las de filtros-disponibles (las de artículos a la venta), como antes.
+   */
+  private categorias$(): Observable<string[]> {
+    const respaldo = this.varianteService.filtrosDisponibles().pipe(map(d => d?.categorias ?? []), catchError(() => of([] as string[])));
+    return this.srvice.categoriasAdmin().pipe(
+      switchMap(lista => lista.length ? of(lista) : respaldo),
+      catchError(() => respaldo));
+  }
+
+  /**
+   * ¿Hay texto que de verdad busca? El buscador solo sale con 3 letras o más: con 1-2 letras la lista sigue siendo la de la categoría,
+   * así que la categoría tiene que seguir viajando (y no se debe decir «buscando en todas»).
+   */
+  private get hayTextoBuscando(): boolean { return (this.buscarProd ?? '').trim().length >= 3; }
 
   /** Con texto escrito se busca en TODAS las categorías: la elegida solo manda cuando no hay texto. */
   private get categoriaParaBackend(): string | undefined {
-    return !this.buscarProd && this.filtroCategoria ? this.filtroCategoria : undefined;
+    return !this.hayTextoBuscando && this.filtroCategoria ? this.filtroCategoria : undefined;
   }
 
-  get categoriaIgnoradaPorTexto(): boolean { return !!this.filtroCategoria && !!this.buscarProd; }
+  get categoriaIgnoradaPorTexto(): boolean { return !!this.filtroCategoria && this.hayTextoBuscando; }
 
   onCategoriaChange(valor: string): void {
     this.filtroCategoria = valor;
     this.paginaPrimera = 1;
+    // Sin filtros de admin la búsqueda va por getData / buscarProductoSinKey, que no recuerdan filtros: se recuerda aquí,
+    // si no, al volver a la pantalla (memoria) o al recargar (filtro guardado) regresaba la categoría anterior.
+    if (!this.hayFiltrosAdminActivos) this.recordarFiltros();
     this.conOSinBuscar(1);
+  }
+
+  /** Todos los filtros juntos (memoria de la pantalla y filtro guardado). */
+  private get filtrosActuales(): Record<string, unknown> {
+    return {
+      mostrarConStock: this.mostrarConStock,
+      mostrarSinStock: this.mostrarSinStock,
+      mostrarConImagenes: this.mostrarConImagenes,
+      mostrarSinImagenes: this.mostrarSinImagenes,
+      mostrarHabilitados: this.mostrarHabilitados,
+      mostrarNoHabilitados: this.mostrarNoHabilitados,
+      mostrarCodigoGenerado: this.mostrarCodigoGenerado,
+      mostrarCodigoReal: this.mostrarCodigoReal,
+      fechaDesde: this.fechaDesde,
+      fechaHasta: this.fechaHasta,
+      filtroCategoria: this.filtroCategoria
+    };
+  }
+
+  private recordarFiltros(): void {
+    const filtros = this.filtrosActuales;
+    this.srvice.setProdFiltrosCache(filtros);
+    this.preferenciaFiltro.guardar('productos-buscar', filtros);
   }
 
   private restaurarFiltros(f: Record<string, any>): void {
@@ -616,6 +659,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     this.sinResultados = false;
     this.srvice.invalidarProdCache();
     this.srvice.setProdFiltrosCache(null);
+    // Queda en «Todas» en esta visita, pero «Todas» NO se recuerda: al recargar abre en JUGUETES si existe (regla del dueño 2026-11-10).
     this.preferenciaFiltro.borrar('productos-buscar');
     this.paginaPrimera = 1;
     this.getData(1);
@@ -639,21 +683,7 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         this.totalPaginas = res.totalPaginas;
         this.paginaPrimera = pagina;
         this.srvice.setProdCache(res.t, pagina, res.totalPaginas, this.buscarProd);
-        const filtros = {
-          mostrarConStock: this.mostrarConStock,
-          mostrarSinStock: this.mostrarSinStock,
-          mostrarConImagenes: this.mostrarConImagenes,
-          mostrarSinImagenes: this.mostrarSinImagenes,
-          mostrarHabilitados: this.mostrarHabilitados,
-          mostrarNoHabilitados: this.mostrarNoHabilitados,
-          mostrarCodigoGenerado: this.mostrarCodigoGenerado,
-          mostrarCodigoReal: this.mostrarCodigoReal,
-          fechaDesde: this.fechaDesde,
-          fechaHasta: this.fechaHasta,
-          filtroCategoria: this.filtroCategoria
-        };
-        this.srvice.setProdFiltrosCache(filtros);
-        this.preferenciaFiltro.guardar('productos-buscar', filtros);
+        this.recordarFiltros();
       },
       error: (err) => {
         if (err.status === 404) { this.rows = []; this.totalPaginas = 0; this.sinResultados = true; }

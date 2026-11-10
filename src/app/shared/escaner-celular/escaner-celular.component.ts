@@ -171,7 +171,8 @@ export class EscanerCelularComponent implements OnInit, OnDestroy {
         this.erroresSeguidos = 0;
         this.desde = lectura.ultimaSecuencia;
         this.fase = lectura.celularConectado ? 'listo' : 'qr';
-        const primero = lectura.codigos[0];
+        // Un código de cliente de campaña (UUID) no es para el campo de código de barras: solo va a «Código del cliente» (regla 2026-11-10).
+        const primero = lectura.codigos.find(c => !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test((c.codigo ?? '').trim()));
         if (primero) { this.alLlegar(primero.codigo); return; }
         this.preguntar(id);
       },

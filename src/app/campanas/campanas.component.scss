@@ -33,7 +33,8 @@
   &__precio { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--app-text-muted); input { width: 7rem; } }
 }
 @media (max-width: 560px) {
-  .cp-fila { grid-template-columns: 1fr auto; &__precio { grid-column: 1 / -1; } }
+  // Nombre y ✕ en el primer renglón; el precio abajo a todo lo ancho (antes el ✕ caía solo en un tercer renglón).
+  .cp-fila { grid-template-columns: 1fr auto; &__precio { grid-column: 1 / -1; grid-row: 2; } > .pk-btn--icon { grid-column: 2; grid-row: 1; } }
 }
 
 .cp-acciones, .cp-card__acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
@@ -91,9 +92,14 @@
 .cp-reporte__cab { display: flex; justify-content: space-between; align-items: center; gap: .8rem; }
 // Scroll propio (vertical y horizontal) con el encabezado fijo: con muchas personas el reporte no alarga la página.
 .cp-tabla { overflow: auto; max-height: 28rem; overscroll-behavior: contain; }
-.cp-tabla table { width: 100%; border-collapse: collapse; font-size: .88rem; color: var(--app-text); }
+.cp-tabla table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: .88rem; color: var(--app-text); }
 .cp-tabla th { text-align: left; padding: .4rem .5rem; color: var(--table-header-text); background: var(--table-header-bg); white-space: nowrap; position: sticky; top: 0; z-index: 1; }
 .cp-tabla td { padding: .45rem .5rem; border-bottom: 1px solid var(--table-border); vertical-align: top; }
 .cp-num { text-align: right; font-variant-numeric: tabular-nums; }
 .cp-codigo { color: var(--app-text-muted); overflow-wrap: anywhere; }
 .cp-acciones-fila { display: flex; flex-wrap: wrap; gap: .4rem; white-space: nowrap; a { text-decoration: none; } }
+
+// Por qué todavía no se puede guardar (el botón deshabilitado solo no lo dice) y el precio que falta corregir.
+.cp-motivos { margin: 0; padding: .55rem .8rem .55rem 1.8rem; border-radius: 10px; font-size: .85rem; display: grid; gap: .2rem;
+  background: var(--pk-warning-soft, var(--app-tint)); color: var(--app-text); border: 1px solid var(--app-hairline, var(--app-border)); }
+.cp-fila__precio input.cp-invalido { border-color: var(--pk-danger); box-shadow: 0 0 0 1px var(--pk-danger); }

@@ -18,6 +18,78 @@ Formato de cada entrada:
 ---
 
 
+### 2026-11-10 — Reglas finales de campaña (front)
+**Dónde:** `variante/venta-directa/venta-directa.component.*`, `shared/escaner-celular/escaner-receptor.service.ts`, `shared/escaner-celular/escaner-celular.component.ts`, `escaner-celular/escaner-celular-pagina.component.ts`, `campanas/campanas.component.ts`, `pedidos/detalle-pedido/*`, `pedidos/mis-pedidos/*`, `pedidos/cobro/liquidar-apartado/*`, `pedidos/aviso-ir-pagando-campana.ts`, `productos/service/producto.service.ts` (`categoriasAdmin`), `productos/producto/all/all.component.ts`, `variante/buscar/buscar.component.ts`, `legal/terminos/*`, `legal/privacidad/*`
+**Tipo:** e2e (Playwright contra QA) · unitario de componente/servicio (HttpTestingController)
+**Debe comprobar:**
+- [ ] Venta directa con campaña vigente, sin cliente, casilla «Cliente recurrente» marcada → «No registrar» / «No registrar y cobrar»: aviso «Se cobra a precio normal» con el total nuevo; el request NO lleva `campana`; `precioVenta` y el ticket impreso salen a precio normal. «Volver» deja la pantalla como estaba (casilla marcada, precio de campaña).
+- [ ] El modal de registro (con campaña) muestra «Sin datos del cliente no se aplica el precio de campaña.»; el botón «Guardar cliente» sigue deshabilitado sin el Aviso de privacidad.
+- [ ] Con cliente identificado la casilla «Cliente recurrente» sigue aplicando el precio de campaña y manda `campana.recurrenteManual=true`.
+- [ ] Contado con «📧 Correo electrónico»: el POST `/v1/ventas/save` ya NO lleva `notificacion`; tras la respuesta sale UN `POST /v1/pedidos/{pedidoId}/notificar` con el HTML de los `renglones` reales (total y cambio del back). Si el notificar falla → aviso «La venta quedó registrada…» y la venta no se repite. Cliente con correo sin verificar → no se manda y se dice. Sin `pedidoId` en la respuesta de contado → aviso de reenviar desde Mis pedidos (depende del back, ver abajo).
+- [ ] Tarjeta (módulo nuevo): el correo sale una sola vez al aprobarse el cobro (no al crear el pedido Pendiente); cancelar o dejar pendiente no lo manda.
+- [ ] Ticket impreso y WhatsApp iguales que antes.
+- [ ] Tienda → Buscar y Productos → Buscar: elegir «Todas» (o «Limpiar») y recargar → abre en JUGUETES (si existe). Elegir BOLSAS y recargar → abre en BOLSAS.
+- [ ] Productos → Buscar: el selector pide `GET /mis-productos/v1/productos/admin/categorias` (arreglo plano en MAYÚSCULAS, incluye categorías sin artículos); si da 404/500 o viene vacío usa `filtros-disponibles`. Tienda → Buscar sigue con `filtros-disponibles`.
+- [ ] Escáner del celular (canal de la cuenta): un UUID con solo el buscador de artículos abierto NO llega al buscador (ni a ninguna receptora sin filtro); con Venta directa + campaña vigente llega solo a «Código del cliente». Los códigos de barras siguen yendo al buscador. La PC pide `acepta=codigo,uuid` solo mientras «Código del cliente» está abierto. El celular dice «La computadora no tiene abierta Venta directa con campaña vigente» cuando el back responde `false` (requiere el cambio del back de abajo). Escáner por QR de sesión (visitante): un UUID no se entrega al campo.
+- [ ] Campañas: «Apagar» una vigente pide confirmación (advierte que corta los descuentos); una encendida fuera de fechas se apaga sin preguntar. Guardar/activar una campaña cuyas fechas se enciman con otra → toast informativo «Esta campaña se encima con «X» (fechas)» sin bloquear. «Eliminar» una con compras ligadas → 409 del back: se muestra su mensaje + «Apágala para conservar el historial» y ofrece «Apagarla» si está encendida (texto plano, nada de html).
+- [ ] Mis pedidos → Liquidar Apartado con juguetes a precio de campaña: se ve el aviso de Ir pagando; «Cámbialo a Ir pagando» abre el detalle ya en «Cambiar forma de cobro» con Ir pagando elegido y el mismo aviso; al confirmar el total se refresca de inmediato (y la card al volver a la lista).
+- [ ] Términos y Privacidad: textos nuevos (Ir pagando a precio normal, Apartado→Ir pagando regresa a precio normal y recalcula, Ir pagando→Apartado no devuelve el precio especial; sin datos no hay precio especial, participación voluntaria, reconocimiento por QR/correo/teléfono, borrado solo a petición e historial conservado); «Última actualización: 10 de noviembre de 2026».
+- [ ] Marcas QR-4/QR-5/QR-6 (`marca-version.ts`) siguen visibles.
+
+**Depende del back (no se pudo hacer solo en el front):**
+- `POST /v1/ventas/save` de contado debe devolver `pedidoId` (hoy solo lo trae en crédito/tarjeta nueva): sin él no hay a qué pedido mandar `/v1/pedidos/{id}/notificar`.
+- Canal del escáner: entender `acepta=…,uuid` y que `POST /v1/escaner/canal/codigos` con un UUID devuelva `false` (y no lo entregue) si ninguna pregunta abierta tiene `uuid`.
+
+**Mejora futura:** paginar el reporte de campaña cuando crezca (hoy trae a todas las personas en una sola respuesta).
+
+### 2026-11-09 — Revisión profunda de campaña (front: campañas y filtros)
+**Dónde:** `campanas/campanas.component.*`, `variante/buscar/buscar.component.*`, `productos/producto/all/all.component.ts`
+**Tipo:** e2e (Playwright contra QA) · unitario de componente (HttpTestingController)
+**Qué se corrigió:**
+- Campañas: Enter en el buscador del catálogo (o un lector de código de barras, que manda Enter) o en un precio **guardaba la campaña y cerraba el formulario**; ahora solo guarda el botón. `guardar()` ya no manda dos POST si llega otro submit mientras guarda.
+- Campañas: XSS en los cuadros de confirmación: el nombre de la persona del reporte (dato del cliente) y el nombre de la campaña iban en `title` de SweetAlert (se pinta como HTML). Ahora `titleText`. Lo mismo en «¿Dar de baja …?» de Tienda → Buscar.
+- Campañas: respuestas del catálogo fuera de orden (escribir rápido / cambiar de página) pisaban la lista; ahora gana la última (switchMap). Al abrir otra campaña y escribir lo mismo que antes, el catálogo no buscaba (distinctUntilChanged viejo).
+- Campañas: precio 0.004 pasaba la validación y el back lo guardaba como $0.00; ahora se valida ya redondeado a centavos. Lista de motivos de por qué no se puede guardar (incluye juguetes ocultos por el buscador sin precio válido) y precio inválido marcado. Un producto sin precio de venta llega vacío (no en 0).
+- Campañas: fechas de la lista en «10 nov 2026 → 5 ene 2027» sin pasar por `Date` (no se corre un día por UTC). Reporte: texto de «suman» actualizado a la regla vigente (lo pagado entre las fechas, juguetes incluidos); «Eliminar datos» sin doble clic, quita la fila al momento y avisa si el refresco falla; el reporte se cierra al editar/crear o al borrar su campaña. Activar/Apagar/Duplicar/Eliminar sin doble clic. «Ver QR» con routerLink. Suscripciones con takeUntil. En celular el ✕ de cada juguete queda junto al nombre. Tabla del reporte con ancho mínimo (scroll horizontal en celular).
+- Filtro Categoría: una sola petición a `filtros-disponibles` al entrar a Tienda → Buscar (antes dos). «Todas» (✕ o «Limpiar») se recuerda al recargar en Tienda y en Productos (antes volvía sola a JUGUETES; el contrato dice que se recuerda). En Productos elegir otra categoría sin filtros de admin no se recordaba en la memoria de la pantalla. Con 1-2 letras en el buscador de Productos ya no dice «buscando en todas». La categoría elegida se ve en el botón «⚙️ Filtros» aunque el panel esté cerrado y cuenta como filtro activo.
+**Debe comprobar:**
+- [ ] Campañas → Nueva: escribir en el buscador del catálogo y pulsar Enter (o escanear con lector USB) → NO se guarda ni se cierra; solo «Guardar campaña» guarda, y una sola vez aunque se pulse rápido dos veces.
+- [ ] Fechas 10-nov-2026 a 5-ene-2027: el body manda `2026-11-10` / `2027-01-05` y la tarjeta muestra «10 nov 2026 → 5 ene 2027» (probar con el navegador en zona de México).
+- [ ] Precio vacío, 0, negativo o 0.004 → botón deshabilitado y el motivo dice qué juguete; con el buscador de la lista filtrando, el motivo avisa que puede estar oculto. Guardar con la vista filtrada manda TODOS los juguetes.
+- [ ] Agregar un juguete que estuvo en otra campaña → llega con el precio de la campaña con fecha de fin más reciente (sin contar la que se edita) y «precio de «…»»; uno que nunca estuvo → su precio de venta.
+- [ ] Buscar «lego», cancelar, abrir otra campaña y buscar «lego» otra vez → sí busca. Escribir rápido varias búsquedas → queda la última.
+- [ ] Reporte: una persona con nombre `<img src=x onerror=alert(1)>` → al pulsar «Eliminar datos» el cuadro muestra el texto tal cual, sin alerta. Tras eliminar, la fila desaparece y los totales se actualizan. 100+ personas: la tabla tiene su propio scroll (y horizontal en celular).
+- [ ] Doble clic en Activar / Duplicar / Eliminar → una sola petición.
+- [ ] Tienda → Buscar y Productos → Buscar (personal con filtros guardados): primera vez JUGUETES; quitarla (✕) y recargar → sigue en Todas; elegir BOLSAS, ir a otra pantalla y volver → BOLSAS; una sola petición a `filtros-disponibles` al entrar a Tienda.
+- [ ] Tienda: con el panel de filtros cerrado se ve «JUGUETES» en el botón «⚙️ Filtros»; con 3+ letras escritas dice «Todas las categorías (buscando)».
+- [ ] Día y noche, 400 px y escritorio: Campañas (formulario, lista, reporte) y botón de filtros de Tienda.
+
+### 2026-11-09 — Revisión profunda de campaña (front: venta, QR, tickets)
+**Dónde:** `variante/venta-directa/*`, `shared/entrada-codigo-qr/*`, `shared/ticket-correo.util.ts`, `assets/escaner/escaner.html`.
+**Tipo:** e2e (Playwright contra QA) · unitario para `extraerCodigo` y `htmlTicketParaCorreo`.
+**Qué se corrigió:** ticket impreso con total/cambio = suma de lo que cobró el back (renglones); quitar o cambiar el cliente borra la verificación y el
+código confirmado del anterior; respuesta tardía de «Buscar código» ya no repone un código viejo; aviso de Ir pagando solo si de verdad le tocaba
+campaña; un solo cobro a la vez (doble clic / perfil del admin); cerrar con clic fuera/Esc la ventana «Correo sin verificar» ya no cobra; correo
+escapado en «Verificar correo»; la campaña se revisa con la fecha local (pestaña abierta de un día para otro) y se vuelve a pedir al volver a la
+pestaña / cada 10 min (sin venta a medias); la recarga por versión nueva ya no borra combos, cliente, código, modal, terminal ni «¿Imprimir?»;
+«Guardar cliente» exige la casilla de privacidad con campaña; cámara del QR: ya no se queda encendida si se cierra mientras arranca, no abre dos y
+solo acepta UUID; `extraerCodigo` corrige el apóstrofe del lector USB también dentro de la liga; correo del ticket escapa comillas y rehace el
+precio tachado desde texto; `escaner.html` (zxing) ya no reinicia la cámara en cada regreso a la pestaña; `type="button"` y `aria-label` en ✕/±.
+**Debe comprobar:**
+- [ ] Contado con juguete de campaña y cliente recurrente: pantalla, ticket impreso (normal tachado + «Precio de campaña») y total = lo que cobró el back; si el back cobra distinto, el ticket dice lo del back y el aviso de éxito muestra «Total cobrado».
+- [ ] Escanear el QR de A (se llena A), quitar a A con ✕ → sin descuento y campo de código vacío; elegir a B después → sin código de A.
+- [ ] Código de A con B ya elegido → pregunta «¿Cambiarlo?»; «No» → sin descuento; «Sí» → queda A.
+- [ ] Ir pagando con cliente que NO llega a la meta → no sale el aviso «no entra el descuento»; con recurrente → sí sale.
+- [ ] Doble clic rápido en «Cobrar» (con y sin cliente, también «No registrar») → una sola venta.
+- [ ] «Correo sin verificar»: clic fuera / Esc → no cobra; «No, solo cobrar» → cobra.
+- [ ] Modal «Cliente sin registro» con campaña: «Guardar cliente» deshabilitado sin la casilla de privacidad; «No registrar y cobrar» cobra con el admin; ✕/«Cancelar» no cobra. Sin campaña, la casilla no aparece y se guarda como siempre.
+- [ ] Pestaña abierta el 5-ene y usada el 6-ene (cambiar la hora del equipo): ya no se muestra la campaña ni se manda `campana`.
+- [ ] Lector USB con distribución española (escribe `'`): UUID solo y liga completa → se llena el cliente.
+- [ ] 📷 del código: cerrar enseguida de abrir (o salir de la pantalla) → la luz de la cámara se apaga; un código de barras frente a la cámara no se pone en el campo.
+- [ ] Recarga por versión nueva: con solo un combo, con cliente elegido o con el «¿Imprimir ticket?» abierto NO recarga; con todo vacío sí.
+- [ ] Correo del ticket con nombre `<img src=x onerror=alert(1)>`: se ve como texto.
+- [ ] Página `/escaner.html` (visitante, iPhone sin BarcodeDetector): bloquear/desbloquear la pantalla → la cámara sigue sin reiniciarse si estaba viva.
+
 ### 2026-11-09 — Filtro Categoría (JUGUETES por defecto) en Tienda → Buscar y Productos → Buscar
 **Dónde:** `variante/buscar/buscar.component.*`, `productos/producto/all/all.component.*`, `VarianteService.buscarFiltrado/adminFiltrar`, `ProductoService.adminFiltrar`.
 **Debe comprobar:**

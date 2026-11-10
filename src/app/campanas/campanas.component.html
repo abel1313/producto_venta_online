@@ -12,7 +12,7 @@
   </header>
 
   <!-- ── Formulario ── -->
-  <form class="cp-form" *ngIf="edicion as c" (ngSubmit)="guardar()" autocomplete="off">
+  <form class="cp-form" *ngIf="edicion as c" (ngSubmit)="guardar()" (keydown.enter)="evitarEnvioConEnter($event)" autocomplete="off">
     <h3 class="cp-form__titulo">{{ c.id ? 'Editar campaña' : 'Nueva campaña' }}</h3>
 
     <div class="cp-grid">
@@ -33,7 +33,7 @@
 
       <label class="pk-field">
         <span class="pk-label">Meta de monto $</span>
-        <input class="pk-input" type="number" name="meta" min="0" step="1" [(ngModel)]="c.metaMonto">
+        <input class="pk-input" type="number" name="meta" min="0" step="1" inputmode="decimal" [(ngModel)]="c.metaMonto" [attr.aria-invalid]="!metaValida">
         <span class="pk-hint">Lo que una persona junta comprando en el evento para ser cliente recurrente. 0 = sin meta.</span>
       </label>
     </div>
@@ -50,7 +50,7 @@
         <!-- Buscar entre los juguetes que ya están en la campaña: solo filtra lo que se ve, no cambia la campaña -->
         <div class="cp-buscar" *ngIf="c.productos.length">
           <input class="pk-input" name="filtroCampana" [ngModel]="filtroCampana" (ngModelChange)="alEscribirEnCampana($event)"
-                 (keydown.enter)="$event.preventDefault()" autocomplete="off"
+                 (keydown.enter)="$event.preventDefault()" autocomplete="off" aria-label="Buscar en los juguetes de la campaña"
                  placeholder="Buscar en los juguetes de la campaña (nombre o código de barras)…">
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="filtroCampana" (click)="limpiarFiltroCampana()">✕ Limpiar</button>
         </div>
@@ -62,7 +62,8 @@
             <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.origen">precio de «{{ p.origen }}»</small></span>
             <label class="cp-fila__precio">
               <span>Precio de campaña $</span>
-              <input class="pk-input" type="number" step="0.01" min="0.01" [name]="'precio' + p.productoId" [(ngModel)]="p.precio">
+              <input class="pk-input" type="number" step="0.01" min="0.01" inputmode="decimal" [name]="'precio' + p.productoId" [(ngModel)]="p.precio"
+                     [class.cp-invalido]="!precioValido(p)" [attr.aria-invalid]="!precioValido(p)">
             </label>
             <button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
           </div>
@@ -73,7 +74,8 @@
       <div class="cp-catalogo">
         <div class="cp-catalogo__cab">
           <h4 class="cp-productos__titulo">Agregar juguetes: catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
-          <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)"
+          <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)" autocomplete="off"
+                 aria-label="Buscar en el catálogo un juguete para agregarlo"
                  placeholder="Buscar un juguete para agregarlo: nombre o código de barras…">
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm cp-todos" *ngIf="faltanDeLaPagina > 0" (click)="agregarPagina()">
             ＋ Agregar los {{ faltanDeLaPagina }} de esta página
@@ -93,7 +95,7 @@
               </small>
             </div>
             <span class="cp-catalogo__estado" *ngIf="estaAgregado(p)">✓ En la campaña</span>
-            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="!estaAgregado(p)" (click)="agregarProducto(p)">＋ Agregar</button>
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="!estaAgregado(p)" (click)="agregarProducto(p)" [attr.aria-label]="'Agregar ' + p.nombre">＋ Agregar</button>
           </li>
         </ul>
 
@@ -106,9 +108,13 @@
 
     </div><!-- /cp-columnas -->
 
+    <ul class="cp-motivos" *ngIf="motivosParaNoGuardar.length" aria-live="polite">
+      <li *ngFor="let m of motivosParaNoGuardar">{{ m }}</li>
+    </ul>
+
     <div class="cp-acciones">
       <button type="submit" class="pk-btn pk-btn--primary" [disabled]="!puedeGuardar || guardando">{{ guardando ? 'Guardando…' : 'Guardar campaña' }}</button>
-      <button type="button" class="pk-btn pk-btn--secondary" (click)="cancelar()">Cancelar</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
     </div>
   </form>
 
@@ -130,7 +136,7 @@
     <p class="cp-card__meta">
       {{ r.totalPersonas }} {{ r.totalPersonas === 1 ? 'persona' : 'personas' }} con código ·
       {{ r.llegaronALaMeta }} {{ r.llegaronALaMeta === 1 ? 'llegó' : 'llegaron' }} a la meta de {{ r.meta | currency:'$' }} ·
-      suman {{ r.totalAcumulado | currency:'$' }} (compras de Contado sin los juguetes de la campaña)
+      suman {{ r.totalAcumulado | currency:'$' }} (lo ya pagado<ng-container *ngIf="fechasReporte"> del {{ fechasReporte }}</ng-container>, juguetes incluidos; sin devoluciones ni cancelados)
     </p>
     <p class="cp-vacio" *ngIf="!r.personas.length">Todavía nadie tiene compras ligadas a esta campaña.</p>
     <div class="cp-tabla" *ngIf="r.personas.length">
@@ -144,8 +150,10 @@
             <td class="cp-num">{{ p.pedidos }}</td>
             <td><span class="cp-estado" [ngClass]="p.llegoALaMeta ? 'cp-estado--ok' : 'cp-estado--apagada'">{{ p.llegoALaMeta ? 'Llegó' : 'Falta' }}</span></td>
             <td class="cp-acciones-fila">
-              <a class="pk-btn pk-btn--secondary pk-btn--sm" [href]="'/codigo-campana/' + p.codigo" target="_blank" rel="noopener">Ver QR</a>
-              <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminarPersona(p)">Eliminar datos</button>
+              <a class="pk-btn pk-btn--secondary pk-btn--sm" [routerLink]="['/codigo-campana', p.codigo]" target="_blank" rel="noopener"
+                 [attr.aria-label]="'Ver QR de ' + (p.nombre || p.codigo)">Ver QR</a>
+              <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminarPersona(p)" [disabled]="borrandoPersonaId !== null"
+                      [attr.aria-label]="'Eliminar datos de ' + (p.nombre || p.codigo)">Eliminar datos</button>
             </td>
           </tr>
         </tbody>
@@ -168,10 +176,10 @@
 
     <div class="cp-card__acciones">
       <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="editar(c)">Editar</button>
-      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternar(c)">{{ c.activa ? 'Apagar' : 'Activar' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternar(c)" [disabled]="ocupadaId !== null">{{ c.activa ? 'Apagar' : 'Activar' }}</button>
       <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="verReporte(c)" [disabled]="cargandoReporte">Reporte</button>
-      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="duplicar(c)">Duplicar</button>
-      <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminar(c)">Eliminar</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="duplicar(c)" [disabled]="ocupadaId !== null">Duplicar</button>
+      <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminar(c)" [disabled]="ocupadaId !== null">Eliminar</button>
     </div>
   </article>
 

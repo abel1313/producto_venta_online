@@ -210,7 +210,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
         if (!entregado) {
           // Se guardó, pero ninguna pantalla de la computadora lo estaba pidiendo.
           this.ultimo = `Sin entregar: ${texto}`;
-          this.mostrar(this.modoQr ? 'La computadora no tiene abierta Venta directa con una campaña vigente' : 'La computadora no tiene abierta una pantalla con código de barras', 'warn');
+          this.mostrar(this.modoQr ? 'La computadora no tiene abierta Venta directa con campaña vigente' : 'La computadora no tiene abierta una pantalla con código de barras', 'warn');
           return;
         }
         this.ultimo = `✔ Enviado: ${texto}`;
@@ -277,7 +277,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
         if (navigator.vibrate) { try { navigator.vibrate(60); } catch { /* sin vibración */ } }
         if (!entregado) {
           this.ultimo = `Sin entregar: ${codigo}`;
-          this.mostrar('La computadora no tiene abierta Venta directa con una campaña vigente', 'warn');
+          this.mostrar('La computadora no tiene abierta Venta directa con campaña vigente', 'warn');
           return;
         }
         this.ultimo = `✔ Enviado: ${codigo}`;

@@ -40,7 +40,6 @@
     <ng-template #categoriaTpl>
       <div class="pl-categoria">
         <app-filtro-buscable etiqueta="Categoría" [opciones]="categorias" [valor]="filtroCategoria" (valorChange)="onCategoriaChange($event)"></app-filtro-buscable>
-        <span class="pl-categoria__aviso" *ngIf="categoriaIgnoradaPorTexto">Buscando «{{ buscarProd }}» en todas las categorías</span>
       </div>
     </ng-template>
     <ng-container *ngIf="!puedeVerAlgunFiltro && categorias.length"><ng-container *ngTemplateOutlet="categoriaTpl"></ng-container></ng-container>

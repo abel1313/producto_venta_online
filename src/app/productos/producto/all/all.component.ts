@@ -508,17 +508,12 @@ export class AllComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   /**
-   * ¿Hay texto que de verdad busca? El buscador solo sale con 3 letras o más: con 1-2 letras la lista sigue siendo la de la categoría,
-   * así que la categoría tiene que seguir viajando (y no se debe decir «buscando en todas»).
+   * La categoría elegida SIEMPRE se respeta, escriba o no texto en el buscador (2026-11-10): texto, categoría y los demás filtros se combinan con
+   * «Y». Para buscar en todas las categorías se quita la categoría con la ✕ del selector.
    */
-  private get hayTextoBuscando(): boolean { return (this.buscarProd ?? '').trim().length >= 3; }
-
-  /** Con texto escrito se busca en TODAS las categorías: la elegida solo manda cuando no hay texto. */
   private get categoriaParaBackend(): string | undefined {
-    return !this.hayTextoBuscando && this.filtroCategoria ? this.filtroCategoria : undefined;
+    return this.filtroCategoria || undefined;
   }
-
-  get categoriaIgnoradaPorTexto(): boolean { return !!this.filtroCategoria && this.hayTextoBuscando; }
 
   onCategoriaChange(valor: string): void {
     this.filtroCategoria = valor;

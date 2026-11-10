@@ -824,3 +824,9 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 ### 2026-11-10 — Actualizar producto: quitar la categoría
 **Dónde:** `productos/producto/add/add.component.ts` (manda `quitarPalabraClave: true` al actualizar sin categoría), `producto.model.ts`.
 - [ ] Productos → Buscar → Actualizar: quitar la categoría (✕ del campo) y guardar; al volver a abrirlo no la trae. Si no se toca, la conserva.
+
+### 2026-11-10 — Productos → Buscar: la categoría se respeta también cuando se escribe en el buscador
+**Dónde:** `productos/producto/all/all.component.{ts,html}` (`categoriaParaBackend`; se quitó el aviso «Buscando en todas las categorías»).
+- [ ] Con JUGUETES elegido, escribir «BOLS» muestra solo los productos JUGUETES que coincidan (si ninguno, «sin resultados»); con la categoría quitada (✕) busca en todas.
+- [ ] Texto + categoría + con stock + habilitados + con imágenes se combinan con «Y»; el contador de Filtros cuenta la categoría.
+- [ ] Sin categoría y sin texto, la lista sale igual que antes; el escáner (código de barras) sigue encontrando el producto.

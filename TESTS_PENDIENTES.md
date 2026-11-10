@@ -18,6 +18,16 @@ Formato de cada entrada:
 ---
 
 
+
+### 2026-11-10 — La compra en curso cuenta para la meta (solo lo que NO son juguetes)
+**Dónde:** `venta-directa.component.ts/.html` (`avance`, `ticketQueSuma`, `faltaParaMeta`, `esRecurrente`, `consultarAvanceDelCliente`), `CampanasService.acumuladoDelCliente`, `terminos.component.html`.
+**Debe comprobar:**
+- Meta $1,499; el cliente ya pagó $800; compra de Contado con $1,600 en artículos que no son juguetes + 2 juguetes: los juguetes salen con precio de campaña en pantalla, en el ticket y en lo que cobra el back; al quitar artículos hasta bajar de la meta vuelven a precio normal en ese momento.
+- Una compra solo de juguetes no se califica sola (con $800 pagados sigue en precio normal).
+- Apartado e Ir pagando: la compra en curso no suma. Ir pagando: normal.
+- Cliente reconocido SIN código (elegido de la lista o sin registro con correo/teléfono ya registrados): aparece «Cliente reconocido · lleva $X de $Y» y el precio se recalcula igual.
+- El aviso «le faltan $X» cuenta lo que no son juguetes del ticket y se actualiza al agregar o quitar artículos.
+
 ### 2026-11-10 — Reglas finales de campaña (front)
 **Dónde:** `variante/venta-directa/venta-directa.component.*`, `shared/escaner-celular/escaner-receptor.service.ts`, `shared/escaner-celular/escaner-celular.component.ts`, `escaner-celular/escaner-celular-pagina.component.ts`, `campanas/campanas.component.ts`, `pedidos/detalle-pedido/*`, `pedidos/mis-pedidos/*`, `pedidos/cobro/liquidar-apartado/*`, `pedidos/aviso-ir-pagando-campana.ts`, `productos/service/producto.service.ts` (`categoriasAdmin`), `productos/producto/all/all.component.ts`, `variante/buscar/buscar.component.ts`, `legal/terminos/*`, `legal/privacidad/*`
 **Tipo:** e2e (Playwright contra QA) · unitario de componente/servicio (HttpTestingController)

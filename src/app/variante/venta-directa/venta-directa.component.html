@@ -175,7 +175,13 @@
             ✓ Es de {{ verificacion?.nombre || 'este cliente' }} · lleva {{ verificacion?.acumulado | currency:'$' }} de {{ verificacion?.meta | currency:'$' }}
             <ng-container *ngIf="campanaRecurrente"> · <strong>recurrente a mano</strong> (casilla marcada)</ng-container>
             <ng-container *ngIf="!campanaRecurrente && esRecurrente"> · <strong>ya es recurrente</strong> (llegó a la meta)</ng-container>
-            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · le faltan {{ (verificacion?.meta ?? 0) - (verificacion?.acumulado ?? 0) | currency:'$' }} pagados para el precio de campaña</ng-container>
+            <ng-container *ngIf="!campanaRecurrente && esRecurrente && ticketQueSuma > 0"> · con lo que no son juguetes de esta compra</ng-container>
+            <ng-container *ngIf="!esRecurrente && verificacion?.meta"> · le faltan {{ faltaParaMeta | currency:'$' }} (contando lo que no son juguetes de esta compra) para el precio de campaña</ng-container>
+          </span>
+          <span class="vd-campana__ok" *ngIf="verificacion?.estado !== 'OK' && avanceCliente">
+            Cliente reconocido · lleva {{ avanceCliente.acumulado | currency:'$' }} de {{ avanceCliente.meta | currency:'$' }}
+            <ng-container *ngIf="!campanaRecurrente && esRecurrente"> · <strong>ya es recurrente</strong> (con lo que no son juguetes de esta compra)</ng-container>
+            <ng-container *ngIf="!esRecurrente"> · le faltan {{ faltaParaMeta | currency:'$' }} (contando lo que no son juguetes de esta compra)</ng-container>
           </span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_COINCIDE'">✕ Ese código es de otra persona (no coincide con el correo ni el teléfono del cliente).</span>
           <span class="vd-campana__mal" *ngIf="verificacion?.estado === 'NO_EXISTE'">✕ Ese código no existe.</span>

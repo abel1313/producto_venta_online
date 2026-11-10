@@ -110,6 +110,11 @@ export class CampanasService {
     return this.http.post<{ data: IVerificacionCodigo }>(`${this.url}/personas/verificar`, { codigo, correo, telefono }).pipe(map(r => r.data));
   }
 
+  /** Lo que lleva pagado un cliente reconocido SIN código (correo, teléfono o cliente): para el aviso en vivo de Venta directa. */
+  acumuladoDelCliente(d: { correo: string | null; telefono: string | null; clienteId: number | null; clienteSinRegistroId: number | null }): Observable<IVerificacionCodigo> {
+    return this.http.post<{ data: IVerificacionCodigo }>(`${this.url}/personas/acumulado`, d).pipe(map(r => r.data));
+  }
+
   /** Escanear el QR: ¿de quién es este código? Con eso se llenan los datos del cliente de la venta. 429 si se hacen demasiados intentos. */
   buscarPorCodigo(codigo: string): Observable<IBuscarPorCodigo> {
     return this.http.post<{ data: IBuscarPorCodigo }>(`${this.url}/personas/buscar-por-codigo`, { codigo }).pipe(map(r => r.data));

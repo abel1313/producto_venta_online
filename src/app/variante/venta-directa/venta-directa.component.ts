@@ -99,6 +99,9 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
    */
   private cobroSinDatos = false;
   verificacion: IVerificacionCodigo | null = null;
+  /** Lo que lleva pagado un cliente reconocido SIN código (por su correo, teléfono o cliente). El back lo vuelve a calcular al cobrar. */
+  avanceCliente: { acumulado: number; meta: number } | null = null;
+  private avanceSeq = 0;
   verificando = false;
 
   // ── Forma de pago (cargada al inicio) ─────────────────────────────
@@ -273,6 +276,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         const privacidad = this.campanaPrivacidad;
         this.olvidarCodigoDelClienteAnterior();
         this.campanaPrivacidad = privacidad;
+        this.consultarAvanceDelCliente();
         this.actualizarCheckboxesTicket();
 
         if (dto.correo_Electronico && !res.correoVerificado) {
@@ -363,6 +367,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   private olvidarCodigoDelClienteAnterior(): void {
     if (this.verificacion?.estado === 'OK') this.campanaCodigo = '';
     this.verificacion = null;
+    this.avanceCliente = null;
+    this.avanceSeq++;
     this.campanaPrivacidad = false;
     this.recalcularSubtotales();
   }
@@ -413,6 +419,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     if ((c.fechaFin && hoy > c.fechaFin.slice(0, 10)) || (c.fechaInicio && hoy < c.fechaInicio.slice(0, 10))) {
       this.campana = null;
       this.verificacion = null;
+      this.avanceCliente = null;
       this.recalcularSubtotales();
     }
   }
@@ -673,22 +680,60 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   get hayJuguetesDeCampana(): boolean { return this.lineas.some(l => this.esDeCampana(l)); }
 
+  /** Lo que ya lleva pagado el cliente y la meta: de su código verificado o, sin código, de su cliente reconocido. */
+  get avance(): { acumulado: number; meta: number } | null {
+    const v = this.verificacion;
+    if (v && v.estado === 'OK') return { acumulado: v.acumulado, meta: v.meta };
+    return this.avanceCliente;
+  }
+
+  /** El precio de una pieza SIN precio de campaña: el normal o el de grupo si es más bajo (lo que ya llevaba). */
+  private precioSinCampanaDe(l: ILineaVenta): number {
+    const base = l.variante.precio ?? 0;
+    return l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+  }
+
   /**
-   * Lo de este ticket que suma para la meta: TODO (juguetes incluidos), pero solo si la venta es Contado (se paga ahora). En Apartado o Ir pagando
-   * no suma hasta que se abone. Es el mismo cálculo que hace el back.
+   * Lo de ESTE ticket que suma para la meta (regla del dueño 2026-11-10): solo lo que NO son juguetes de la campaña, y solo si la venta es Contado
+   * (se paga ahora). Los juguetes no cuentan para calificarse a sí mismos. Es el mismo cálculo que hace el back, que decide al cobrar.
    */
   get ticketQueSuma(): number {
     if (this.tipoPedido !== 'NORMAL') return 0;
-    return +this.lineas.reduce((t, l) => t + (l.variante.precio ?? 0) * l.cantidad, 0).toFixed(2);
+    return +this.lineas.filter(l => !this.esDeCampana(l))
+      .reduce((t, l) => t + this.precioSinCampanaDe(l) * l.cantidad, 0).toFixed(2);
   }
 
-  /** ¿Este cliente es recurrente ahora? A mano, o con código verificado cuyo avance YA PAGADO llega a la meta (esta venta no cuenta). */
+  /** Lo que todavía le falta para la meta contando lo ya pagado y lo que no son juguetes de este ticket (0 si ya llega). */
+  get faltaParaMeta(): number {
+    const a = this.avance;
+    if (!a || a.meta <= 0) return 0;
+    return Math.max(0, +(a.meta - a.acumulado - this.ticketQueSuma).toFixed(2));
+  }
+
+  /** ¿Este cliente es recurrente ahora? A mano, o lo ya pagado + lo que no son juguetes de este ticket llega a la meta. Se recalcula al agregar o quitar artículos. */
   get esRecurrente(): boolean {
     if (!this.campana) return false;
     if (this.campanaRecurrente) return true;
-    const v = this.verificacion;
-    // Solo cuenta lo YA pagado (lo mismo que decide el back): el ticket de esta venta no se suma a sí mismo.
-    return !!v && v.estado === 'OK' && v.meta > 0 && v.acumulado >= v.meta;
+    const a = this.avance;
+    return !!a && a.meta > 0 && a.acumulado + this.ticketQueSuma >= a.meta;
+  }
+
+  /** Cliente ya elegido (registrado o sin registro) y sin código: pregunta cuánto lleva pagado para saber su precio al momento. */
+  private consultarAvanceDelCliente(): void {
+    if (!this.campana) return;
+    const k = this.contactoClienteCampana;
+    const clienteId = this.clienteSeleccionado?.id ?? null;
+    const sinRegistroId = this.clienteSinRegistroId ?? null;
+    if (!k.correo && !k.telefono && !clienteId && !sinRegistroId) return;
+    const seq = ++this.avanceSeq;
+    this.campanasService.acumuladoDelCliente({ correo: k.correo, telefono: k.telefono, clienteId, clienteSinRegistroId: sinRegistroId }).subscribe({
+      next: v => {
+        if (seq !== this.avanceSeq) return;          // cambió el cliente mientras respondía
+        this.avanceCliente = v.estado === 'OK' && v.meta > 0 ? { acumulado: v.acumulado, meta: v.meta } : null;
+        this.recalcularSubtotales();
+      },
+      error: () => { /* sin aviso: el back decide igual al cobrar */ }
+    });
   }
 
   /** El precio de campaña de la línea, o null si no le toca (no es juguete, no es recurrente o la venta es Ir pagando). */
@@ -893,6 +938,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.campanaPrivacidad = false;
     this.cobroSinDatos = false;
     this.verificacion = null;
+    this.avanceCliente = null;
+    this.avanceSeq++;
     this.observaciones = '';
     this.nombreReceptor = '';
     this.direccionEntrega = '';
@@ -979,6 +1026,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.terminoCliente = `${c.nombrePersona} ${c.apeidoPaterno}`;
     this.clientes = [];
     this.olvidarCodigoDelClienteAnterior();
+    this.consultarAvanceDelCliente();
     this.actualizarCheckboxesTicket();
   }
 

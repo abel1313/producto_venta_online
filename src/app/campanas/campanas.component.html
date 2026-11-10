@@ -59,7 +59,7 @@
 
         <div class="cp-productos__lista" *ngIf="c.productos.length">
           <div class="cp-fila" *ngFor="let p of productosFiltrados; trackBy: porIdDeProducto">
-            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.origen">precio de «{{ p.origen }}»</small></span>
+            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.codigoBarras">Código: {{ p.codigoBarras }}</small><small class="cp-fila__origen" *ngIf="p.origen">{{ p.origen }}</small></span>
             <label class="cp-fila__precio">
               <span>Precio de campaña $</span>
               <input class="pk-input" type="number" step="0.01" min="0.01" inputmode="decimal" [name]="'precio' + p.productoId" [(ngModel)]="p.precio"
@@ -74,6 +74,10 @@
       <div class="cp-catalogo">
         <div class="cp-catalogo__cab">
           <h4 class="cp-productos__titulo">Agregar juguetes: catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
+          <select class="pk-input" name="categoria" *ngIf="categorias.length" [ngModel]="categoria" (ngModelChange)="alCambiarCategoria($event)" aria-label="Categoría del catálogo">
+            <option value="">Todas las categorías</option>
+            <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
+          </select>
           <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)" autocomplete="off"
                  aria-label="Buscar en el catálogo un juguete para agregarlo"
                  placeholder="Buscar un juguete para agregarlo: nombre o código de barras…">
@@ -91,7 +95,7 @@
             <div class="cp-catalogo__datos">
               <span class="cp-catalogo__nombre">{{ p.nombre }}</span>
               <small class="cp-catalogo__meta">
-                {{ p.precioVenta | currency:'$' }} · stock {{ p.stock }}<ng-container *ngIf="p.categoria"> · {{ p.categoria }}</ng-container>
+                <ng-container *ngIf="p.codigoBarras">Código {{ p.codigoBarras }} · </ng-container>{{ p.precioVenta | currency:'$' }}<ng-container *ngIf="p.precioRebaja > 0"> · con descuento <b>{{ p.precioRebaja | currency:'$' }}</b></ng-container> · stock {{ p.stock }}<ng-container *ngIf="p.categoria"> · {{ p.categoria }}</ng-container>
               </small>
             </div>
             <span class="cp-catalogo__estado" *ngIf="estaAgregado(p)">✓ En la campaña</span>
@@ -171,7 +175,7 @@
     </div>
 
     <ul class="cp-card__productos">
-      <li *ngFor="let p of c.productos"><span>{{ p.nombre }}</span><strong>{{ p.precio | currency:'$' }}</strong></li>
+      <li *ngFor="let p of c.productos"><span>{{ p.nombre }}<small *ngIf="p.codigoBarras"> · {{ p.codigoBarras }}</small></span><strong>{{ p.precio | currency:'$' }}</strong></li>
     </ul>
 
     <div class="cp-card__acciones">

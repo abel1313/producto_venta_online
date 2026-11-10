@@ -21,6 +21,24 @@ const routes: Routes = [
     canActivate: [CarritoGuard, UsuariosGuard]
   },
   {
+    // Página pública de la liga del correo: solo dibuja el QR del código de cliente (sin sesión, sin datos personales).
+    path: 'codigo-campana/:uuid',
+    loadChildren: () => import('./campanas/codigo-publico/codigo-publico.module').then(m => m.CodigoPublicoModule)
+  },
+  {
+    // Campañas (solo administrador). Va ANTES de 'productos' por la misma razón. Fila en submenu: migration_campana.sql.
+    path: 'productos/campanas',
+    loadChildren: () => import('./campanas/campanas.module').then(m => m.CampanasModule),
+    canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
+  },
+  {
+    // Grupos de precio por cantidad (solo administrador). Va ANTES de 'productos' para que esa ruta de prefijo no la tape.
+    // Fila en submenu: migration_grupo_precio_cantidad.sql.
+    path: 'productos/grupos-precio',
+    loadChildren: () => import('./precio-cantidad/precio-cantidad.module').then(m => m.PrecioCantidadModule),
+    canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
+  },
+  {
     path: 'productos',
     loadChildren: () => import('./productos/producto/producto.module').then(m => m.ProductoModule),
     canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
@@ -164,6 +182,13 @@ const routes: Routes = [
   {
     // El CELULAR de la cuenta: cámara siempre lista que manda los códigos de barras a la computadora (mismo usuario). Solo con sesión.
     path: 'escaner-celular',
+    loadChildren: () => import('./escaner-celular/escaner-celular.module').then(m => m.EscanerCelularModule),
+    canActivate: [AuthGuard]
+  },
+  {
+    // Igual que el Escáner, pero para el QR del código de cliente de una campaña (cámara o foto): llega al campo «Código del cliente» de Venta directa.
+    path: 'escaner-qr',
+    data: { modo: 'qr' },
     loadChildren: () => import('./escaner-celular/escaner-celular.module').then(m => m.EscanerCelularModule),
     canActivate: [AuthGuard]
   },

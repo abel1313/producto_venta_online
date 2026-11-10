@@ -1,8 +1,9 @@
 <main class="ep">
   <button type="button" class="ep-volver" (click)="volver()" aria-label="Volver a la pantalla anterior">← Volver</button>
   <header class="ep-cabeza">
-    <h1 class="ep-titulo">Escáner de código de barras</h1>
-    <p class="ep-sub">Lo que escanees llega a la pantalla que tengas abierta en tu computadora (con tu mismo usuario).</p>
+    <h1 class="ep-titulo">{{ modoQr ? 'Escáner de QR de clientes' : 'Escáner de código de barras' }}</h1>
+    <p class="ep-sub" *ngIf="!modoQr">Lo que escanees llega a la pantalla que tengas abierta en tu computadora (con tu mismo usuario).</p>
+    <p class="ep-sub" *ngIf="modoQr">Lo que escanees llega al campo «Código del cliente» de Venta directa en tu computadora (con tu mismo usuario).</p>
   </header>
 
   <div class="ep-estado" [ngClass]="'ep-estado--' + tono" aria-live="polite" *ngIf="!error">{{ estado }}</div>
@@ -20,13 +21,21 @@
     </div>
   </section>
 
-  <div class="ep-acciones" *ngIf="!error && !fotoPrevia">
+  <div class="ep-acciones" *ngIf="!error && !fotoPrevia && !modoQr">
     <button type="button" class="ep-boton" (click)="tomarFoto()">📷 Tomar foto</button>
     <button type="button" class="ep-boton ep-boton--sec" (click)="archivo.click()">📸 Cámara del celular</button>
     <input #archivo type="file" accept="image/*" capture="environment" hidden (change)="alElegirArchivo($event)" />
   </div>
+  <!-- Modo QR: la foto del QR se lee aquí y se manda como código (no como imagen) -->
+  <div class="ep-acciones" *ngIf="!error && modoQr">
+    <button type="button" class="ep-boton" (click)="fotoQr.click()">📸 Foto del QR</button>
+    <button type="button" class="ep-boton ep-boton--sec" (click)="galeriaQr.click()">🖼️ Elegir de la galería</button>
+    <input #fotoQr type="file" accept="image/*" capture="environment" hidden (change)="alElegirFotoQr($event)" />
+    <input #galeriaQr type="file" accept="image/*" hidden (change)="alElegirFotoQr($event)" />
+  </div>
   <p class="ep-ultimo" *ngIf="ultimo && !error">{{ ultimo }}</p>
-  <p class="ep-detalle" *ngIf="!error">Deja esta pantalla abierta: queda lista para todos los códigos que escanees.</p>
+  <p class="ep-detalle" *ngIf="!error && !modoQr">Deja esta pantalla abierta: queda lista para todos los códigos que escanees.</p>
+  <p class="ep-detalle" *ngIf="!error && modoQr">Deja esta pantalla abierta y ten Venta directa abierta en la computadora: cada QR de cliente que escanees se escribe allá y llena sus datos.</p>
 
   <section class="ep-error" *ngIf="error">
     <strong>{{ error.titulo }}</strong>

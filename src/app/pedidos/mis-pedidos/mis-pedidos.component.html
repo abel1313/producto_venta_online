@@ -534,6 +534,6 @@
       (cerrar)="cerrarCobroCredito()" (cobrado)="alCobrarCredito()"></app-abonar-grupo>
 </ng-container>
 
-<app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item"
+<app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item" [abrirCambioDeTipo]="abrirCambioDeTipo"
     (regresarProductos)="mostrarProductos($event)"
     (abrirPedido)="abrirOtroPedido($event)"></app-detalle-pedido>

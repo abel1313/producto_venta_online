@@ -1,7 +1,7 @@
 import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { Observable, Subject } from 'rxjs';
-import { debounceTime, takeUntil } from 'rxjs/operators';
+import { forkJoin, Observable, of, Subject } from 'rxjs';
+import { catchError, debounceTime, shareReplay, takeUntil } from 'rxjs/operators';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../../shared/barcode-scanner.util';
 import { AuthService } from 'src/app/auth/auth.service';
@@ -52,6 +52,10 @@ export class BuscarComponent implements OnInit, OnDestroy {
   filtroTalla = '';
   filtroColor = '';
   filtroMarca = '';
+  /** Categoría (en mayúsculas). Vacío = todas. JUGUETES por defecto SOLO para el personal con sesión (ver arrancarConFiltrosGuardados). */
+  filtroCategoria = '';
+  /** La que se elige sola al entrar el personal: así los juguetes se ven primero. Clientes y visitantes arrancan en «Todas». */
+  private static readonly CATEGORIA_POR_DEFECTO = 'JUGUETES';
   filtroPrecioMin: number | null = null;
   filtroPrecioMax: number | null = null;
 
@@ -81,10 +85,32 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return t.length >= BuscarComponent.MIN_CARACTERES_BUSQUEDA ? t : '';
   }
 
+  /**
+   * La categoría viaja solo cuando no hay texto: si se escribe algo para buscar, se busca en TODAS las categorías
+   * (así un juguete se encuentra por nombre aunque la categoría elegida sea otra).
+   */
+  private get categoriaParaBackend(): string | undefined {
+    return !this.terminoParaBackend && this.filtroCategoria ? this.filtroCategoria : undefined;
+  }
+
+  /** Hay texto buscando y también una categoría elegida: se avisa que el texto manda. */
+  get categoriaIgnoradaPorTexto(): boolean {
+    return !!this.filtroCategoria && !!this.terminoParaBackend;
+  }
+
+  /**
+   * ¿JUGUETES por defecto? Solo el personal con sesión (el mismo criterio con el que se guardan sus filtros: con rol, sin ROLE_USUARIO y con la
+   * pantalla). Un cliente o un visitante anónimo arranca en «Todas» y no pierde catálogo (decisión del dueño para producción).
+   */
+  private get categoriaPorDefectoAplica(): boolean {
+    return !this.isAnonymous && this.preferenciaFiltro.puedeGuardar('tienda-buscar');
+  }
+
   /** id del modelo que se esta dando de baja, para no disparar dos veces. */
   dandoDeBajaId: number | null = null;
 
   private busquedaSubject = new Subject<string>();
+  private filtrosDisponibles$?: Observable<IFiltrosDisponibles | null>;
   /** $ mín / $ máx: buscan cuando terminas de escribir, no con cada tecla (con "100" salían 1, 10 y 100). */
   private precioSubject = new Subject<void>();
   private destroy$        = new Subject<void>();
@@ -150,10 +176,9 @@ export class BuscarComponent implements OnInit, OnDestroy {
 
     this.carritoVariante.carrito$.pipe(takeUntil(this.destroy$)).subscribe(d => { this.detalle = d; });
 
-    this.varianteService.filtrosDisponibles().pipe(takeUntil(this.destroy$)).subscribe({
-      next: f => { this.filtrosDisponibles = f; },
-      error: () => { this.filtrosDisponibles = null; }
-    });
+    // Una sola petición a filtros-disponibles: la comparten el selector y el arranque (que espera las categorías para elegir JUGUETES).
+    this.filtrosDisponibles$ = this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)), shareReplay(1));
+    this.filtrosDisponibles$.pipe(takeUntil(this.destroy$)).subscribe(f => { this.filtrosDisponibles = f; });
 
     this.busquedaSubject.pipe(debounceTime(1500), takeUntil(this.destroy$))
       .subscribe(() => this.aplicarFiltros(1));
@@ -211,6 +236,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.filtroTalla = f['filtroTalla'] ?? '';
     this.filtroColor = f['filtroColor'] ?? '';
     this.filtroMarca = f['filtroMarca'] ?? '';
+    this.filtroCategoria = f['filtroCategoria'] ?? '';
     this.filtroPrecioMin = f['filtroPrecioMin'] ?? null;
     this.filtroPrecioMax = f['filtroPrecioMax'] ?? null;
   }
@@ -221,11 +247,20 @@ export class BuscarComponent implements OnInit, OnDestroy {
    * como antes. Los filtros de admin solo se aplican si todavía tiene permiso de verlos.
    */
   private arrancarConFiltrosGuardados(): void {
-    this.preferenciaFiltro.obtener('tienda-buscar').pipe(takeUntil(this.destroy$)).subscribe(f => {
+    // Se esperan las preferencias Y las categorías disponibles: JUGUETES solo se pone si existe y nadie eligió otra cosa antes.
+    forkJoin([
+      this.preferenciaFiltro.obtener('tienda-buscar'),
+      this.filtrosDisponibles$ ?? this.varianteService.filtrosDisponibles().pipe(catchError(() => of(null)))
+    ]).pipe(takeUntil(this.destroy$)).subscribe(([f, disponibles]) => {
+      if (disponibles) this.filtrosDisponibles = disponibles;
       if (f) {
         this.restaurarFiltros(f);
         if (!this.puedeVerAlgunFiltro) this.apagarFiltrosAdmin();
       }
+      // Solo cuenta una categoría guardada de verdad: «Todas» (vacía) no se recuerda y al recargar el personal vuelve a JUGUETES (regla 2026-11-10).
+      const yaEligio = !!f?.['filtroCategoria'];
+      const hayJuguetes = !!disponibles?.categorias?.includes(BuscarComponent.CATEGORIA_POR_DEFECTO);
+      if (!yaEligio && hayJuguetes && this.categoriaPorDefectoAplica) this.filtroCategoria = BuscarComponent.CATEGORIA_POR_DEFECTO;
       this.aplicarFiltros(1);
     });
   }
@@ -305,7 +340,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     return [this.mostrarConStock, this.mostrarSinStock, this.mostrarConImagenes, this.mostrarSinImagenes,
             this.mostrarHabilitados, this.mostrarNoHabilitados, this.mostrarCodigoGenerado, this.mostrarCodigoReal,
             !!this.fechaDesde, !!this.fechaHasta,
-            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca,
+            !!this.filtroTalla, !!this.filtroColor, !!this.filtroMarca, !!this.filtroCategoria,
             this.filtroPrecioMin !== null, this.filtroPrecioMax !== null].filter(Boolean).length;
   }
 
@@ -526,6 +561,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       // término y página, y buscarPagina la reusaría tal cual.
       this.varianteService.invalidarCache();
       this.varianteService.setFiltrosCache(null);
+      // Regla del dueño (2026-11-10): «Todas» NO se recuerda entre recargas; sin otra categoría guardada, al recargar el personal abre en JUGUETES.
       this.preferenciaFiltro.borrar('tienda-buscar');
       // terminoParaBackend y no el termino crudo: un termino de 1-2 letras no sale a buscar.
       this.buscarPagina(this.terminoParaBackend, pagina);
@@ -548,6 +584,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       filtroTalla: this.filtroTalla,
       filtroColor: this.filtroColor,
       filtroMarca: this.filtroMarca,
+      filtroCategoria: this.filtroCategoria,
       filtroPrecioMin: this.filtroPrecioMin,
       filtroPrecioMax: this.filtroPrecioMax
     };
@@ -569,6 +606,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       talla: this.filtroTalla || undefined,
       color: this.filtroColor || undefined,
       marca: this.filtroMarca || undefined,
+      categoria: this.categoriaParaBackend,
       precioMin: this.filtroPrecioMin ?? undefined,
       precioMax: this.filtroPrecioMax ?? undefined
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
@@ -596,7 +634,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
   // ── Filtros públicos del catálogo (talla / color / marca / precio) ───
 
   get hayFiltrosPublicosActivos(): boolean {
-    return !!this.filtroTalla || !!this.filtroColor || !!this.filtroMarca
+    return !!this.filtroTalla || !!this.filtroColor || !!this.filtroMarca || !!this.filtroCategoria
         || this.filtroPrecioMin !== null || this.filtroPrecioMax !== null;
   }
 
@@ -615,6 +653,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
     this.filtroTalla = '';
     this.filtroColor = '';
     this.filtroMarca = '';
+    this.filtroCategoria = '';
     this.filtroPrecioMin = null;
     this.filtroPrecioMax = null;
     this.seleccionados.clear();
@@ -632,6 +671,7 @@ export class BuscarComponent implements OnInit, OnDestroy {
       talla: this.filtroTalla || undefined,
       color: this.filtroColor || undefined,
       marca: this.filtroMarca || undefined,
+      categoria: this.categoriaParaBackend,
     }, pagina, 10).pipe(takeUntil(this.destroy$)).subscribe({
       next: res => {
         if (this.reqId !== id) return;

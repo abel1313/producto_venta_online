@@ -20,6 +20,7 @@ import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.mode
 
 import { hoyIso, hoyMasDiasIso } from '../../shared/fecha.util';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
+import { PrecioCantidadService } from 'src/app/precio-cantidad/precio-cantidad.service';
 @Component({
   selector: 'app-venta-variante',
   templateUrl: './venta-variante.component.html',
@@ -61,7 +62,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     private readonly router: Router,
     private readonly usuarioService: UsuarioService,
     private readonly lugarEntregaService: LugarEntregaService,
-    private readonly pedidosService: PedidosService
+    private readonly pedidosService: PedidosService,
+    private readonly precioCantidad: PrecioCantidadService
   ) {}
 
   lugares: ILugarEntrega[] = [];
@@ -113,6 +115,7 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     this.carritoService.carrito$.subscribe(items => {
       this.carrito = items;
       this.recalcularTotales();
+      this.actualizarPreciosDeGrupo();
     });
     this.carritoService.promos$.subscribe(promos => {
       this.promos = promos;
@@ -135,11 +138,52 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     this.otroPrecioVisible.clear();
   }
 
+  // ── Precio por cantidad (grupos de precio) ─────────────────────────
+  // El back dice a qué productos del carrito les toca su precio de grupo (las piezas se suman dentro del grupo) y ESE cálculo es el que
+  // cuenta al guardar el pedido. Gana el precio más bajo: el de grupo solo se usa si es menor al de la línea.
+
+  /** Lo que cuesta cada pieza de la línea: el de grupo si le toca y es menor, si no el precio de la línea. */
+  precioUnitarioDe(i: IDetalleVariante): number {
+    return i.precioGrupo != null && i.precioGrupo < i.precio ? i.precioGrupo : i.precio;
+  }
+
+  conPrecioDeGrupo(i: IDetalleVariante): boolean {
+    return i.precioGrupo != null && i.precioGrupo < i.precio;
+  }
+
+  subTotalDe(i: IDetalleVariante): number {
+    return this.precioUnitarioDe(i) * i.cantidad;
+  }
+
+  /** Lo que ahorra el carrito por precio de grupo. */
+  ahorroGrupos = 0;
+  private consultaPrecios = 0;
+
+  private actualizarPreciosDeGrupo(): void {
+    const consulta = ++this.consultaPrecios;
+    const porProducto = new Map<number, number>();
+    this.carrito.forEach(i => {
+      const p = i.productoId ?? 0;
+      if (p > 0) porProducto.set(p, (porProducto.get(p) ?? 0) + i.cantidad);
+    });
+    this.precioCantidad.calcular([...porProducto].map(([productoId, cantidad]) => ({ productoId, cantidad }))).subscribe(precios => {
+      if (consulta !== this.consultaPrecios) return;   // llegó una respuesta vieja: ya hay otra consulta en camino
+      const porId = new Map(precios.map(p => [p.productoId, p]));
+      this.carrito.forEach(i => {
+        const g = porId.get(i.productoId ?? 0);
+        i.precioGrupo = g ? g.precioPromocion : null;
+        i.grupoNombre = g ? g.grupo : null;
+      });
+      this.recalcularTotales();
+    });
+  }
+
   private recalcularTotales(): void {
     const unidadesV = this.carrito.reduce((s, i) => s + i.cantidad, 0);
     const unidadesP = this.promos.reduce((s, p) => s + p.cantidadCombos, 0);
     this.totalUnidades = unidadesV + unidadesP;
-    const importeV = this.carrito.reduce((s, i) => s + i.subTotal, 0);
+    this.ahorroGrupos = +this.carrito.reduce((s, i) => s + (i.precio - this.precioUnitarioDe(i)) * i.cantidad, 0).toFixed(2);
+    const importeV = this.carrito.reduce((s, i) => s + this.subTotalDe(i), 0);
     const importeP = this.promos.reduce((s, p) => s + p.precioTotal * p.cantidadCombos, 0);
     this.totalImporte = importeV + importeP;
   }
@@ -332,8 +376,8 @@ export class VentaVarianteComponent implements OnInit, OnDestroy {
     const detallesVariantes = this.carrito.map(d => ({
       producto:       { id: d.productoId ?? 0 },
       cantidad:       d.cantidad,
-      precioUnitario: d.precio,
-      subTotal:       d.precio * d.cantidad,
+      precioUnitario: this.precioUnitarioDe(d),
+      subTotal:       this.subTotalDe(d),
       varianteId:     d.varianteId
     }));
 

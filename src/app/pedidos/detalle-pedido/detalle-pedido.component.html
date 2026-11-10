@@ -54,6 +54,11 @@
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
         🖨️ Imprimir ticket
       </button>
+      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && detalle?.tieneCodigoDeCampana"
+              [disabled]="enviandoCodigoCampana" (click)="enviarCodigoDeCampana()"
+              title="Vuelve a mandar por correo el código de cliente de la campaña a la persona de este pedido">
+        🎁 {{ enviandoCodigoCampana ? 'Enviando…' : 'Enviar código de campaña' }}
+      </button>
       <button class="dp-btn-reenviar" type="button" *ngIf="puedeReenviarComprobante"
               [disabled]="!puedeGenerarTicket" (click)="reenviarComprobanteManual()"
               [title]="puedeGenerarTicket ? 'Reenviar ticket por correo' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
@@ -163,6 +168,10 @@
                [(ngModel)]="tipoForm.descripcion"
                placeholder="Ej: vino a recogerlo y lo pagó completo" />
       </div>
+
+      <p class="dp-tipo-aviso" *ngIf="tipoForm.tipoPedido === 'FIADO' && detalle?.tieneJuguetesConPrecioDeCampana">
+        {{ avisoIrPagandoCampana }}
+      </p>
 
       <p class="dp-tipo-aviso" *ngIf="cambioDejaSaldoSinCobrar">
         ⚠️ Falta cobrar {{ (saldoPendiente - (tipoForm.montoCobrado || 0)) | currency:'$' }}

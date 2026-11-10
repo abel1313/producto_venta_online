@@ -13,7 +13,8 @@ import {
 import { AbonoService } from './service/abono.service';
 import { PedidosService } from '../pedidos/pedidos.service';
 import { preguntarYEntregar } from '../pedidos/entrega/entrega';
-import { generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
+import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData, ITicketArticulo } from '../shared/ticket.util';
+import { htmlTicketParaCorreo } from '../shared/ticket-correo.util';
 import { NegocioService } from '../negocio/negocio.service';
 import { FloresService } from '../flores/service/flores.service';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION, IMotivoOpcion } from '../shared/motivo-cancelacion.util';
@@ -294,7 +295,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
                 tipo:      'cancelacion',
                 numero:    opts.pedidoId,
                 cliente:   opts.cliente,
-                articulos: det.detalles.map(d => ({ cantidad: d.cantidad, productoNombre: d.productoNombre, talla: d.talla, subTotal: d.subTotal })),
+                articulos: det.detalles.map(d => articuloDeDetalle(d)),
                 total:     opts.totalPedido,
                 metodoPago: 'N/A',
                 motivo:    motivo ?? null,
@@ -431,7 +432,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       tempTicket.qrTiktok  = this.qrTiktok;
       body.notificacion = {
         enviarCorreo: true,
-        ticketHtml:   generarHtmlTicket(tempTicket)
+        ticketHtml:   htmlTicketParaCorreo(generarHtmlTicket(tempTicket))
       };
     }
 
@@ -565,12 +566,7 @@ export class AbonosComponent implements OnInit, OnDestroy {
       tipo,
       numero:         pedido.pedidoId,
       cliente:        pedido.cliente,
-      articulos:      detalle.detalles.map(d => ({
-        cantidad:       d.cantidad,
-        productoNombre: d.productoNombre,
-        talla:          d.talla,
-        subTotal:       d.subTotal
-      })) as ITicketArticulo[],
+      articulos:      detalle.detalles.map(d => articuloDeDetalle(d)) as ITicketArticulo[],
       total:          pedido.totalPedido,
       totalPagado:    tipo === 'liquidado' ? pedido.totalPedido : pedido.totalPagado,
       saldoPendiente: tipo === 'liquidado' ? 0 : pedido.saldo,

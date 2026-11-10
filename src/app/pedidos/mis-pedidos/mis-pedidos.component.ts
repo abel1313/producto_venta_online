@@ -13,7 +13,7 @@ import { PagoService } from '../pago.service';
 import { IOpcionMesesDto, IOpcionPagoDto, ITerminalIniciarRequest } from './models/IPago.model';
 import Swal from 'sweetalert2';
 import * as L from 'leaflet';
-import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidoDetalleResponse } from 'src/app/abonos/models/abono.model';
 import { motivoCancelacionSwalFragment, MOTIVOS_CANCELACION } from 'src/app/shared/motivo-cancelacion.util';
@@ -447,10 +447,14 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     pedido: { detalles: [], estado_pedido: '', fecha_pedido: '', id: 0 }
   };
 
-  irDetalle(item: IPedidoGenerico) {
+  irDetalle(item: IPedidoGenerico, abrirCambioDeTipo: 'FIADO' | null = null) {
+    this.abrirCambioDeTipo = abrirCambioDeTipo;
     this.mostrarDetalle = true;
     this.item = item;
   }
+
+  /** El detalle se abre ya en «🔁 Cambiar forma de cobro» con este tipo (con su aviso de campaña); null = detalle normal. */
+  abrirCambioDeTipo: 'FIADO' | null = null;
 
   /**
    * Desde el detalle se abre otro pedido del grupo. Los que no son titulares no salen en la lista,
@@ -1009,7 +1013,8 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   /** "¿Dejó solo una parte?" en Liquidar: el detalle tiene 🔁 Cambiar forma de cobro. */
   irAlDetalleDesdeCobro(item: IPedidoGenerico): void {
     this.cobroCredito = null;
-    this.irDetalle(item);
+    // Directo al cambio a Ir pagando del detalle: ahí sale el mismo aviso de campaña y, al confirmar, el total se recalcula (regla 2026-11-10).
+    this.irDetalle(item, 'FIADO');
   }
 
   /** El tipo se supo por el detalle (la card no lo traía): se abre el formulario que le toca. */
@@ -1655,9 +1660,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
-      articulos: d.detalles.map(det => ({
-        cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal
-      })),
+      articulos: d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,
@@ -1770,7 +1773,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
       abonos:         (d.abonos ?? []).map(a => ({ monto: a.monto, fecha: a.fechaPago })),
       montoDado,
       cambio,
-      articulos: d.detalles.map(det => ({ cantidad: det.cantidad, productoNombre: det.productoNombre, talla: det.talla, subTotal: det.subTotal })),
+      articulos: d.detalles.map(det => articuloDeDetalle(det)),
       qrTienda:   this.qrTienda,
       qrWhatsapp: this.qrWhatsapp,
       qrFacebook: this.qrFacebook,

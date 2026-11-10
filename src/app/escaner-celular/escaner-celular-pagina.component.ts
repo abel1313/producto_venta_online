@@ -1,10 +1,12 @@
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { Location } from '@angular/common';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { IScannerControls } from '@zxing/browser';
 import { iniciarEscanerConAutofoco } from '../shared/barcode-scanner.util';
 import { EscanerCelularService } from '../shared/escaner-celular/escaner-celular.service';
+import { esUuid, extraerCodigo, leerQrDeImagen } from '../shared/entrada-codigo-qr/codigo-qr.util';
+import { hayVersionNueva } from '../shared/version-nueva.util';
 
 type Tono = 'ok' | 'warn' | 'bad' | '';
 
@@ -34,10 +36,15 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   fotoPrevia: string | null = null;
   enviandoFoto = false;
 
+  /** `/escaner-qr`: lee solo el QR del código de cliente de una campaña (con la cámara o con una foto) y lo manda a la computadora como código. */
+  readonly modoQr: boolean;
+
   private stream: MediaStream | null = null;
   private controlesZxing: IScannerControls | null = null;
   private cicloNativo: ReturnType<typeof setTimeout> | null = null;
   private latidos: ReturnType<typeof setInterval> | null = null;
+  /** Revisa cada 10 min si hay una versión nueva del front: esta página se deja abierta todo el día y nunca se recargaría sola. */
+  private vigiaVersion: ReturnType<typeof setInterval> | null = null;
   private wakeLock: { release: () => Promise<void> } | null = null;
   private destruido = false;
   private arrancando = false;
@@ -47,8 +54,16 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   constructor(
     private readonly svc: EscanerCelularService,
     private readonly location: Location,
-    private readonly router: Router
-  ) {}
+    private readonly router: Router,
+    route: ActivatedRoute
+  ) {
+    this.modoQr = route.snapshot.data['modo'] === 'qr';
+  }
+
+  /** Lo que dice el estado cuando todo está listo. */
+  get textoListo(): string {
+    return this.modoQr ? 'Listo: apunta al QR del cliente' : 'Listo: apunta al código de barras';
+  }
 
   /** La página cubre toda la pantalla (es del celular) y tapaba el menú: sin este botón, en la computadora no había cómo salir. */
   volver(): void {
@@ -61,10 +76,18 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     void this.iniciar();
+    this.vigiaVersion = setInterval(() => void this.recargarSiHayVersionNueva(), 10 * 60 * 1000);
+  }
+
+  /** Si se publicó una versión nueva, se recarga la página (vuelve sola al escáner; la sesión y el enlace con la PC no se pierden). */
+  private async recargarSiHayVersionNueva(): Promise<void> {
+    if (this.destruido || this.fotoPrevia || this.enviandoFoto) return;
+    if (await hayVersionNueva()) window.location.reload();
   }
 
   ngOnDestroy(): void {
     this.destruido = true;
+    if (this.vigiaVersion) clearInterval(this.vigiaVersion);
     this.apagar();
     if (this.latidos) clearInterval(this.latidos);
     void this.wakeLock?.release().catch(() => undefined);
@@ -74,6 +97,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   @HostListener('document:visibilitychange')
   alCambiarVisibilidad(): void {
     if (document.hidden || this.destruido || this.error) return;
+    void this.recargarSiHayVersionNueva();
     this.pedirPantallaEncendida();
     this.latido();
     if (!this.camaraViva() && !this.arrancando) { this.apagar(); void this.iniciar(); }
@@ -95,11 +119,11 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
     try {
       const Detector = (window as any).BarcodeDetector;
       const soportados: string[] | null = Detector?.getSupportedFormats ? await Promise.resolve(Detector.getSupportedFormats()).catch(() => null) : null;
-      const nativo = !!soportados && (soportados.includes('ean_13') || soportados.includes('code_128'));
-      if (nativo) await this.conDetectorNativo(Detector); else await this.conZxing();
+      const nativo = !!soportados && (this.modoQr ? soportados.includes('qr_code') : (soportados.includes('ean_13') || soportados.includes('code_128')));
+      if (nativo) await this.conDetectorNativo(Detector, soportados); else await this.conZxing();
       if (this.destruido) { this.apagar(); return; }
       this.arrancando = false;
-      this.mostrar('Listo: apunta al código de barras', 'ok');
+      this.mostrar(this.textoListo, 'ok');
       this.latido();
       if (this.latidos) clearInterval(this.latidos);
       this.latidos = setInterval(() => this.latido(), 15000);
@@ -110,8 +134,10 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
     }
   }
 
-  private async conDetectorNativo(Detector: any): Promise<void> {
-    const detector = new Detector({ formats: FORMATOS });
+  private async conDetectorNativo(Detector: any, soportados: string[] | null): Promise<void> {
+    // También el QR del código de cliente de una campaña, si este celular lo sabe leer (zxing ya lo lee en cualquier caso). Solo se pide lo que el detector soporta.
+    const formatos = this.modoQr ? ['qr_code'] : (soportados && soportados.includes('qr_code') ? [...FORMATOS, 'qr_code'] : FORMATOS);
+    const detector = new Detector({ formats: formatos });
     const video = this.video.nativeElement;
     this.stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
@@ -151,7 +177,7 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   private latido(): void {
     if (this.destruido) return;
     this.svc.canalLatido().subscribe({
-      next: () => { if (!this.arrancando && !this.enviadoAhora && !this.error) this.mostrar('Listo: apunta al código de barras', 'ok'); },
+      next: () => { if (!this.arrancando && !this.enviadoAhora && !this.error) this.mostrar(this.textoListo, 'ok'); },
       error: (err: HttpErrorResponse) => { if (err.status === 401 || err.status === 403) this.fallar('La sesión terminó', 'Vuelve a iniciar sesión en la tienda y abre el Escáner otra vez.'); else this.mostrar('Sin conexión a internet…', 'warn'); }
     });
   }
@@ -159,8 +185,14 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
   // ── Cada lectura: decide si es un escaneo nuevo y lo manda ──
   private alLeer(texto: string): void {
     if (this.destruido || !texto || this.fotoPrevia) return;   // mientras se fotografía, no se mandan códigos (se colaría la etiqueta del producto)
-    // Una dirección (p. ej. un QR de enlace) no es un código de barras de producto.
-    if (/^https?:\/\//i.test(texto)) return;
+    if (this.modoQr) {
+      // Solo vale el QR del código de cliente (UUID, solo o dentro de una liga); cualquier otro se ignora.
+      texto = extraerCodigo(texto);
+      if (!esUuid(texto)) { this.mostrar('Ese QR no es un código de cliente', 'warn'); return; }
+    } else if (/^https?:\/\//i.test(texto)) {
+      // Una dirección (p. ej. un QR de enlace) no es un código de barras de producto.
+      return;
+    }
     const ahora = Date.now();
     const v = this.visto;
     const mismo = texto === v.texto && ahora - v.ultimaVez < SALIDA_DEL_CUADRO_MS;
@@ -176,13 +208,13 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
         if (!entregado) {
           // Se guardó, pero ninguna pantalla de la computadora lo estaba pidiendo.
           this.ultimo = `Sin entregar: ${texto}`;
-          this.mostrar('La computadora no tiene abierta una pantalla con código de barras', 'warn');
+          this.mostrar(this.modoQr ? 'La computadora no tiene abierta Venta directa con campaña vigente' : 'La computadora no tiene abierta una pantalla con código de barras', 'warn');
           return;
         }
         this.ultimo = `✔ Enviado: ${texto}`;
         this.enviadoAhora = true;
         this.mostrar('✔ Enviado', 'ok');
-        setTimeout(() => { this.enviadoAhora = false; this.mostrar('Listo: apunta al código de barras', 'ok'); }, 1500);
+        setTimeout(() => { this.enviadoAhora = false; this.mostrar(this.textoListo, 'ok'); }, 1500);
       },
       error: (err: HttpErrorResponse) => {
         if (err.status === 400) { this.mostrar('Ese código no es válido', 'bad'); return; }
@@ -220,6 +252,42 @@ export class EscanerCelularPaginaComponent implements OnInit, OnDestroy {
     };
     img.onerror = () => { URL.revokeObjectURL(url); this.mostrar('No se pudo abrir esa foto', 'bad'); };
     img.src = url;
+  }
+
+  /** Modo QR: una foto del QR (cámara nativa o galería). Se lee AQUÍ y, si es un código de cliente, se manda como código (no como foto). */
+  async alElegirFotoQr(e: Event): Promise<void> {
+    const input = e.target as HTMLInputElement;
+    const archivo = input.files?.[0];
+    input.value = '';
+    // La cámara nativa pudo dejar la del escáner sin imagen (sobre todo en iPhone): se revisa y se reinicia.
+    setTimeout(() => { if (!this.destruido && !this.error && !this.camaraViva() && !this.arrancando) { this.apagar(); void this.iniciar(); } }, 300);
+    if (!archivo) return;
+    this.mostrar('Leyendo la foto…', 'warn');
+    let codigo = '';
+    try { codigo = extraerCodigo(await leerQrDeImagen(archivo)); } catch { codigo = ''; }
+    if (!esUuid(codigo)) {
+      this.ultimo = 'No encontré un código de cliente en esa foto';
+      this.mostrar('No encontré un QR en esa foto: acércate y que se vea completo', 'bad');
+      return;
+    }
+    this.svc.canalEnviar(codigo).subscribe({
+      next: entregado => {
+        if (navigator.vibrate) { try { navigator.vibrate(60); } catch { /* sin vibración */ } }
+        if (!entregado) {
+          this.ultimo = `Sin entregar: ${codigo}`;
+          this.mostrar('La computadora no tiene abierta Venta directa con campaña vigente', 'warn');
+          return;
+        }
+        this.ultimo = `✔ Enviado: ${codigo}`;
+        this.mostrar('✔ Enviado', 'ok');
+        setTimeout(() => this.mostrar(this.textoListo, 'ok'), 1500);
+      },
+      error: (err: HttpErrorResponse) => {
+        if (err.status === 401 || err.status === 403) { this.fallar('La sesión terminó', 'Vuelve a iniciar sesión en la tienda y abre el Escáner otra vez.'); return; }
+        if (err.status === 429) { this.mostrar('Demasiado rápido, espera un momento', 'warn'); return; }
+        this.mostrar('No se pudo enviar, intenta de nuevo', 'bad');
+      }
+    });
   }
 
   descartarFoto(): void { if (!this.enviandoFoto) this.fotoPrevia = null; }

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, HostListener, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Subject, Subscription } from 'rxjs';
@@ -19,18 +19,23 @@ import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { correoOpcional, cumpleMinLetras, minLetras, MIN_LETRAS_NOMBRE, telefonoOpcional } from '../../shared/validadores-persona';
 import { AbonoRequest, MetodoPago } from 'src/app/abonos/models/abono.model';
 import { AbonoService } from 'src/app/abonos/service/abono.service';
-import { generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
+import { generarHtmlTicket, imprimirTicket, ITicketArticulo } from 'src/app/shared/ticket.util';
+import { hayVersionNueva } from 'src/app/shared/version-nueva.util';
 import { NegocioService } from 'src/app/negocio/negocio.service';
 import { PedidosService } from 'src/app/pedidos/pedidos.service';
 import { LugarEntregaService } from 'src/app/lugares-entrega/service/lugar-entrega.service';
 import { ILugarEntrega } from 'src/app/lugares-entrega/models/lugar-entrega.model';
 
 import { hoyIso } from '../../shared/fecha.util';
+import { IPrecioGrupo, PrecioCantidadService } from 'src/app/precio-cantidad/precio-cantidad.service';
 import { escaparHtml } from 'src/app/shared/escapar-html.util';
+import { CampanasService, IBuscarPorCodigo, ICampana, IVerificacionCodigo } from 'src/app/campanas/campanas.service';
 interface ILineaVenta {
   variante: IVarianteResumen;
   cantidad:  number;
   subTotal:  number;
+  /** Precio por cantidad: el precio de grupo que le toca a esta línea (null = no le toca). */
+  grupo?: IPrecioGrupo | null;
 }
 
 @Component({
@@ -42,6 +47,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   modalClienteSinRegistro = false;
   private cobrarPendiente = false;
+  /** Para la plantilla: el modal se abrió desde «Cobrar» (no desde el botón de agregar cliente). */
+  get cobrarPendienteVisible(): boolean { return this.cobrarPendiente; }
   clienteForm: FormGroup;
   clienteSinRegistroModal: IClienteSinRegistro = null as any;
 
@@ -77,6 +84,25 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   clienteSeleccionado: IClienteBusquedaDto | null = null;
   private cliSub$      = new Subject<string>();
   private clienteResolvedId = 0;
+
+  // ── Campaña (solo si hay una vigente) ─────────────────────────────
+  /** La campaña vigente hoy; null = no hay y no se muestra nada de campaña. */
+  campana: ICampana | null = null;
+  private campanaCargada = false;
+  campanaCodigo = '';
+  /** El check «Cliente recurrente»: el administrador lo marca a mano y no hace falta código. */
+  campanaRecurrente = false;
+  campanaPrivacidad = false;
+  /**
+   * Regla del dueño (2026-11-10): «No registrar y cobrar» (a nombre del administrador) cobra SIEMPRE a precio normal, aunque esté marcada la casilla
+   * «Cliente recurrente»: sin datos del cliente no se lleva el acumulado. Solo vive mientras se cobra esa venta (no toca la casilla).
+   */
+  private cobroSinDatos = false;
+  verificacion: IVerificacionCodigo | null = null;
+  /** Lo que lleva pagado un cliente reconocido SIN código (por su correo, teléfono o cliente). El back lo vuelve a calcular al cobrar. */
+  avanceCliente: { acumulado: number; meta: number } | null = null;
+  private avanceSeq = 0;
+  verificando = false;
 
   // ── Forma de pago (cargada al inicio) ─────────────────────────────
   opcionesEstructuradas: IOpcionPagoDto[] = [];
@@ -167,6 +193,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     private readonly negocioService:  NegocioService,
     private readonly pedidosService:  PedidosService,
     private readonly lugarEntregaService: LugarEntregaService,
+    private readonly precioCantidad: PrecioCantidadService,
+    private readonly campanasService: CampanasService,
     private fb: FormBuilder
   ) {
 
@@ -202,11 +230,35 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.errorClienteSinRegistro = '';
   }
 
+  /** Clic en el fondo del modal: con una campaña vigente NO lo cierra (hay que pulsar «Guardar cliente», «No registrar» o la ✕). */
+  alHacerClicEnElFondo(): void {
+    if (!this.campana) {
+      this.closeModalModalSinRegistro();
+    }
+  }
+
+  /** Con campaña: el cliente no quiere registrarse. Se cierra el modal y se cobra sin cliente (a nombre del administrador), sin QR. */
+  noRegistrarYCobrar(): void {
+    this.modalClienteSinRegistro = false;
+    this.pasoClienteSinRegistro = 'form';
+    this.errorClienteSinRegistro = '';
+    this.campanaPrivacidad = false;
+    if (this.cobrarPendiente) {
+      this.cobrarPendiente = false;
+      this.ejecutarVentaConAdmin();
+    }
+  }
+
   // Paso 1: crea el registro en el back (antes solo se guardaba en memoria).
   // Si trae correo sin verificar, pasa al paso de verificación dentro del mismo
   // modal; si no hay correo, cierra directo (nada que verificar).
   guardarClienteSinRegistro(): void {
     if (this.clienteForm.invalid || this.guardandoClienteSinRegistro) return;
+    // Con campaña vigente, registrar exige el Aviso de privacidad (sin él: «No registrar»).
+    if (this.campana && !this.campanaPrivacidad) {
+      this.errorClienteSinRegistro = 'Para registrar al cliente marca la casilla del Aviso de privacidad.';
+      return;
+    }
     this.guardandoClienteSinRegistro = true;
     this.errorClienteSinRegistro = '';
     const dto: IClienteSinRegistro = this.clienteForm.value;
@@ -220,6 +272,11 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         this.clienteSeleccionado = null;
         this.terminoCliente = '';
         this.clientes = [];
+        // La casilla de privacidad se acaba de marcar en este mismo modal: se conserva.
+        const privacidad = this.campanaPrivacidad;
+        this.olvidarCodigoDelClienteAnterior();
+        this.campanaPrivacidad = privacidad;
+        this.consultarAvanceDelCliente();
         this.actualizarCheckboxesTicket();
 
         if (dto.correo_Electronico && !res.correoVerificado) {
@@ -296,8 +353,78 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSinRegistroId = null;
     this.clienteSinRegistroCorreoVerificado = false;
     this.clienteForm.reset();
+    // Revisión 2026-11-09: antes se quedaba la verificación (y el código) del cliente quitado: la pantalla seguía mostrando su precio de campaña.
+    this.terminoCliente = '';
+    this.olvidarCodigoDelClienteAnterior();
+    this.actualizarCheckboxesTicket();
   }
+
+  /**
+   * Cambió (o se quitó) el cliente de la venta: la verificación del código ya no vale. Si el código estaba confirmado como del cliente anterior
+   * (estado OK) también se quita, para no mandar al back el código de otra persona; si no estaba confirmado se deja (flujo «código primero, cliente
+   * después»: se pulsa «Buscar código» con el cliente ya elegido).
+   */
+  private olvidarCodigoDelClienteAnterior(): void {
+    if (this.verificacion?.estado === 'OK') this.campanaCodigo = '';
+    this.verificacion = null;
+    this.avanceCliente = null;
+    this.avanceSeq++;
+    this.campanaPrivacidad = false;
+    this.recalcularSubtotales();
+  }
+  /** Hay una versión nueva del front publicada y esta pestaña sigue con la vieja (se avisa; se recarga sola cuando el carrito está vacío). */
+  hayVersionNueva = false;
+  private vigiaVersion: ReturnType<typeof setInterval> | null = null;
+
+  /** Venta directa se deja abierta todo el día: si se publicó una versión nueva, se recarga sola solo con el carrito vacío y sin cobro en curso. */
+  @HostListener('document:visibilitychange')
+  alCambiarVisibilidad(): void {
+    if (!document.hidden) { void this.revisarVersion(); this.cargarCampana(); }
+  }
+
+  /**
+   * ¿Hay algo a medias que una recarga perdería? Antes solo se miraba el carrito: con solo combos, un cliente elegido, el modal abierto, un código
+   * escrito, el cobro con terminal o el «¿Imprimir ticket?» a la vista, la recarga lo borraba (revisión 2026-11-09).
+   */
+  private get hayAlgoAMedias(): boolean {
+    return this.lineas.length > 0 || this.tienePromos || this.procesando || !!this.clienteSeleccionado || !!this.clienteSinRegistroModal
+      || this.modalClienteSinRegistro || !!this.campanaCodigo.trim() || this.mostrarTerminal || Swal.isVisible();
+  }
+
+  private async revisarVersion(): Promise<void> {
+    if (!(await hayVersionNueva())) return;
+    if (!this.hayAlgoAMedias) { window.location.reload(); return; }
+    this.hayVersionNueva = true;
+  }
+
+  /** Campaña vigente: sin ella (o sin permiso) la venta es la de siempre. Se vuelve a pedir al regresar a la pestaña y cada 10 min (se deja abierta todo el día). */
+  private cargarCampana(): void {
+    // A media venta no se vuelve a pedir (un error de red daría «sin campaña» y cambiaría los precios a la vista); solo se revisa la fecha.
+    if (this.campanaCargada && this.hayAlgoAMedias) { this.revisarVigenciaLocal(); return; }
+    this.campanaCargada = true;
+    this.campanasService.activa().pipe(takeUntil(this.destroy$)).subscribe(c => {
+      this.campana = c && c.vigente ? c : null;
+      this.revisarVigenciaLocal();
+      this.recalcularSubtotales();
+    });
+  }
+
+  /** Con la fecha LOCAL: el último día (fechaFin) sigue vigente todo el día; al día siguiente ya no (aunque la pestaña siga abierta desde ayer). */
+  private revisarVigenciaLocal(): void {
+    const c = this.campana;
+    if (!c) return;
+    const hoy = hoyIso();
+    if ((c.fechaFin && hoy > c.fechaFin.slice(0, 10)) || (c.fechaInicio && hoy < c.fechaInicio.slice(0, 10))) {
+      this.campana = null;
+      this.verificacion = null;
+      this.avanceCliente = null;
+      this.recalcularSubtotales();
+    }
+  }
+
   ngOnInit(): void {
+    this.vigiaVersion = setInterval(() => { void this.revisarVersion(); this.cargarCampana(); }, 10 * 60 * 1000);
+    this.cargarCampana();
     this.authService.userRoles$.pipe(takeUntil(this.destroy$)).subscribe(roles => {
       this.isAdminUser = roles.includes('ROLE_ADMIN');
     });
@@ -329,6 +456,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           subTotal: item.subTotal
         }));
         this.promosCarrito = promosCarrito;
+        this.repreciar();
         if (promosCarrito.length > 0) this.tipoPedido = 'NORMAL';
       }
     }
@@ -364,6 +492,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    if (this.vigiaVersion) clearInterval(this.vigiaVersion);
     this.destroy$.next(); this.destroy$.complete();
     this.varianteSub?.unsubscribe();
     this.clienteSub?.unsubscribe();
@@ -402,6 +531,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.pagosYMesesId     = opcion.mostrarMeses ? null : opcion.pagosYMesesId;
     this.tipoPedido        = 'NORMAL';
     this.montoDadoContado  = 0;
+    this.recalcularSubtotales();
   }
 
   seleccionarMeses(opcion: IOpcionMesesDto): void {
@@ -414,6 +544,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.tipoPedido        = 'NORMAL';
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial      = 0;
+    this.recalcularSubtotales();
   }
 
   /** Se eligió Apartado y luego se escribió un enganche: quedó como Ir pagando. */
@@ -425,6 +556,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     if (this.tipoPedido === 'APARTADO' && monto > 0) {
       this.tipoPedido     = 'FIADO';
       this.pasoAIrPagando = true;
+      this.recalcularSubtotales();
     }
   }
 
@@ -437,6 +569,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.pagosYMesesId     = null;
     this.metodoPagoCredito = 'EFECTIVO';
     this.montoInicial      = 0;
+    this.recalcularSubtotales();
   }
 
   // ── Búsqueda de variantes ──────────────────────────────────────────
@@ -471,7 +604,6 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         return;
       }
       this.lineas[idx].cantidad++;
-      this.lineas[idx].subTotal = this.lineas[idx].cantidad * (this.lineas[idx].variante.precio ?? 0);
     } else {
       if ((v.stock ?? 0) <= 0) {
         Swal.fire({ icon: 'warning', title: 'Artículo sin stock', timer: 1400, showConfirmButton: false });
@@ -479,21 +611,296 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       }
       this.lineas.push({ variante: v, cantidad: 1, subTotal: v.precio ?? 0 });
     }
+    this.repreciar();
   }
 
   incrementar(linea: ILineaVenta): void {
     if (linea.cantidad >= (linea.variante.stock ?? 0)) return;
     linea.cantidad++;
-    linea.subTotal = linea.cantidad * (linea.variante.precio ?? 0);
+    this.repreciar();
   }
 
   decrementar(linea: ILineaVenta): void {
     if (linea.cantidad <= 1) { this.quitarLinea(this.lineas.indexOf(linea)); return; }
     linea.cantidad--;
-    linea.subTotal = linea.cantidad * (linea.variante.precio ?? 0);
+    this.repreciar();
   }
 
-  quitarLinea(i: number): void { this.lineas.splice(i, 1); }
+  quitarLinea(i: number): void { this.lineas.splice(i, 1); this.repreciar(); }
+
+  // ── Precio por cantidad (grupos de precio) ─────────────────────────────────
+  // Las piezas se suman por producto dentro de su grupo; el back dice a quién le toca y ESE cálculo es el que cuenta al guardar. Gana el
+  // precio más bajo: el de grupo solo se usa si es menor al precio de la línea (si el admin ya puso una rebaja menor, se queda).
+
+  /** Lo que de verdad cuesta cada pieza de la línea: el precio más bajo entre el de la línea, el de grupo y el de campaña. */
+  precioUnitarioDe(l: ILineaVenta): number {
+    const base = l.variante.precio ?? 0;
+    const conGrupo = l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+    const camp = this.precioCampanaDe(l);
+    return camp !== null && camp < conGrupo ? camp : conGrupo;
+  }
+
+  /** ¿Esta línea se está cobrando con precio de grupo? (si gana el de campaña, se cuenta como campaña) */
+  conPrecioDeGrupo(l: ILineaVenta): boolean {
+    return !!l.grupo && l.grupo.precioPromocion < (l.variante.precio ?? 0) && !this.conPrecioDeCampana(l);
+  }
+
+  /** ¿Esta línea se está cobrando con el precio de campaña? */
+  conPrecioDeCampana(l: ILineaVenta): boolean {
+    const camp = this.precioCampanaDe(l);
+    if (camp === null) return false;
+    const base = l.variante.precio ?? 0;
+    const conGrupo = l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+    return camp < conGrupo;
+  }
+
+  /** Lo que ahorra la línea por el precio de grupo o de campaña. */
+  ahorroDe(l: ILineaVenta): number {
+    return this.conPrecioDeGrupo(l) || this.conPrecioDeCampana(l)
+      ? +(((l.variante.precio ?? 0) - this.precioUnitarioDe(l)) * l.cantidad).toFixed(2) : 0;
+  }
+
+  get ahorroTotal(): number {
+    return +this.lineas.filter(l => this.conPrecioDeGrupo(l)).reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+  }
+
+  get ahorroCampanaTotal(): number {
+    return +this.lineas.filter(l => this.conPrecioDeCampana(l)).reduce((s, l) => s + this.ahorroDe(l), 0).toFixed(2);
+  }
+
+  // ── Campaña ────────────────────────────────────────────────────────────────
+  // El back decide todo (quién es recurrente, qué precio); esto solo lo muestra igual para que el total no sorprenda. Si el cálculo del back
+  // fuera distinto, el back rechaza el precio y no se cobra mal.
+
+  private esDeCampana(l: ILineaVenta): boolean {
+    return !!this.campana?.productos.some(p => p.productoId === l.variante.productoId);
+  }
+
+  get hayJuguetesDeCampana(): boolean { return this.lineas.some(l => this.esDeCampana(l)); }
+
+  /** Lo que ya lleva pagado el cliente y la meta: de su código verificado o, sin código, de su cliente reconocido. */
+  get avance(): { acumulado: number; meta: number } | null {
+    const v = this.verificacion;
+    if (v && v.estado === 'OK') return { acumulado: v.acumulado, meta: v.meta };
+    return this.avanceCliente;
+  }
+
+  /** El precio de una pieza SIN precio de campaña: el normal o el de grupo si es más bajo (lo que ya llevaba). */
+  private precioSinCampanaDe(l: ILineaVenta): number {
+    const base = l.variante.precio ?? 0;
+    return l.grupo && l.grupo.precioPromocion < base ? l.grupo.precioPromocion : base;
+  }
+
+  /**
+   * Lo de ESTE ticket que suma para la meta (regla del dueño 2026-11-10): solo lo que NO son juguetes de la campaña, y solo si la venta es Contado
+   * (se paga ahora). Los juguetes no cuentan para calificarse a sí mismos. Es el mismo cálculo que hace el back, que decide al cobrar.
+   */
+  get ticketQueSuma(): number {
+    if (this.tipoPedido !== 'NORMAL') return 0;
+    return +this.lineas.filter(l => !this.esDeCampana(l))
+      .reduce((t, l) => t + this.precioSinCampanaDe(l) * l.cantidad, 0).toFixed(2);
+  }
+
+  /** Lo que todavía le falta para la meta contando lo ya pagado y lo que no son juguetes de este ticket (0 si ya llega). */
+  get faltaParaMeta(): number {
+    const a = this.avance;
+    if (!a || a.meta <= 0) return 0;
+    return Math.max(0, +(a.meta - a.acumulado - this.ticketQueSuma).toFixed(2));
+  }
+
+  /** ¿Este cliente es recurrente ahora? A mano, o lo ya pagado + lo que no son juguetes de este ticket llega a la meta. Se recalcula al agregar o quitar artículos. */
+  get esRecurrente(): boolean {
+    if (!this.campana) return false;
+    if (this.campanaRecurrente) return true;
+    const a = this.avance;
+    return !!a && a.meta > 0 && a.acumulado + this.ticketQueSuma >= a.meta;
+  }
+
+  /** Cliente ya elegido (registrado o sin registro) y sin código: pregunta cuánto lleva pagado para saber su precio al momento. */
+  private consultarAvanceDelCliente(): void {
+    if (!this.campana) return;
+    const k = this.contactoClienteCampana;
+    const clienteId = this.clienteSeleccionado?.id ?? null;
+    const sinRegistroId = this.clienteSinRegistroId ?? null;
+    if (!k.correo && !k.telefono && !clienteId && !sinRegistroId) return;
+    const seq = ++this.avanceSeq;
+    this.campanasService.acumuladoDelCliente({ correo: k.correo, telefono: k.telefono, clienteId, clienteSinRegistroId: sinRegistroId }).subscribe({
+      next: v => {
+        if (seq !== this.avanceSeq) return;          // cambió el cliente mientras respondía
+        this.avanceCliente = v.estado === 'OK' && v.meta > 0 ? { acumulado: v.acumulado, meta: v.meta } : null;
+        this.recalcularSubtotales();
+      },
+      error: () => { /* sin aviso: el back decide igual al cobrar */ }
+    });
+  }
+
+  /** El precio de campaña de la línea, o null si no le toca (no es juguete, no es recurrente o la venta es Ir pagando). */
+  private precioCampanaDe(l: ILineaVenta): number | null {
+    if (!this.campana || this.cobroSinDatos || !this.esRecurrente || this.tipoPedido === 'FIADO') return null;
+    const p = this.campana.productos.find(x => x.productoId === l.variante.productoId);
+    return p && p.precio < (l.variante.precio ?? 0) ? p.precio : null;
+  }
+
+  /** Aviso cuando se pasa a Ir pagando una venta que sí llevaría precio de campaña. */
+  get avisoIrPagandoSinDescuento(): boolean {
+    // Solo si de verdad le tocaría (recurrente): antes salía también con un código OK que aún no llegaba a la meta (revisión 2026-11-09).
+    return !!this.campana && this.tipoPedido === 'FIADO' && this.hayJuguetesDeCampana && this.esRecurrente;
+  }
+
+  get contactoClienteCampana(): { correo: string | null; telefono: string | null } {
+    const c = this.clienteSeleccionado;
+    const s = this.clienteSinRegistroModal;
+    return {
+      correo: (c?.correoElectronico || s?.correo_Electronico || '') || null,
+      telefono: (c?.numeroTelefonico || s?.numero_Telefonico || '') || null
+    };
+  }
+
+  get clienteTieneContacto(): boolean {
+    const k = this.contactoClienteCampana;
+    return !!(k.correo || k.telefono);
+  }
+
+  recalcularSubtotales(): void {
+    this.lineas.forEach(l => { l.subTotal = l.cantidad * this.precioUnitarioDe(l); });
+  }
+
+  private static readonly UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  /** El código cambió (escrito, pegado, de la imagen del QR, de la cámara o del celular). Un UUID completo se busca solo: llena al cliente. */
+  alCambiarCodigo(codigo: string): void {
+    this.campanaCodigo = codigo;
+    this.verificacion = null;
+    this.recalcularSubtotales();
+    if (VentaDirectaComponent.UUID.test(codigo.trim())) {
+      this.buscarCodigo();
+    }
+  }
+
+  alCambiarRecurrente(): void { this.recalcularSubtotales(); }
+
+  /** Escanear el QR: ¿de quién es este código? Si es válido, se llenan solos los datos del cliente y se ve lo que lleva. */
+  buscarCodigo(): void {
+    const codigo = this.campanaCodigo.trim();
+    if (!codigo || this.verificando) return;
+    this.verificando = true;
+    this.campanasService.buscarPorCodigo(codigo).subscribe({
+      next: r => {
+        this.verificando = false;
+        // Si mientras respondía se cambió o quitó el código, esta respuesta ya no aplica (antes volvía a poner el código viejo y su cliente).
+        if (this.campanaCodigo.trim() !== codigo) {
+          if (VentaDirectaComponent.UUID.test(this.campanaCodigo.trim())) this.buscarCodigo();
+          return;
+        }
+        void this.aplicarCodigo(codigo, r);
+      },
+      error: e => {
+        this.verificando = false;
+        Swal.fire({ icon: 'warning', title: 'No se pudo revisar el código', text: e?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private async aplicarCodigo(codigo: string, r: IBuscarPorCodigo): Promise<void> {
+    if (!r.valido) {
+      this.verificacion = { estado: 'NO_EXISTE', nombre: '', acumulado: 0, meta: r.meta, falta: 0 };
+      this.recalcularSubtotales();
+      return;
+    }
+    const tieneCliente = !!(r.clienteId || r.clienteSinRegistroId);
+    if (!tieneCliente) {
+      // Código anterior al ligado con el cliente: no se sabe a cuál pertenece. Se deja elegir al cliente y se valida por correo o teléfono.
+      if (this.clienteTieneContacto) {
+        this.verificarCodigo();
+      } else {
+        Swal.fire({ icon: 'info', title: `Código de ${r.nombre || 'un cliente'}`,
+          text: 'Este código no tiene un cliente ligado. Elige al cliente de la venta y pulsa «Buscar código».' });
+      }
+      return;
+    }
+    const mismo = (!!r.clienteId && this.clienteSeleccionado?.id === r.clienteId)
+      || (!!r.clienteSinRegistroId && this.clienteSinRegistroId === r.clienteSinRegistroId);
+    const hayOtro = !mismo && (!!this.clienteSeleccionado || !!this.clienteSinRegistroModal);
+    if (hayOtro) {
+      const ok = await Swal.fire({
+        icon: 'question', title: `Este código es de ${r.nombre || 'otro cliente'}`,
+        text: 'La venta ya tiene otro cliente. ¿Cambiarlo por el dueño del código?',
+        showCancelButton: true, confirmButtonText: 'Sí, cambiar', cancelButtonText: 'No'
+      });
+      if (!ok.isConfirmed) {
+        this.campanaCodigo = '';
+        return;
+      }
+    }
+    if (r.clienteId) {
+      // Cliente registrado: se selecciona como si se hubiera buscado.
+      this.clienteSinRegistroModal = null as any;
+      this.clienteSinRegistroId = null;
+      this.clienteSeleccionado = {
+        id: r.clienteId, nombrePersona: r.nombre, apeidoPaterno: '', apeidoMaterno: '',
+        correoElectronico: r.correo ?? '', numeroTelefonico: r.telefono ?? '', correoVerificado: undefined
+      } as IClienteBusquedaDto;
+      this.terminoCliente = r.nombre;
+    } else {
+      // Cliente sin registro de su primera compra.
+      this.clienteSeleccionado = null;
+      this.clienteSinRegistroId = r.clienteSinRegistroId;
+      this.clienteSinRegistroModal = {
+        nombre_persona: r.nombre, segundo_nombre: '', apeido_Paterno: '', apeido_Materno: '', fecha_Nacimiento: '', sexo: '',
+        correo_Electronico: r.correo ?? '', numero_Telefonico: r.telefono ?? ''
+      } as IClienteSinRegistro;
+      this.terminoCliente = r.nombre;
+    }
+    this.clientes = [];
+    this.campanaCodigo = codigo;
+    this.verificacion = { estado: 'OK', nombre: r.nombre, acumulado: r.acumulado, meta: r.meta, falta: r.falta };
+    this.actualizarCheckboxesTicket();
+    this.recalcularSubtotales();
+  }
+
+  verificarCodigo(): void {
+    const k = this.contactoClienteCampana;
+    if (!this.campanaCodigo.trim()) return;
+    if (!k.correo && !k.telefono) {
+      Swal.fire({ icon: 'info', title: 'Elige primero al cliente', text: 'El código se comprueba contra el correo o el teléfono del cliente de la venta.' });
+      return;
+    }
+    this.verificando = true;
+    const codigo = this.campanaCodigo.trim();
+    this.campanasService.verificarCodigo(codigo, k.correo, k.telefono).subscribe({
+      next: v => {
+        this.verificando = false;
+        if (this.campanaCodigo.trim() !== codigo) return;     // el código cambió mientras respondía
+        this.verificacion = v;
+        this.recalcularSubtotales();
+      },
+      error: e => {
+        this.verificando = false;
+        Swal.fire({ icon: 'warning', title: 'No se pudo verificar', text: e?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  private pedidoPrecios = 0;
+
+  /** Recalcula los subtotales al momento (sin grupo) y pide al back a qué productos les toca su precio de grupo. */
+  private repreciar(): void {
+    this.lineas.forEach(l => { l.subTotal = l.cantidad * this.precioUnitarioDe(l); });
+    const pedido = ++this.pedidoPrecios;
+    const porProducto = new Map<number, number>();
+    this.lineas.forEach(l => {
+      const p = l.variante.productoId ?? 0;
+      if (p > 0) porProducto.set(p, (porProducto.get(p) ?? 0) + l.cantidad);
+    });
+    this.precioCantidad.calcular([...porProducto].map(([productoId, cantidad]) => ({ productoId, cantidad }))).subscribe(precios => {
+      if (pedido !== this.pedidoPrecios) return;   // llegó una respuesta vieja: ya hay otra consulta en camino
+      const porId = new Map(precios.map(p => [p.productoId, p]));
+      this.lineas.forEach(l => {
+        l.grupo = porId.get(l.variante.productoId ?? 0) ?? null;
+        l.subTotal = l.cantidad * this.precioUnitarioDe(l);
+      });
+    });
+  }
 
   // Solo quita el combo de ESTA venta en curso, igual que quitarLinea(). El carrito
   // real se limpia hasta el final, en limpiarTodo(), si la venta vino de ahí.
@@ -524,6 +931,13 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.mostrarTerminal = false;
     this.estadoTerminal = 'idle';
     this.tipoPedido = 'NORMAL';
+    this.campanaCodigo = '';
+    this.campanaRecurrente = false;
+    this.campanaPrivacidad = false;
+    this.cobroSinDatos = false;
+    this.verificacion = null;
+    this.avanceCliente = null;
+    this.avanceSeq++;
     this.observaciones = '';
     this.nombreReceptor = '';
     this.direccionEntrega = '';
@@ -609,11 +1023,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     this.clienteSeleccionado = c;
     this.terminoCliente = `${c.nombrePersona} ${c.apeidoPaterno}`;
     this.clientes = [];
+    this.olvidarCodigoDelClienteAnterior();
+    this.consultarAvanceDelCliente();
     this.actualizarCheckboxesTicket();
   }
 
   limpiarCliente(): void {
     this.clienteSeleccionado = null;
+    this.olvidarCodigoDelClienteAnterior();
     this.terminoCliente = '';
     this.clientes = [];
     this.actualizarCheckboxesTicket();
@@ -661,19 +1078,26 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.ejecutarVenta(this.clienteResolvedId);
     } else {
       // Sin cliente → preguntar si quiere agregar uno para la rifa
+      // Con una campaña vigente esta ventana NO se cierra con un clic fuera ni con Esc: hay que elegir (registrar al cliente para darle su QR, o no).
+      const hayCampana = !!this.campana;
       Swal.fire({
         icon: 'question',
-        title: '¿Agregar cliente para la rifa?',
-        text: 'No hay cliente seleccionado. ¿Desea registrar uno antes de cobrar?',
+        title: hayCampana ? '¿Registrar los datos del cliente?' : '¿Agregar cliente para la rifa?',
+        text: hayCampana
+          ? `Hay una campaña vigente («${this.campana!.nombre}»). Si registras al cliente se le crea su código QR y se le manda por correo. Sin datos del cliente no se aplica el precio de campaña.`
+          : 'No hay cliente seleccionado. ¿Desea registrar uno antes de cobrar?',
         showCancelButton: true,
-        confirmButtonText: 'Sí, agregar cliente',
-        cancelButtonText: 'No, cobrar sin cliente',
-        reverseButtons: true
+        confirmButtonText: hayCampana ? 'Sí, registrar cliente' : 'Sí, agregar cliente',
+        cancelButtonText: hayCampana ? 'No registrar' : 'No, cobrar sin cliente',
+        reverseButtons: true,
+        allowOutsideClick: !hayCampana,
+        allowEscapeKey: !hayCampana
       }).then(result => {
         if (result.isConfirmed) {
           this.cobrarPendiente = true;
           this.openModalSinRegistro();
-        } else {
+        } else if (result.dismiss === Swal.DismissReason.cancel) {
+          // Solo el botón «No…» cobra sin cliente. Cerrar la ventana (clic fuera o Esc) ya NO cobra a nombre del administrador.
           this.ejecutarVentaConAdmin();
         }
       });
@@ -702,6 +1126,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       cancelButtonText: 'No, solo cobrar',
       reverseButtons: true
     }).then(result => {
+      if (result.isDismissed && result.dismiss !== Swal.DismissReason.cancel) return;   // clic fuera / Esc / ✕: no se cobra (revisión 2026-11-09)
       if (!result.isConfirmed) {
         this.ejecutarVenta(this.clienteResolvedId); // el admin decidió no verificar
         return;
@@ -721,7 +1146,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       title: 'Verificar correo',
       html: `
         <p style="margin-bottom:10px;font-size:0.88rem">
-          Se envió un código a <strong>${c.correoElectronico}</strong>.<br>
+          Se envió un código a <strong>${escaparHtml(c.correoElectronico)}</strong>.<br>
           Pídele al cliente que te dicte el código de 6 dígitos.
         </p>
         <input id="swal-codigo-venta" type="text" inputmode="numeric" maxlength="6"
@@ -751,6 +1176,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         }
       }
     }).then(result => {
+      if (result.isDismissed && result.dismiss !== Swal.DismissReason.cancel) return;   // clic fuera / Esc: no se cobra; se vuelve a pulsar «Cobrar»
       if (result.isConfirmed) {
         c.correoVerificado = true;   // refresca el badge del chip sin recargar
       }
@@ -760,20 +1186,68 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
   }
 
   private ejecutarVentaConAdmin(): void {
+    // Mientras se busca el perfil del administrador «Cobrar» queda deshabilitado (antes un segundo clic abría otra ventana y podía cobrar dos veces).
+    this.procesando = true;
     this.usuarioService.buscarClientePorIdUsuario(this.idUsuario).subscribe({
       next: (res: any) => {
+        this.procesando = false;
         if (res) {
           this.clienteResolvedId = res as number;
-          this.ejecutarVenta(this.clienteResolvedId);
+          this.ejecutarVenta(this.clienteResolvedId, true);
         } else {
           Swal.fire({ icon: 'warning', title: 'Sin perfil de cliente', text: 'El administrador no tiene un perfil de cliente registrado.' });
         }
       },
-      error: () => Swal.fire({ icon: 'error', title: 'Error al obtener el cliente.' })
+      error: () => { this.procesando = false; Swal.fire({ icon: 'error', title: 'Error al obtener el cliente.' }); }
     });
   }
 
-  private async ejecutarVenta(clienteId: number): Promise<void> {
+  /**
+   * Los renglones del ticket impreso DESPUÉS de guardar: los que cobró el back (precio normal y precio cobrado), para que el ticket diga lo que de verdad
+   * se cobró aunque la pantalla pensara otra cosa. Si el back no los manda, el snapshot de la pantalla.
+   */
+  private articulosDelTicket(res: IVentaDirectaResponse, respaldo: ITicketArticulo[]): ITicketArticulo[] {
+    if (!res.renglones?.length) return respaldo;
+    return res.renglones.map(r => {
+      const hay = !!(r.conDescuentoDeCampana || r.conDescuentoDeGrupo) && r.precioNormal > r.precioCobrado + 0.005;
+      return {
+        cantidad: r.cantidad, productoNombre: r.nombre, talla: null, subTotal: +(r.precioCobrado * r.cantidad).toFixed(2),
+        subTotalNormal: hay ? +(r.precioNormal * r.cantidad).toFixed(2) : null,
+        etiqueta: hay ? (r.conDescuentoDeCampana ? 'Precio de campaña' : 'Precio por cantidad') : null
+      } as ITicketArticulo;
+    });
+  }
+
+  /** El total del ticket: la suma de lo que cobró el back (renglones) para que el ticket cuadre con el cobro; sin renglones, el de la pantalla. */
+  private totalDelTicket(res: IVentaDirectaResponse, respaldo: number): number {
+    if (!res.renglones?.length) return respaldo;
+    return +res.renglones.reduce((s, r) => s + r.precioCobrado * r.cantidad, 0).toFixed(2);
+  }
+
+  private async ejecutarVenta(clienteId: number, sinDatosCliente = false): Promise<void> {
+    // Doble clic / dos caminos a la vez: una sola venta en curso (antes `procesando` se encendía hasta DESPUÉS de la pregunta de entrega).
+    if (this.procesando) return;
+    this.procesando = true;
+    // Sin datos del cliente: precios, ticket y request sin campaña (precio normal). Se recalcula ANTES del snapshot para que el ticket salga normal.
+    const totalAntes = this.totalVenta;
+    this.cobroSinDatos = sinDatosCliente;
+    this.recalcularSubtotales();
+    if (sinDatosCliente && Math.abs(this.totalVenta - totalAntes) > 0.005) {
+      // La pantalla traía precio de campaña (casilla «Cliente recurrente» marcada): se avisa del total nuevo antes de cobrar.
+      const r = await Swal.fire({
+        icon: 'info', title: 'Se cobra a precio normal',
+        text: `Sin datos del cliente no se aplica el precio de campaña. Total a cobrar: $${this.totalVenta.toFixed(2)} (antes $${totalAntes.toFixed(2)}).`,
+        showCancelButton: true, confirmButtonText: 'Cobrar', cancelButtonText: 'Volver', reverseButtons: true, allowOutsideClick: false
+      });
+      if (!r.isConfirmed) {
+        this.cobroSinDatos = false;
+        this.recalcularSubtotales();
+        this.procesando = false;
+        return;
+      }
+    }
+    // La campaña se vuelve a revisar con la fecha local: una pestaña abierta desde ayer no manda campaña si ya terminó.
+    this.revisarVigenciaLocal();
     // "¿Ya se lo llevó?" (dominio entrega, 2026-10-06): contado e Ir pagando casi siempre sí; un
     // Apartado nunca (se lleva al pagarlo completo). Si dice que no, queda "Falta entregar".
     const entregado = this.tipoPedido === 'APARTADO' ? undefined
@@ -788,20 +1262,30 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         ? `${l.variante.marca}${l.variante.talla ? ' ' + l.variante.talla : ''}`
         : (l.variante.color ?? `Artículo #${l.variante.id}`),
       talla:    null as string | null,
-      subTotal: l.subTotal
-    }));
+      subTotal: l.subTotal,
+      // Con descuento de campaña o de grupo: el precio normal tachado y la etiqueta (la pantalla replica lo que decide el back).
+      subTotalNormal: this.conPrecioDeCampana(l) || this.conPrecioDeGrupo(l) ? (l.variante.precio ?? 0) * l.cantidad : null,
+      etiqueta: this.conPrecioDeCampana(l) ? 'Precio de campaña' : this.conPrecioDeGrupo(l) ? 'Precio por cantidad' : null
+    })) as ITicketArticulo[];
     const totalSnap           = this.totalVenta;
     const clienteSnap         = this.nombreClienteTicket;
     const metodoPagoSnap      = this.tipoPagoActivo?.formaPago ?? 'EFECTIVO';
     const montoDadoSnap       = this.esEfectivoContado && this.montoDadoContado > 0 ? this.montoDadoContado : null;
     const cambioSnap          = this.esEfectivoContado ? this.cambioContado : null;
     const correoDisponibleSnap = this.correoDisponible;
+    const esCreditoSnap        = this.esCredito;
+    // Ticket por correo (regla 2026-11-10): se decide aquí pero se manda DESPUÉS de la venta, con lo que cobró el back. Un correo del cliente
+    // registrado que no está verificado no se usa (antes lo rechazaba el back al mandarlo junto con la venta).
+    const correoTicketSnap: string | null = !this.esCredito && this.enviarCorreo && this.correoDisponible
+      && this.clienteSeleccionado?.correoVerificado !== false
+      ? (this.clienteSeleccionado?.correoElectronico || this.clienteSinRegistroModal?.correo_Electronico || null) : null;
+    const correoSinVerificarSnap = !this.esCredito && this.enviarCorreo && this.clienteSeleccionado?.correoVerificado === false;
 
     const detallesVariantes = this.lineas.map(l => ({
       productoId:  l.variante.productoId ?? 0,
       varianteId:  l.variante.id,
       cantidad:    l.cantidad,
-      precioVenta: l.variante.precio ?? 0,
+      precioVenta: this.precioUnitarioDe(l),
       subTotal:    l.subTotal
     }));
 
@@ -830,7 +1314,12 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       fechaEntrega:      this.fechaEntrega || undefined,
       lugarEntregaId:    this.lugarEntregaId ?? undefined,
       urlFacebook:       this.urlFacebook || undefined,
-      entregado
+      entregado,
+      // Campaña vigente: el back decide el precio; solo se manda lo que el administrador puso.
+      campana: this.campana && !sinDatosCliente
+        ? { codigo: this.campanaCodigo.trim() || undefined, recurrenteManual: this.campanaRecurrente,
+            aceptaPrivacidad: this.campanaPrivacidad && this.clienteTieneContacto }
+        : undefined
     };
 
     if (this.esCredito) {
@@ -839,28 +1328,15 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     } else {
       request.pagosYMesesId = this.pagosYMesesId!;
       if (montoDadoSnap !== null) request.montoDado = montoDadoSnap;
-      if (this.enviarCorreo && this.correoDisponible) {
-        const preTicket: ITicketData = {
-          tipo: 'venta', numero: 0, cliente: clienteSnap,
-          articulos: articulosSnap, total: totalSnap,
-          metodoPago: metodoPagoSnap, montoDado: montoDadoSnap, cambio: cambioSnap,
-          qrTienda:   this.qrTienda,
-          qrWhatsapp: this.qrWhatsapp,
-          qrFacebook: this.qrFacebook,
-          qrInstagram: this.qrInstagram,
-          qrTiktok:  this.qrTiktok
-        };
-        request.notificacion = {
-          enviarCorreo: true,
-          ticketHtml:   generarHtmlTicket(preTicket)
-        };
-      }
+      // El ticket por correo YA NO va en este request (antes se armaba aquí con los precios de la pantalla): se manda al responder el back,
+      // con sus renglones, total y cambio reales (ver enviarTicketPorCorreo).
     }
 
     this.varianteService.saveVentaDirecta(request).subscribe({
       next: (res: IVentaDirectaResponse) => {
-        if (res.pedidoId) {
-          // Crédito (APARTADO / FIADO)
+        // Crédito (APARTADO / FIADO). Se decide por lo que se pidió (no solo por traer pedidoId): así una venta de contado que devuelva su pedidoId
+        // (lo necesita el correo del ticket) no se toma por crédito.
+        if (res.pedidoId && esCreditoSnap) {
           this.varianteService.invalidarCache();
           const pedidoId   = res.pedidoId;
           const label      = this.tipoPedido === 'APARTADO' ? 'Apartado' : 'Ir pagando';
@@ -913,16 +1389,17 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           // Efectivo / Transferencia → venta confirmada
           this.varianteService.invalidarCache();
 
-          // Ticket con ventaId real (para imprimir)
+          // Ticket con ventaId real (para imprimir). Total y cambio con lo que cobró el back (si difiere de la pantalla, manda el back).
+          const totalTicket = this.totalDelTicket(res, totalSnap);
           const htmlTicket = generarHtmlTicket({
             tipo:      'venta',
             numero:    res.ventaId ?? 0,
             cliente:   clienteSnap,
-            articulos: articulosSnap,
-            total:     totalSnap,
+            articulos: this.articulosDelTicket(res, articulosSnap),
+            total:     totalTicket,
             metodoPago: metodoPagoSnap,
             montoDado:  montoDadoSnap,
-            cambio:     cambioSnap,
+            cambio:     cambioSnap !== null && montoDadoSnap !== null ? Math.max(0, +(montoDadoSnap - totalTicket).toFixed(2)) : cambioSnap,
             qrTienda:   this.qrTienda,
             qrWhatsapp: this.qrWhatsapp,
             qrFacebook: this.qrFacebook,
@@ -932,16 +1409,28 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
           this.limpiarTodo();
 
+          // El correo sale ya con el ticket real (una sola vez por venta). Si falla, la venta ya quedó: solo se avisa.
+          const envioCorreo = this.enviarTicketPorCorreo(res.pedidoId, correoTicketSnap, htmlTicket);
+
           Swal.fire({
             icon:               'success',
             title:              `¡Venta #${res.ventaId} registrada!`,
-            text:               res.descripcionPago ?? undefined,
+            text:               [res.descripcionPago,
+                                 Math.abs(totalTicket - totalSnap) > 0.005 ? `Total cobrado: $${totalTicket.toFixed(2)} (la pantalla decía $${totalSnap.toFixed(2)}).` : null,
+                                 correoTicketSnap ? `El ticket se está enviando a ${correoTicketSnap}.` : null,
+                                 correoSinVerificarSnap ? 'El ticket no se mandó por correo: el correo del cliente no está verificado.' : null]
+                                  .filter(Boolean).join(' ') || undefined,
             showConfirmButton:  true,
             confirmButtonText:  '🖨️ Imprimir ticket',
             showCancelButton:   true,
             cancelButtonText:   'Cerrar'
-          }).then(result => {
+          }).then(async result => {
             if (result.isConfirmed) imprimirTicket(htmlTicket);
+            const errorCorreo = await envioCorreo;
+            if (errorCorreo) {
+              Swal.fire({ icon: 'warning', title: 'La venta quedó registrada', text: errorCorreo });
+              return;
+            }
             // Sin correo registrado → preguntar si quiere recibir el ticket por correo
             if (!correoDisponibleSnap && res.pedidoId) {
               this.pedirCorreoPostTransaccion(res.pedidoId, htmlTicket);
@@ -956,6 +1445,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       },
       error: (err) => {
         this.procesando = false;
+        // La venta no se hizo: la pantalla vuelve a mostrar los precios que tocan al cliente (la casilla sigue como estaba).
+        if (this.cobroSinDatos) { this.cobroSinDatos = false; this.recalcularSubtotales(); }
         const msg: string = (err?.error?.mensaje ?? err?.error?.message) ?? '';
         if (msg.toLowerCase().includes('no es valido') || msg.toLowerCase().includes('no es válido')) {
           Swal.fire({
@@ -970,6 +1461,24 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
           Swal.fire({ icon: 'error', title: 'Error al procesar la venta', text: msg || 'No se pudo procesar la venta.' });
         }
       }
+    });
+  }
+
+  /**
+   * Manda el ticket por correo DESPUÉS de la venta (regla 2026-11-10), con el HTML armado con los renglones/total/cambio que devolvió el back. Usa el mismo
+   * envío de comprobantes que Mis pedidos (reenviarComprobante → htmlTicketParaCorreo). Se llama una sola vez por venta y nunca toca la venta:
+   * resuelve con el mensaje de error para mostrarlo (o null si salió bien / no había nada que mandar).
+   */
+  private enviarTicketPorCorreo(pedidoId: number | null, correo: string | null, htmlTicket: string): Promise<string | null> {
+    if (!correo) return Promise.resolve(null);
+    if (!pedidoId) {
+      return Promise.resolve('El ticket no se pudo enviar por correo (falta el número de pedido de la venta). Reenvíalo desde Mis pedidos.');
+    }
+    return new Promise(resolve => {
+      this.pedidosService.reenviarComprobante(pedidoId, { correo, ticketHtml: htmlTicket }).subscribe({
+        next: () => resolve(null),
+        error: err => resolve(`El ticket no se pudo enviar por correo: ${err?.error?.mensaje ?? 'error al enviar'}. Reenvíalo desde Mis pedidos.`)
+      });
     });
   }
 

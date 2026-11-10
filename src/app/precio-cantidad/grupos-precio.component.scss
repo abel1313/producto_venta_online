@@ -1,0 +1,75 @@
+// Grupos de precio por cantidad. Solo tokens del diseño (--app-*, --card-*, --input-*, --pk-*): cambia con Personalización, de día y de noche.
+.gp { max-width: 1180px; margin-inline: auto; display: grid; gap: 1rem; }
+.gp-hero { display: grid; gap: .35rem; }
+.gp-titulo { font-size: 1.6rem; }
+.gp-barra { display: flex; justify-content: flex-end; }
+
+.gp-form, .gp-card {
+  background: var(--card-body-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--card-radius, 14px);
+  box-shadow: var(--card-shadow);
+  padding: 1rem 1.1rem;
+  min-width: 0;
+}
+.gp-form { display: grid; gap: 1rem; }
+.gp-form__titulo { margin: 0; font-size: 1.05rem; color: var(--app-text); }
+
+.gp-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: .8rem; align-items: start; }
+.gp-campo--ancho { grid-column: 1 / -1; }
+.gp-opcional { font-weight: 400; color: var(--app-text-muted); text-transform: none; letter-spacing: 0; }
+.gp-check { display: inline-flex; align-items: center; gap: .5rem; color: var(--app-text); align-self: end; min-height: 2.6rem; }
+
+.gp-productos { display: grid; gap: .6rem; }
+.gp-productos__titulo { margin: 0; font-size: .95rem; color: var(--app-text); }
+.gp-vacio { margin: 0; color: var(--app-text-muted); font-size: .9rem; }
+
+.gp-fila {
+  display: grid; grid-template-columns: 1fr auto auto; gap: .6rem; align-items: center;
+  padding: .45rem 0; border-bottom: 1px solid var(--app-hairline, var(--app-border));
+  &__nombre { min-width: 0; overflow-wrap: anywhere; color: var(--app-text); }
+  &__precio { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--app-text-muted); input { width: 7rem; } }
+}
+@media (max-width: 560px) {
+  .gp-fila { grid-template-columns: 1fr auto; &__precio { grid-column: 1 / -1; } }
+}
+
+.gp-acciones, .gp-card__acciones { display: flex; flex-wrap: wrap; gap: .5rem; }
+
+.gp-card { display: grid; gap: .7rem; }
+.gp-card__cab { display: flex; justify-content: space-between; gap: .8rem; align-items: start; }
+.gp-card__nombre { margin: 0; font-size: 1.05rem; color: var(--app-text); }
+.gp-card__meta { margin: .15rem 0 0; font-size: .82rem; color: var(--app-text-muted); }
+.gp-card__productos {
+  list-style: none; margin: 0; padding: 0; display: grid; gap: .25rem;
+  li { display: flex; justify-content: space-between; gap: .8rem; font-size: .9rem; color: var(--app-text); span { min-width: 0; overflow-wrap: anywhere; } }
+}
+
+.gp-estado {
+  white-space: nowrap; font-size: .72rem; font-weight: 700; padding: .2rem .6rem; border-radius: 999px;
+  &--ok { background: var(--pk-success-soft, var(--app-accent-soft)); color: var(--pk-success); }
+  &--fuera { background: var(--pk-warning-soft, var(--app-tint)); color: var(--pk-warning); }
+  &--apagado { background: var(--app-tint); color: var(--app-text-muted); }
+}
+
+// Catálogo de productos para armar el grupo (lista con filtro y páginas). Tokens del diseño, día y noche.
+.gp-catalogo { display: grid; gap: .6rem; border-top: 1px solid var(--app-hairline, var(--app-border)); padding-top: .8rem; }
+.gp-catalogo__cab { display: grid; gap: .5rem; }
+.gp-catalogo__lista { list-style: none; margin: 0; padding: 0; display: grid; transition: opacity .15s; &--carga { opacity: .55; } }
+.gp-catalogo__fila {
+  display: grid; grid-template-columns: 1fr auto; gap: .6rem; align-items: center; padding: .5rem .2rem;
+  border-bottom: 1px solid var(--app-hairline, var(--app-border));
+}
+.gp-catalogo__datos { min-width: 0; display: grid; }
+.gp-catalogo__nombre { color: var(--app-text); overflow-wrap: anywhere; }
+.gp-catalogo__meta { color: var(--app-text-muted); }
+.gp-catalogo__estado { font-size: .78rem; font-weight: 700; color: var(--pk-success); white-space: nowrap; &--otro { color: var(--app-text-muted); font-weight: 500; } }
+.gp-catalogo__pie { display: flex; align-items: center; justify-content: center; gap: .8rem; flex-wrap: wrap; color: var(--app-text-muted); font-size: .85rem; }
+
+// Dos columnas (productos del grupo | catálogo), cada lista con su propio scroll: la pantalla no crece al agregar productos.
+.gp-columnas { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
+@media (max-width: 900px) { .gp-columnas { grid-template-columns: minmax(0, 1fr); } }
+.gp-productos__lista, .gp-catalogo__lista { max-height: 26rem; overflow-y: auto; overscroll-behavior: contain; padding-right: .25rem; }
+@media (max-width: 900px) { .gp-productos__lista, .gp-catalogo__lista { max-height: 18rem; } }
+.gp-columnas > .gp-catalogo { border-top: 0; padding-top: 0; }
+.gp-columnas > .gp-productos, .gp-columnas > .gp-catalogo { align-content: start; }

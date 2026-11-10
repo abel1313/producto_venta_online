@@ -150,7 +150,7 @@ export class VarianteService {
   // Catálogo público con filtros combinables (AND). Todos los parámetros son opcionales — a
   // diferencia de /buscar, nunca 404: sin resultados devuelve t: [].
   buscarFiltrado(
-    filtros: { termino?: string; precioMin?: number; precioMax?: number; talla?: string; color?: string; marca?: string },
+    filtros: { termino?: string; precioMin?: number; precioMax?: number; talla?: string; color?: string; marca?: string; categoria?: string },
     pagina = 1, size = 10
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams().set('pagina', String(pagina)).set('size', String(size));
@@ -160,6 +160,7 @@ export class VarianteService {
     if (filtros.talla)  params = params.set('talla', filtros.talla);
     if (filtros.color)  params = params.set('color', filtros.color);
     if (filtros.marca)  params = params.set('marca', filtros.marca);
+    if (filtros.categoria) params = params.set('categoria', filtros.categoria);
 
     return this.http.get<{ data: IVarianteResumenPaginable }>(`${this.url}/buscar-filtrado`, { params })
       .pipe(map(res => res.data));
@@ -270,7 +271,7 @@ export class VarianteService {
   adminFiltrar(
     filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean;
                codigoGenerado?: boolean; fechaDesde?: string; fechaHasta?: string;
-               talla?: string; color?: string; marca?: string; precioMin?: number; precioMax?: number },
+               talla?: string; color?: string; marca?: string; categoria?: string; precioMin?: number; precioMax?: number },
     pagina: number, size: number
   ): Observable<IVarianteResumenPaginable> {
     let params = new HttpParams()
@@ -291,6 +292,7 @@ export class VarianteService {
     if (filtros.talla) params = params.set('talla', filtros.talla);
     if (filtros.color) params = params.set('color', filtros.color);
     if (filtros.marca) params = params.set('marca', filtros.marca);
+    if (filtros.categoria) params = params.set('categoria', filtros.categoria);
     if (filtros.precioMin !== undefined && filtros.precioMin !== null) params = params.set('precioMin', String(filtros.precioMin));
     if (filtros.precioMax !== undefined && filtros.precioMax !== null) params = params.set('precioMax', String(filtros.precioMax));
 
@@ -392,6 +394,8 @@ export interface IVentaDirectaRequest {
   // clienteSinRegistroDto queda como fallback por compatibilidad — el flujo nuevo del front
   // siempre manda el id una vez que el modal ya lo creó.
   clienteSinRegistroId?: number,
+  /** Campaña vigente (back 2026-11-07): código del cliente, check «Cliente recurrente» y aviso de privacidad. */
+  campana?: { codigo?: string; recurrenteManual: boolean; aceptaPrivacidad: boolean };
   detalles: {
     productoId:   number;
     varianteId:   number | null;
@@ -466,4 +470,7 @@ export interface IVentaDirectaResponse {
   correoEnviado?:   boolean;
   whatsappEnviado?: boolean;
   erroresEnvio?:    string[];
+  /** Los renglones tal como los cobró el back (back 2026-11-08), para el ticket: precio normal y precio cobrado. */
+  renglones?: { nombre: string; cantidad: number; precioNormal: number; precioCobrado: number;
+                conDescuentoDeCampana?: boolean; conDescuentoDeGrupo?: boolean }[];
 }

@@ -42,7 +42,12 @@
         <td *ngIf="mostrarMarca">{{ item.marca || '—' }}</td>
         <td *ngIf="mostrarPresentacion">{{ item.presentacion || '—' }}</td>
         <td>{{ item.stock }}</td>
-        <td>{{ item.precio | currency:'$' }}</td>
+        <td>
+          {{ precioUnitarioDe(item) | currency:'$' }}
+          <small class="vv-grupo d-block" *ngIf="conPrecioDeGrupo(item)" [title]="'Grupo «' + item.grupoNombre + '»'">
+            <s>{{ item.precio | currency:'$' }}</s> precio por cantidad
+          </small>
+        </td>
         <!-- El monto va tapado y ni siquiera está en la página hasta que se destapa: 👁 se lo pide
              al back y 🙈 lo borra (R9). El cliente puede estar viendo la pantalla. -->
         <td *ngIf="isAdminUser">
@@ -66,7 +71,7 @@
           </div>
         </td>
         <td>{{ item.cantidad }}</td>
-        <td class="fw-semibold">{{ item.subTotal | currency:'$' }}</td>
+        <td class="fw-semibold">{{ subTotalDe(item) | currency:'$' }}</td>
         <td class="d-flex gap-1">
           <button type="button" class="btn btn-sm btn-outline-secondary"
             [disabled]="!item.imagenUrl" (click)="verImagen(item)" title="Ver imagen">

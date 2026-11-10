@@ -119,6 +119,15 @@
           <ng-container *ngIf="precio && precioMercado && precio > precioMercado"> Tu precio queda <strong>{{ precio - precioMercado | currency:'MXN':'symbol':'1.2-2' }} arriba</strong>: ten a favor que lo tienes aquí, sin viajar.</ng-container></span>
         <span *ngIf="m.ganancia < 0">⚠️ Igualar ese precio te haría <strong>perder {{ -m.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza. Opciones: bajar tu margen, no venderlo o ponerlo dentro de un paquete.</span>
       </div>
+
+      <ng-container *ngIf="precioCampana !== null">
+        <h5 class="cp-subtitulo">Precio de campaña <span class="cp-opcional">({{ nombreCampana }})</span></h5>
+        <p class="cp-ayuda">Este producto está en la campaña vigente con precio de campaña de <strong>{{ precioCampana | currency:'MXN':'symbol':'1.2-2' }}</strong> para el cliente recurrente (se cambia en Catálogo → Campañas).</p>
+        <div class="cp-ganancia" *ngIf="enCampana as c" [class.cp-ganancia--mal]="c.ganancia < 0">
+          <span *ngIf="c.ganancia >= 0">Con el precio de campaña ganas <strong>{{ c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza · margen {{ c.margenPct }} %.</span>
+          <span *ngIf="c.ganancia < 0">⚠️ Con el precio de campaña <strong>pierdes {{ -c.ganancia | currency:'MXN':'symbol':'1.2-2' }}</strong> por pieza.</span>
+        </div>
+      </ng-container>
     </section>
     <ng-template #faltaCosto>
       <section class="cp-bloque cp-vacio">Escribe el <strong>costo de compra</strong> (y el margen) para ver el precio.</section>

@@ -31,7 +31,8 @@ export class LoadingInterceptor implements HttpInterceptor {
   // `/v1/escaner/` pregunta cada ~1.5 s si el celular mandó un código: con overlay la pantalla parpadearía sin parar.
   // `/v1/datos-legales` lo pide el pie de página en cada carga (contacto del negocio): igual que
   // la cinta, no tiene por qué tapar la pantalla.
-  private readonly skipUrls = ['/chatbot/', '/v1/cinta/activos', '/redes-sociales/',
+  // `/v1/campanas/activa` se pide en segundo plano al abrir Venta directa (para saber si hay campaña vigente): sin overlay.
+  private readonly skipUrls = ['/chatbot/', '/v1/campanas/activa', '/v1/cinta/activos', '/redes-sociales/',
                                '/publico/premio/', '/v1/preferencias-filtro/', '/v1/datos-legales', '/v1/escaner/'];
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {

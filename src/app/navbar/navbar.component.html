@@ -58,6 +58,13 @@
       <span class="sb-icon">📱</span>
       <span class="sb-label">Escáner</span>
     </a>
+    <!-- Escáner de QR de clientes (campañas): el QR escaneado o fotografiado llega al campo «Código del cliente» de Venta directa -->
+    <a class="sb-item" *ngIf="puedeEscanerCelular"
+       routerLink="escaner-qr" routerLinkActive="sb-item--active"
+       (click)="closeMobile()">
+      <span class="sb-icon">🎁</span>
+      <span class="sb-label">Escáner QR</span>
+    </a>
 
     <!-- Catálogo (admin) — accordion. "Modelo" agrupa (Blusa Zara),
          "Artículo" es lo que se vende (Blusa Zara / M / Negro).
@@ -73,6 +80,10 @@
       <div class="sb-submenu">
         <a class="sb-subitem" *ngIf="tienePantalla('productos/buscar')" routerLinkActive="sb-subitem--active" routerLink="productos/buscar" (click)="closeMobile()"
            title="Lista de productos: el producto base, sin talla ni color (ej. Blusa Zara)">🔍 Productos</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/grupos-precio')" routerLinkActive="sb-subitem--active" routerLink="productos/grupos-precio" (click)="closeMobile()"
+           title="Grupos de productos con precio de promoción cuando el cliente junta el mínimo de piezas (solo administrador)">🏷️ Grupos de precio por cantidad</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/campanas')" routerLinkActive="sb-subitem--active" routerLink="productos/campanas" (click)="closeMobile()"
+           title="Eventos con fechas (Reyes, roscas…): juguetes con precio de campaña (solo administrador)">🎁 Campañas</a>
         <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()"
            title="Da de alta el producto base (ej. Blusa Zara). Todavía no se vende: primero hay que agregarle artículos con su talla y color">➕ Agregar producto</a>
         <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()"

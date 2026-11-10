@@ -20,6 +20,7 @@ import { DialogModule } from 'primeng/dialog';
 import { SharedModule as PrimeSharedModule } from 'primeng/api';
 import { QRCodeModule } from 'angularx-qrcode';
 import { EscanerCelularComponent } from './escaner-celular/escaner-celular.component';
+import { EntradaCodigoQrComponent } from './entrada-codigo-qr/entrada-codigo-qr.component';
 import { FotoCelularComponent } from './foto-celular/foto-celular.component';
 import { CalculadoraPrecioComponent } from './calculadora-precio/calculadora-precio.component';
 
@@ -39,6 +40,7 @@ import { CalculadoraPrecioComponent } from './calculadora-precio/calculadora-pre
     AltaArticulosComponent,
     FiltroBuscableComponent,
     EscanerCelularComponent,
+    EntradaCodigoQrComponent,
     FotoCelularComponent,
     CalculadoraPrecioComponent
   ],
@@ -58,6 +60,7 @@ import { CalculadoraPrecioComponent } from './calculadora-precio/calculadora-pre
     AltaArticulosComponent,
     FiltroBuscableComponent,
     EscanerCelularComponent,
+    EntradaCodigoQrComponent,
     FotoCelularComponent,
     CalculadoraPrecioComponent
   ]

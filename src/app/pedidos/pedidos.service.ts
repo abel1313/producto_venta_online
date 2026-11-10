@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { htmlTicketParaCorreo } from '../shared/ticket-correo.util';
 import { CrudGenericService } from '../crud-generic.service';
 import { IPedidos } from '../productos/producto/detalle-productos/models/pedidos.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -114,7 +115,8 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     }
 
     reenviarComprobante(pedidoId: number, body: { correo: string; ticketHtml: string }): Observable<any> {
-      return this.http.post<any>(`${this.url}/v1/pedidos/${pedidoId}/notificar`, body);
+      // El ticket de la impresora usa clases CSS que un correo no tiene: se rehace con estilos en línea y los colores de la marca.
+      return this.http.post<any>(`${this.url}/v1/pedidos/${pedidoId}/notificar`, { ...body, ticketHtml: htmlTicketParaCorreo(body.ticketHtml) });
     }
 
     // ── Editar un pedido ya creado (back 2026-09-22) ────────────────────────────────

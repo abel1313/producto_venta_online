@@ -131,8 +131,10 @@
     return navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 },
       advanced: [{ focusMode: 'continuous' }] } });
   }
-  function conDetectorNativo(Detector) {
-    var detector = new Detector({ formats: FORMATOS }), video = $('video'), temporizador = 0;
+  function conDetectorNativo(Detector, soportados) {
+    // También el QR del código de cliente de una campaña, si este celular lo sabe leer. Solo se pide lo que el detector soporta.
+    var formatos = soportados && soportados.indexOf('qr_code') >= 0 ? FORMATOS.concat(['qr_code']) : FORMATOS;
+    var detector = new Detector({ formats: formatos }), video = $('video'), temporizador = 0;
     return pedirCamara().then(function (s) {
       stream = s; video.srcObject = s; return video.play();
     }).then(function () {
@@ -164,7 +166,7 @@
       ? Promise.resolve(window.BarcodeDetector.getSupportedFormats()).catch(function () { return null; }) : Promise.resolve(null);
     soportados.then(function (lista) {
       var sirve = lista && (lista.indexOf('ean_13') >= 0 || lista.indexOf('code_128') >= 0);
-      return sirve ? conDetectorNativo(window.BarcodeDetector) : conZxing();
+      return sirve ? conDetectorNativo(window.BarcodeDetector, lista) : conZxing();
     }).then(function () {
       arrancando = false;
       estado('Listo: apunta al código de barras', 'ok');
@@ -181,7 +183,9 @@
   }
   // Al volver de segundo plano o de la pantalla bloqueada la cámara puede haberse detenido (sobre todo en iPhone): se revisa y se reinicia.
   function camaraViva() {
-    var pista = stream && stream.getVideoTracks && stream.getVideoTracks()[0];
+    // Con zxing el stream no se guarda en `stream` (lo abre la librería): se toma del video. Antes con zxing parecía apagada y se reiniciaba siempre.
+    var fuente = stream || $('video').srcObject;
+    var pista = fuente && fuente.getVideoTracks && fuente.getVideoTracks()[0];
     return !!pista && pista.readyState === 'live' && !pista.muted && !$('video').paused;
   }
   document.addEventListener('visibilitychange', function () {

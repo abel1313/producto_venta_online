@@ -190,7 +190,7 @@ export class ProductoService {
     // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
     adminFiltrar(
         filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean;
-                   fechaDesde?: string; fechaHasta?: string },
+                   fechaDesde?: string; fechaHasta?: string; categoria?: string },
         page: number, size: number
     ): Observable<IProductoPaginable<IProductoDTO[]>> {
         let params = new HttpParams()
@@ -206,6 +206,7 @@ export class ProductoService {
         // "lo que se cargo hoy" en carga rapida de imagenes. Los 2 son independientes entre si.
         if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
         if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
+        if (filtros.categoria) params = params.set('categoria', filtros.categoria);
 
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }
@@ -224,6 +225,15 @@ export class ProductoService {
 
     diagnosticoImagenes(productoId: number): Observable<any> {
         return this.http.get(`${this.url}/admin/diagnostico-imagenes/${productoId}`);
+    }
+
+    /**
+     * Categorías para el selector de Productos → Buscar (back 2026-11-10): arreglo JSON plano de strings en MAYÚSCULAS, incluye productos sin
+     * artículos o deshabilitados (filtros-disponibles solo trae las de artículos a la venta). Quien llama hace el fallback si falla.
+     */
+    categoriasAdmin(): Observable<string[]> {
+        return this.http.get<string[]>(`${this.url}/admin/categorias`).pipe(
+            map(r => Array.isArray(r) ? r.filter((c): c is string => typeof c === 'string' && !!c.trim()) : []));
     }
 
     compartirImagenesVariante(compartirImagenesVarianteDto: CompartirImagenesVarianteDto): Observable<any> {

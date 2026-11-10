@@ -17,6 +17,26 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-10 — Paquete de campaña para PRODUCCIÓN (hotfix/campana-prod-front, desde master)
+**Dónde:** `campanas/**` (+ `codigo-publico`), `precio-cantidad/**`, `variante/venta-directa/**`, `variante/venta-variante/*`, `pedidos/detalle-pedido/*`, `pedidos/mis-pedidos/*`, `pedidos/cobro/liquidar-apartado/*`, `pedidos/aviso-ir-pagando-campana.ts`, `shared/entrada-codigo-qr/**`, `shared/escaner-celular/*`, `escaner-celular/*`, `assets/escaner/escaner.html`, `shared/ticket.util.ts`, `shared/ticket-correo.util.ts`, `shared/version-nueva.util.ts`, `shared/calculadora-precio/*`, `variante/buscar/*`, `productos/producto/all/*`, `legal/privacidad/*`, `legal/terminos/*`, `navbar/*`, `app-routing.module.ts`.
+**Tipo:** e2e (Playwright contra producción con back simulado y después contra el back real) · unitario de componente/servicio (HttpTestingController)
+**Debe comprobar:**
+- [ ] Menú Catálogo: «🏷️ Grupos de precio por cantidad» y «🎁 Campañas» solo con la pantalla (`productos/grupos-precio`, `productos/campanas`; filas de submenu en la BD de producción). Sin la fila → `PantallaGuard` manda a Tienda.
+- [ ] Campañas: alta, buscadores, precios, reporte con «Ver QR» y «Eliminar datos», duplicar / activar / apagar con confirmación, aviso de fechas encimadas. `/codigo-campana/:uuid` dibuja el QR sin sesión.
+- [ ] Venta directa sin campaña vigente: igual que antes (sin bloque). Con campaña vigente: bloque «🎁 Campaña …» SIN marca de versión; ya pagado 800, meta 1,499, Contado con 1,600 en no-juguetes + juguetes → los juguetes bajan a precio de campaña; al quitar no-juguetes por debajo de la meta regresan a normal; Ir pagando → precio normal con aviso.
+- [ ] «No registrar y cobrar» → aviso «Se cobra a precio normal» y el request sin `campana`; el modal «Cliente sin registro» exige la casilla de privacidad, tiene scroll y botones fijos en 400 px.
+- [ ] Contado con correo: el `POST /v1/ventas/save` ya NO lleva `notificacion`; sale UN `POST /v1/pedidos/{pedidoId}/notificar` con el ticket de los `renglones` del back. Sin `pedidoId` en la respuesta → aviso «Reenvíalo desde Mis pedidos» (depende del back de producción).
+- [ ] Doble clic en «Cobrar» → una sola venta. Pestaña abierta desde ayer después de `fechaFin` → no manda campaña. Versión nueva publicada con el carrito vacío → recarga sola; con venta a medias → aviso y no recarga.
+- [ ] Carrito (venta-variante) y Venta directa: precio de grupo tachado; gana el más bajo entre normal, grupo y campaña.
+- [ ] Detalle del pedido: «🎁 Enviar código de campaña» (admin, `tieneCodigoDeCampana`), aviso de Ir pagando; Liquidar Apartado → «Cámbialo a Ir pagando» abre el detalle ya en el cambio; tickets con precio normal tachado (`precioNormal`/`conPrecioDeCampana`).
+- [ ] Escáner QR del celular (`/escaner-qr`, menú «🎁 Escáner QR» SIN versión): el UUID llega solo a «Código del cliente»; un código de barras sigue yendo al buscador; un UUID con solo el buscador abierto se descarta.
+- [ ] Tienda → Buscar: **visitante anónimo y cliente (ROLE_USUARIO) arrancan en «Todas»** y ven todo el catálogo; ven el selector Categoría. Personal con sesión arranca en JUGUETES (si existe); «Limpiar» deja «Todas»; al recargar vuelve a JUGUETES; otra categoría guardada (BOLSAS) se recuerda; con 3+ letras busca en todas.
+- [ ] Productos → Buscar: el selector usa `GET /mis-productos/v1/productos/admin/categorias` y si falla `filtros-disponibles`; mismas reglas de JUGUETES/«Todas».
+- [ ] Privacidad y Términos: «10 de noviembre de 2026», fin 5 de enero de 2027 (incluido), regla «lo ya pagado + artículos de la compra actual que no son juguetes», Ir pagando a precio normal, Apartado↔Ir pagando, sin datos no hay precio especial, datos solo se borran si lo pide.
+- [ ] No hay «QR-4/QR-5/QR-6» ni «Versión:» en ninguna pantalla (`marca-version.ts` no existe en este paquete).
+
+**Depende del back de producción:** endpoints `/v1/campanas/**`, `/v1/grupos-precio-cantidad/**` y `/v1/precio-cantidad/calcular`, `admin/categorias`, `categoria` en `buscar-filtrado`/`admin/filtrar`, `renglones` y `pedidoId` en `/v1/ventas/save` de contado, `acepta=…,uuid` en el canal del escáner, `precioNormal`/`conPrecioDeCampana`/`tieneJuguetesConPrecioDeCampana`/`tieneCodigoDeCampana` en el detalle del pedido, filas de submenu `productos/campanas` y `productos/grupos-precio`.
+
 ### 2026-10-14 — Card de Tienda → Buscar: «Deshabilitado» en franja propia
 **Dónde:** `variante/buscar/buscar.component.html` / `.scss` (`.vb-badge-disabled`, `.vb-card__header--con-check`, `.vb-card__header--con-baja`)
 **Tipo:** unitario (componente) · e2e visual (Playwright)

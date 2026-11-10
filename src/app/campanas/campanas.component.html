@@ -1,0 +1,186 @@
+<section class="pk-page cp">
+
+  <app-boton-volver anchoContenido="1180px" margen="16px" fallback="/productos/buscar"></app-boton-volver>
+
+  <header class="cp-hero">
+    <p class="pk-kicker">Catálogo · solo administrador</p>
+    <h2 class="pk-title cp-titulo">Campañas</h2>
+    <p class="pk-subtitle">
+      Un evento con fechas (Reyes, roscas…): primero su nombre y fechas, luego se eligen los juguetes y se le pone a cada uno su
+      precio de campaña. Solo una campaña puede estar encendida a la vez; fuera de sus fechas todo se vende a su precio normal.
+    </p>
+  </header>
+
+  <!-- ── Formulario ── -->
+  <form class="cp-form" *ngIf="edicion as c" (ngSubmit)="guardar()" (keydown.enter)="evitarEnvioConEnter($event)" autocomplete="off">
+    <h3 class="cp-form__titulo">{{ c.id ? 'Editar campaña' : 'Nueva campaña' }}</h3>
+
+    <div class="cp-grid">
+      <label class="pk-field cp-campo--ancho">
+        <span class="pk-label">Nombre de la campaña</span>
+        <input class="pk-input" name="nombre" [(ngModel)]="c.nombre" maxlength="100" placeholder="Ej.: Día de Reyes 2027">
+      </label>
+
+      <label class="pk-field">
+        <span class="pk-label">Inicia</span>
+        <input class="pk-input" type="date" name="inicio" [(ngModel)]="c.fechaInicio">
+      </label>
+
+      <label class="pk-field">
+        <span class="pk-label">Termina <span class="cp-opcional">(incluido)</span></span>
+        <input class="pk-input" type="date" name="fin" [(ngModel)]="c.fechaFin">
+      </label>
+
+      <label class="pk-field">
+        <span class="pk-label">Meta de monto $</span>
+        <input class="pk-input" type="number" name="meta" min="0" step="1" inputmode="decimal" [(ngModel)]="c.metaMonto" [attr.aria-invalid]="!metaValida">
+        <span class="pk-hint">Lo que una persona junta comprando en el evento para ser cliente recurrente. 0 = sin meta.</span>
+      </label>
+    </div>
+    <p class="pk-error" *ngIf="fechasAlReves">La fecha de inicio no puede ser después de la de fin.</p>
+
+    <div class="cp-columnas">
+
+      <!-- Juguetes de la campaña -->
+      <div class="cp-productos">
+        <h4 class="cp-productos__titulo">Juguetes y su precio de campaña <span class="cp-opcional">({{ c.productos.length }})</span></h4>
+
+        <p class="cp-vacio" *ngIf="!c.productos.length">Todavía no hay juguetes: agrégalos desde el catálogo.</p>
+
+        <!-- Buscar entre los juguetes que ya están en la campaña: solo filtra lo que se ve, no cambia la campaña -->
+        <div class="cp-buscar" *ngIf="c.productos.length">
+          <input class="pk-input" name="filtroCampana" [ngModel]="filtroCampana" (ngModelChange)="alEscribirEnCampana($event)"
+                 (keydown.enter)="$event.preventDefault()" autocomplete="off" aria-label="Buscar en los juguetes de la campaña"
+                 placeholder="Buscar en los juguetes de la campaña (nombre o código de barras)…">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="filtroCampana" (click)="limpiarFiltroCampana()">✕ Limpiar</button>
+        </div>
+        <p class="cp-vacio" *ngIf="c.productos.length && filtroCampana.trim()">Mostrando {{ productosFiltrados.length }} de {{ c.productos.length }}</p>
+        <p class="cp-vacio" *ngIf="filtroCampana.trim() && !productosFiltrados.length">{{ mensajeSinCoincidencias }}</p>
+
+        <div class="cp-productos__lista" *ngIf="c.productos.length">
+          <div class="cp-fila" *ngFor="let p of productosFiltrados; trackBy: porIdDeProducto">
+            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.origen">precio de «{{ p.origen }}»</small></span>
+            <label class="cp-fila__precio">
+              <span>Precio de campaña $</span>
+              <input class="pk-input" type="number" step="0.01" min="0.01" inputmode="decimal" [name]="'precio' + p.productoId" [(ngModel)]="p.precio"
+                     [class.cp-invalido]="!precioValido(p)" [attr.aria-invalid]="!precioValido(p)">
+            </label>
+            <button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Catálogo -->
+      <div class="cp-catalogo">
+        <div class="cp-catalogo__cab">
+          <h4 class="cp-productos__titulo">Agregar juguetes: catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
+          <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)" autocomplete="off"
+                 aria-label="Buscar en el catálogo un juguete para agregarlo"
+                 placeholder="Buscar un juguete para agregarlo: nombre o código de barras…">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm cp-todos" *ngIf="faltanDeLaPagina > 0" (click)="agregarPagina()">
+            ＋ Agregar los {{ faltanDeLaPagina }} de esta página
+          </button>
+        </div>
+
+        <p class="cp-vacio" *ngIf="cargandoCatalogo">Cargando productos…</p>
+        <p class="pk-error" *ngIf="errorCatalogo">{{ errorCatalogo }}</p>
+        <p class="cp-vacio" *ngIf="!cargandoCatalogo && !errorCatalogo && !catalogo.length">No hay productos con ese filtro.</p>
+
+        <ul class="cp-catalogo__lista" *ngIf="catalogo.length" [class.cp-catalogo__lista--carga]="cargandoCatalogo">
+          <li class="cp-catalogo__fila" *ngFor="let p of catalogo; trackBy: porIdDeCatalogo">
+            <div class="cp-catalogo__datos">
+              <span class="cp-catalogo__nombre">{{ p.nombre }}</span>
+              <small class="cp-catalogo__meta">
+                {{ p.precioVenta | currency:'$' }} · stock {{ p.stock }}<ng-container *ngIf="p.categoria"> · {{ p.categoria }}</ng-container>
+              </small>
+            </div>
+            <span class="cp-catalogo__estado" *ngIf="estaAgregado(p)">✓ En la campaña</span>
+            <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="!estaAgregado(p)" (click)="agregarProducto(p)" [attr.aria-label]="'Agregar ' + p.nombre">＋ Agregar</button>
+          </li>
+        </ul>
+
+        <div class="cp-catalogo__pie" *ngIf="totalPaginas > 1">
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina <= 1 || cargandoCatalogo" (click)="irAPagina(pagina - 1)">‹ Anterior</button>
+          <span>Página {{ pagina }} de {{ totalPaginas }}</span>
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" [disabled]="pagina >= totalPaginas || cargandoCatalogo" (click)="irAPagina(pagina + 1)">Siguiente ›</button>
+        </div>
+      </div>
+
+    </div><!-- /cp-columnas -->
+
+    <ul class="cp-motivos" *ngIf="motivosParaNoGuardar.length" aria-live="polite">
+      <li *ngFor="let m of motivosParaNoGuardar">{{ m }}</li>
+    </ul>
+
+    <div class="cp-acciones">
+      <button type="submit" class="pk-btn pk-btn--primary" [disabled]="!puedeGuardar || guardando">{{ guardando ? 'Guardando…' : 'Guardar campaña' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+    </div>
+  </form>
+
+  <!-- ── Lista ── -->
+  <div class="cp-barra" *ngIf="!edicion">
+    <button type="button" class="pk-btn pk-btn--primary" (click)="nuevo()">＋ Nueva campaña</button>
+  </div>
+
+  <p class="pk-empty" *ngIf="cargando">Cargando campañas…</p>
+  <p class="pk-error" *ngIf="error">{{ error }}</p>
+  <p class="pk-empty" *ngIf="!cargando && !error && !campanas.length && !edicion">Todavía no hay campañas. Crea una con «Nueva campaña».</p>
+
+  <!-- ── Reporte de una campaña ── -->
+  <section class="cp-reporte" *ngIf="reporte as r" aria-label="Reporte de la campaña">
+    <div class="cp-reporte__cab">
+      <h3 class="cp-form__titulo">Reporte · {{ r.campana }}</h3>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="cerrarReporte()">Cerrar</button>
+    </div>
+    <p class="cp-card__meta">
+      {{ r.totalPersonas }} {{ r.totalPersonas === 1 ? 'persona' : 'personas' }} con código ·
+      {{ r.llegaronALaMeta }} {{ r.llegaronALaMeta === 1 ? 'llegó' : 'llegaron' }} a la meta de {{ r.meta | currency:'$' }} ·
+      suman {{ r.totalAcumulado | currency:'$' }} (lo ya pagado<ng-container *ngIf="fechasReporte"> del {{ fechasReporte }}</ng-container>, juguetes incluidos; sin devoluciones ni cancelados)
+    </p>
+    <p class="cp-vacio" *ngIf="!r.personas.length">Todavía nadie tiene compras ligadas a esta campaña.</p>
+    <div class="cp-tabla" *ngIf="r.personas.length">
+      <table>
+        <thead><tr><th>Persona</th><th>Contacto</th><th class="cp-num">Lleva</th><th class="cp-num">Pedidos</th><th>Meta</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let p of r.personas; trackBy: porIdDePersona">
+            <td>{{ p.nombre || '—' }}<br><small class="cp-codigo">{{ p.codigo }}</small></td>
+            <td>{{ p.correo || '—' }}<br><small>{{ p.telefono || '' }}</small></td>
+            <td class="cp-num">{{ p.acumulado | currency:'$' }}</td>
+            <td class="cp-num">{{ p.pedidos }}</td>
+            <td><span class="cp-estado" [ngClass]="p.llegoALaMeta ? 'cp-estado--ok' : 'cp-estado--apagada'">{{ p.llegoALaMeta ? 'Llegó' : 'Falta' }}</span></td>
+            <td class="cp-acciones-fila">
+              <a class="pk-btn pk-btn--secondary pk-btn--sm" [routerLink]="['/codigo-campana', p.codigo]" target="_blank" rel="noopener"
+                 [attr.aria-label]="'Ver QR de ' + (p.nombre || p.codigo)">Ver QR</a>
+              <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminarPersona(p)" [disabled]="borrandoPersonaId !== null"
+                      [attr.aria-label]="'Eliminar datos de ' + (p.nombre || p.codigo)">Eliminar datos</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <article class="cp-card" *ngFor="let c of campanas" [hidden]="!!edicion">
+    <div class="cp-card__cab">
+      <div>
+        <h3 class="cp-card__nombre">{{ c.nombre }}</h3>
+        <p class="cp-card__meta">{{ fechas(c) }} · Meta {{ c.metaMonto | currency:'$' }}</p>
+      </div>
+      <span class="cp-estado" [ngClass]="claseEstado(c)">{{ estado(c) }}</span>
+    </div>
+
+    <ul class="cp-card__productos">
+      <li *ngFor="let p of c.productos"><span>{{ p.nombre }}</span><strong>{{ p.precio | currency:'$' }}</strong></li>
+    </ul>
+
+    <div class="cp-card__acciones">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="editar(c)">Editar</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternar(c)" [disabled]="ocupadaId !== null">{{ c.activa ? 'Apagar' : 'Activar' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="verReporte(c)" [disabled]="cargandoReporte">Reporte</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="duplicar(c)" [disabled]="ocupadaId !== null">Duplicar</button>
+      <button type="button" class="pk-btn pk-btn--danger pk-btn--sm" (click)="eliminar(c)" [disabled]="ocupadaId !== null">Eliminar</button>
+    </div>
+  </article>
+
+</section>

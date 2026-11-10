@@ -43,6 +43,10 @@ export interface AbonoDetalleItem {
 }
 
 export interface PedidoDetalleResponse {
+  /** Solo viene en true (back 2026-11-07): alguna línea lleva precio de campaña; pasarlo a Ir pagando la regresa a su precio normal. */
+  tieneJuguetesConPrecioDeCampana?: boolean;
+  /** Solo viene en true y solo para el administrador: el pedido está ligado a una persona con código de campaña (se le puede reenviar). */
+  tieneCodigoDeCampana?: boolean;
   pedidoId:          number;
   tipoPedido:        string;
   estadoPedido:      string;
@@ -113,6 +117,9 @@ export interface PedidoDetalleItem {
   subTotal:               number;
   promocionId?:           number | null;
   promocionDescripcion?:  string | null;
+  /** Solo en líneas cobradas con precio de campaña (back 2026-11-08): el precio de antes del descuento y la marca. */
+  precioNormal?:          number | null;
+  conPrecioDeCampana?:    boolean | null;
   /**
    * `true` solo en la línea del papel de un ramo. Sustituye a detectarlo por el nombre del
    * producto, que era frágil. Sirve para no mostrársela al cliente: el papel va incluido, él no

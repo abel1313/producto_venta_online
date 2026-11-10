@@ -116,6 +116,8 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 // cada tema (el modo día está en el bloque :host-context(body.theme-light) de abajo).
 .vb-filtros-toggle {
   display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
   align-items: center;
   gap: 10px;
   margin: 0 0 14px;
@@ -202,6 +204,11 @@ $transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 // ── Filtros públicos del catálogo (talla/color/marca/precio) ────────
+.vb-pub-aviso {
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
 .vb-pub-filtros {
   display: flex;
   gap: 8px;

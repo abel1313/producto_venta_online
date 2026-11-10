@@ -171,13 +171,17 @@ export interface FilaReporteCategoria {
   piezasVendidas: number; ventas: number; totalVendido: number; costoVendido: number; gananciaVendida: number;
   porcentajeCalculado: number | null; calculoNuevo: boolean; porcentajeReal: number | null;
   fletePorPieza: number; sinFlete: boolean;
-  porVender: number; gananciaPorVender: number; gananciaTotal: number;
+  porVender: number; gananciaPorVender: number; gananciaPorVenderRebaja: number; gananciaPorVenderCampana: number;
+  gananciaTotal: number; gananciaTotalRebaja: number; gananciaTotalCampana: number;
+  fleteEnLoVendido: number; fleteEnStock: number;
 }
 
 export interface TotalesReporteCategoria {
   productos: number; productosVendidos: number; productosSinVender: number;
   piezas: number; total: number; costo: number; gananciaVendida: number; margenRealPct: number | null;
   piezasPorVender: number; gananciaPorVender: number; gananciaTotal: number;
+  gananciaPorVenderRebaja: number; gananciaPorVenderCampana: number; gananciaTotalRebaja: number; gananciaTotalCampana: number;
+  fleteVendido: number; fleteEnStock: number;
 }
 
 export interface PaginaReporteCategoria {

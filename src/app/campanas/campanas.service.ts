@@ -5,7 +5,11 @@ import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
 /** `origen` es solo de pantalla (de qué campaña se tomó el precio al agregarlo); no se manda al back. */
-export interface ICampanaProducto { productoId: number; nombre: string | null; codigoBarras?: string | null; precio: number; origen?: string | null; }
+export interface ICampanaProducto {
+  productoId: number; nombre: string | null; codigoBarras?: string | null; precio: number; origen?: string | null;
+  /** Solo para mostrar (vienen del catálogo, no se guardan con la campaña): el precio de venta y el precio con descuento del producto. */
+  precioVenta?: number | null; precioRebaja?: number | null;
+}
 
 /** Respuesta del «Verificar»: OK = el código es de este cliente; NO_COINCIDE = es de otra persona; NO_EXISTE = no es de nadie. */
 export interface IVerificacionCodigo {

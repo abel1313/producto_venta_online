@@ -30,11 +30,15 @@
   padding: .45rem 0; border-bottom: 1px solid var(--app-hairline, var(--app-border));
   &__nombre { min-width: 0; overflow-wrap: anywhere; color: var(--app-text); }
   &__origen { display: block; font-size: .72rem; color: var(--app-text-muted); }
-  &__precio { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--app-text-muted); input { width: 7rem; } }
+  &__precios { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem .9rem; }
+  &__precio { display: inline-flex; align-items: center; gap: .4rem; font-size: .8rem; color: var(--app-text-muted); input { width: 7rem; &:disabled { opacity: .75; cursor: not-allowed; } } }
 }
+// Precio de campaña igual al de venta = sin descuento real: fila marcada con el color de aviso del diseño.
+.cp-fila--sin-descuento { background: var(--pk-warning-soft, var(--app-tint)); box-shadow: inset 3px 0 0 var(--pk-warning, var(--app-gold)); padding-inline: .5rem; border-radius: 6px; }
+.cp-aviso-sin-descuento { margin: .25rem 0 .5rem; font-size: .8rem; color: var(--app-text-muted); }
 @media (max-width: 560px) {
   // Nombre y ✕ en el primer renglón; el precio abajo a todo lo ancho (antes el ✕ caía solo en un tercer renglón).
-  .cp-fila { grid-template-columns: 1fr auto; &__precio { grid-column: 1 / -1; grid-row: 2; } > .pk-btn--icon { grid-column: 2; grid-row: 1; } }
+  .cp-fila { grid-template-columns: 1fr auto; &__precios { grid-column: 1 / -1; grid-row: 2; justify-content: flex-start; } > .pk-btn--icon { grid-column: 2; grid-row: 1; } }
 }
 
 .cp-acciones, .cp-card__acciones { display: flex; flex-wrap: wrap; gap: .5rem; }

@@ -59,16 +59,27 @@
         <ng-container *ngIf="c.productos.length && productosFiltrados.length">
           <ng-container *ngTemplateOutlet="pie; context: { pagina: paginaActualCampana, total: totalPaginasCampana, resumen: rangoCampana, ocupado: false, ir: irAPaginaCampana.bind(this) }"></ng-container>
         </ng-container>
+        <p class="cp-aviso-sin-descuento" *ngIf="cuantosSinDescuento">⚠ {{ cuantosSinDescuento }} juguete{{ cuantosSinDescuento === 1 ? '' : 's' }} con el precio de campaña igual al de venta (sin descuento): salen primero y con la fila marcada.</p>
         <p class="cp-vacio" *ngIf="filtroCampana.trim() && !productosFiltrados.length">{{ mensajeSinCoincidencias }}</p>
 
         <div class="cp-productos__lista" *ngIf="c.productos.length">
-          <div class="cp-fila" *ngFor="let p of productosDeLaPagina; trackBy: porIdDeProducto">
+          <div class="cp-fila" [class.cp-fila--sin-descuento]="esIgualAVenta(p)" *ngFor="let p of productosDeLaPagina; trackBy: porIdDeProducto">
             <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.codigoBarras">Código: {{ p.codigoBarras }}</small><small class="cp-fila__origen" *ngIf="p.origen">{{ p.origen }}</small></span>
-            <label class="cp-fila__precio">
-              <span>Precio de campaña $</span>
-              <input class="pk-input" type="number" step="0.01" min="0.01" inputmode="decimal" [name]="'precio' + p.productoId" [(ngModel)]="p.precio"
-                     [class.cp-invalido]="!precioValido(p)" [attr.aria-invalid]="!precioValido(p)">
-            </label>
+            <div class="cp-fila__precios">
+              <label class="cp-fila__precio">
+                <span>Precio de venta $</span>
+                <input class="pk-input" type="text" [value]="(p.precioVenta ?? 0) > 0 ? (p.precioVenta | number:'1.2-2') : '—'" disabled readonly [name]="'venta' + p.productoId" aria-label="Precio de venta (solo lectura)">
+              </label>
+              <label class="cp-fila__precio">
+                <span>Con descuento $</span>
+                <input class="pk-input" type="text" [value]="(p.precioRebaja ?? 0) > 0 ? (p.precioRebaja | number:'1.2-2') : '—'" disabled readonly [name]="'rebaja' + p.productoId" aria-label="Precio con descuento (solo lectura)">
+              </label>
+              <label class="cp-fila__precio">
+                <span>Precio de campaña $</span>
+                <input class="pk-input" type="number" step="0.01" min="0.01" inputmode="decimal" [name]="'precio' + p.productoId" [(ngModel)]="p.precio" (change)="refrescarOrden()"
+                       [class.cp-invalido]="!precioValido(p)" [attr.aria-invalid]="!precioValido(p)">
+              </label>
+            </div>
             <button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button>
           </div>
         </div>

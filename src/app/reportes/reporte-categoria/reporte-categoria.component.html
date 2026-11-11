@@ -29,6 +29,13 @@
       </select>
     </label>
     <label class="pk-field">
+      <span class="pk-label">Tipo de reporte</span>
+      <select class="pk-input" name="tipoReporte" [(ngModel)]="tipoReporte">
+        <option value="COMPLETO">Completo (precios, por vender y flete)</option>
+        <option value="VENTAS">Ventas: a qué precio se vendió (venta, rebaja, campaña)</option>
+      </select>
+    </label>
+    <label class="pk-field">
       <span class="pk-label">Qué mostrar</span>
       <select class="pk-input" name="vista" [(ngModel)]="vista">
         <option value="TODOS">Vendido y por vender</option>
@@ -89,10 +96,18 @@
       <div><span class="rc-etq">Piezas vendidas</span><strong>{{ resultado.totales.piezas | number:'1.0-0' }}</strong><small>{{ resultado.totales.piezasPorVender | number:'1.0-0' }} en stock por vender</small></div>
       <div><span class="rc-etq">Total vendido</span><strong>{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Costo {{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Ganancia vendida</span><strong class="rc-ok">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</strong><small *ngIf="resultado.totales.margenRealPct !== null">{{ resultado.totales.margenRealPct | number:'1.2-2' }} % real</small></div>
+<ng-container *ngIf="tipoMostrado === 'COMPLETO'">
       <div><span class="rc-etq">Flete llevamos</span><strong>{{ resultado.totales.fleteVendido | currency:'MXN':'symbol':'1.2-2' }}</strong><small>En stock: {{ resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Total con precio venta</span><strong class="rc-ok">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVender | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Total con rebaja</span><strong class="rc-ok">{{ resultado.totales.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVenderRebaja | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Total con campaña</span><strong class="rc-ok">{{ resultado.totales.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendida + por vender {{ resultado.totales.gananciaPorVenderCampana | currency:'MXN':'symbol':'1.2-2' }}</small></div>
+</ng-container>
+<ng-container *ngIf="tipoMostrado === 'VENTAS'">
+      <div><span class="rc-etq">A precio de venta</span><strong>{{ resultado.totales.montoVenta | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasVenta | number:'1.0-0' }} piezas</small></div>
+      <div><span class="rc-etq">A rebaja</span><strong>{{ resultado.totales.montoRebaja | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasRebaja | number:'1.0-0' }} piezas</small></div>
+      <div><span class="rc-etq">A campaña</span><strong>{{ resultado.totales.montoCampana | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasCampana | number:'1.0-0' }} piezas</small></div>
+      <div><span class="rc-etq">A otro precio</span><strong>{{ resultado.totales.montoOtro | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasOtro | number:'1.0-0' }} piezas (grupo, promoción…)</small></div>
+</ng-container>
     </div>
 
     <details class="rc-leyenda">
@@ -100,6 +115,7 @@
       <p><strong>Total vendido</strong> y <strong>ganancia vendida</strong> son lo que realmente se cobró en las ventas del periodo, a su precio de ese día; la ganancia ya descuenta la comisión de tarjeta.</p>
       <p><strong>Por vender</strong> = piezas en stock × (precio − compra), si se venden al precio de <em>venta</em>, de <em>rebaja</em> o de <em>campaña</em> (si el producto no tiene rebaja o campaña usa el de venta). No descuenta flete ni comisión.</p>
       <p><strong>Total</strong> = ganancia vendida + por vender, con cada uno de los tres precios.</p>
+      <p *ngIf="tipoMostrado === 'VENTAS'"><strong>Tipo de precio</strong>: «venta» = precio normal; «rebaja» = precio con descuento; «campaña» = precio de campaña; «otro» = precio de grupo por cantidad, promoción u otro. Las ventas nuevas lo traen guardado; las anteriores se clasifican comparando lo cobrado con los precios actuales y se cuentan en «Piezas con tipo estimado» (puede equivocarse si el precio cambió).</p>
       <p><strong>Flete</strong>: el flete por pieza del último cálculo de precio de cada producto × las piezas vendidas (o las que siguen en stock). «Sin flete» = ese producto no lo trae capturado.</p>
     </details>
 
@@ -109,6 +125,7 @@
       <table class="rc-tabla">
         <thead>
           <tr>
+<ng-container *ngIf="tipoMostrado === 'COMPLETO'">
             <th class="rc-izq">Producto</th><th>Código de barras</th><th>Categoría</th>
             <th class="rc-num">Compra</th><th class="rc-num">Venta</th><th class="rc-num">Rebaja</th><th class="rc-num">Rebaja campaña</th>
             <th class="rc-num">Piezas vendidas</th><th class="rc-num">Ventas</th><th class="rc-num">Total vendido</th><th class="rc-num">Costo</th><th class="rc-num">Ganancia</th>
@@ -116,10 +133,18 @@
             <th class="rc-num">Flete en lo vendido</th><th class="rc-num">Flete en stock</th>
             <th class="rc-num">Por vender (stock)</th><th class="rc-num">Por vender: venta</th><th class="rc-num">Por vender: rebaja</th><th class="rc-num">Por vender: campaña</th>
             <th class="rc-num">Total: venta</th><th class="rc-num">Total: rebaja</th><th class="rc-num">Total: campaña</th>
+</ng-container>
+<ng-container *ngIf="tipoMostrado === 'VENTAS'">
+            <th class="rc-izq">Producto</th><th>Código de barras</th><th>Categoría</th>
+            <th class="rc-num">Piezas vendidas</th><th class="rc-num">Ventas</th><th class="rc-num">Total vendido</th><th class="rc-num">Ganancia</th><th class="rc-num">% real</th>
+            <th class="rc-num">Piezas venta</th><th class="rc-num">$ venta</th><th class="rc-num">Piezas rebaja</th><th class="rc-num">$ rebaja</th>
+            <th class="rc-num">Piezas campaña</th><th class="rc-num">$ campaña</th><th class="rc-num">Piezas otro</th><th class="rc-num">$ otro</th><th class="rc-num">Piezas con tipo estimado</th>
+</ng-container>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let f of resultado.filas; trackBy: porId" [class.rc-sin-ventas]="f.piezasVendidas === 0">
+<ng-container *ngIf="tipoMostrado === 'COMPLETO'">
             <td class="rc-izq rc-nombre">{{ f.nombre }}</td>
             <td>{{ f.codigoBarras || '—' }}</td>
             <td>{{ f.categoria || 'Otros' }}</td>
@@ -145,10 +170,31 @@
             <td class="rc-num">{{ f.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num">{{ f.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num">{{ f.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</td>
+</ng-container>
+<ng-container *ngIf="tipoMostrado === 'VENTAS'">
+            <td class="rc-izq rc-nombre">{{ f.nombre }}</td>
+            <td>{{ f.codigoBarras || '—' }}</td>
+            <td>{{ f.categoria || 'Otros' }}</td>
+            <td class="rc-num">{{ f.piezasVendidas | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.ventas | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num" [class.rc-mal]="f.gananciaVendida < 0">{{ f.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.porcentajeReal !== null ? ((f.porcentajeReal | number:'1.2-2') + ' %') : '—' }}</td>
+            <td class="rc-num">{{ f.piezasVenta | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.montoVenta | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.piezasRebaja | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.montoRebaja | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.piezasCampana | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.montoCampana | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.piezasOtro | number:'1.0-0' }}</td>
+            <td class="rc-num">{{ f.montoOtro | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.piezasEstimadas | number:'1.0-0' }}</td>
+</ng-container>
           </tr>
         </tbody>
         <tfoot>
           <tr>
+<ng-container *ngIf="tipoMostrado === 'COMPLETO'">
             <th class="rc-izq" colspan="3">Totales ({{ resultado.totales.productos }} productos, todas las páginas)</th>
             <th class="rc-num">{{ resultado.totales.sumaCompra | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.sumaVenta | currency:'MXN':'symbol':'1.2-2' }}</th>
@@ -171,6 +217,24 @@
             <th class="rc-num">{{ resultado.totales.gananciaTotal | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.gananciaTotalRebaja | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.gananciaTotalCampana | currency:'MXN':'symbol':'1.2-2' }}</th>
+</ng-container>
+<ng-container *ngIf="tipoMostrado === 'VENTAS'">
+            <th class="rc-izq" colspan="3">Totales ({{ resultado.totales.productos }} productos, todas las páginas)</th>
+            <th class="rc-num">{{ resultado.totales.piezas | number:'1.0-0' }}</th>
+            <th></th>
+            <th class="rc-num">{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.margenRealPct !== null ? ((resultado.totales.margenRealPct | number:'1.2-2') + ' %') : '—' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasVenta | number:'1.0-0' }}</th>
+            <th class="rc-num">{{ resultado.totales.montoVenta | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasRebaja | number:'1.0-0' }}</th>
+            <th class="rc-num">{{ resultado.totales.montoRebaja | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasCampana | number:'1.0-0' }}</th>
+            <th class="rc-num">{{ resultado.totales.montoCampana | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasOtro | number:'1.0-0' }}</th>
+            <th class="rc-num">{{ resultado.totales.montoOtro | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasEstimadas | number:'1.0-0' }}</th>
+</ng-container>
           </tr>
         </tfoot>
       </table>

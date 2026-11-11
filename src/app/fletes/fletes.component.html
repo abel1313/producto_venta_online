@@ -101,13 +101,23 @@
       </div>
       <p class="pk-hint" *ngIf="(categoria || texto.trim().length >= 2) && !buscando && !resultados.length">No encontré productos con eso.</p>
 
-      <div class="fl-tabla-wrap" *ngIf="v.productos.length">
+      <div class="fl-filtrar" *ngIf="v.productos.length > porPaginaViaje">
+        <input class="pk-input" name="filtroViaje" [ngModel]="filtroViaje" (ngModelChange)="alEscribirFiltroViaje($event)" autocomplete="off"
+               placeholder="Buscar entre los productos del viaje (nombre o código)…" aria-label="Buscar entre los productos del viaje">
+        <span class="pk-hint">Mostrando {{ rangoViaje }}</span>
+      </div>
+      <div class="fl-paginas" *ngIf="totalPaginasViaje > 1">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPaginaViaje(paginaActualViaje - 1)" [disabled]="paginaActualViaje <= 1">‹ Anterior</button>
+        <span class="pk-hint">Página {{ paginaActualViaje }} de {{ totalPaginasViaje }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPaginaViaje(paginaActualViaje + 1)" [disabled]="paginaActualViaje >= totalPaginasViaje">Siguiente ›</button>
+      </div>
+      <div class="fl-tabla-wrap fl-tabla-wrap--viaje" *ngIf="v.productos.length">
         <table class="fl-tabla">
           <thead>
             <tr><th class="fl-izq">Producto</th><th>Piezas</th><th>Costo c/u $</th><th>Flete por pieza $</th><th>Flete del renglón</th><th></th></tr>
           </thead>
           <tbody>
-            <tr *ngFor="let p of v.productos; trackBy: porIdProducto">
+            <tr *ngFor="let p of productosDeLaPaginaViaje; trackBy: porIdProducto">
               <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
               <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"></td>
               <td><input class="pk-input" type="number" [name]="'co' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.costoUnitario" aria-label="Costo por pieza"></td>
@@ -118,9 +128,11 @@
           </tbody>
         </table>
       </div>
+      <p class="pk-hint" *ngIf="v.productos.length && !productosDelViaje.length">Ningún producto del viaje coincide con lo que escribiste.</p>
       <p class="pk-hint" *ngIf="!v.productos.length">Todavía no hay productos. Busca arriba y agrégalos con ＋.</p>
     </div>
 
+    <div class="fl-pie">
     <!-- Resumen en vivo -->
     <div class="fl-resumen" aria-live="polite">
       <div><span>Costo a cubrir</span><strong>{{ costoACubrir | currency:'MXN':'symbol':'1.2-2' }}</strong><small>flete + gastos que cuentan</small></div>
@@ -135,6 +147,7 @@
     <div class="fl-acciones">
       <button type="submit" class="pk-btn pk-btn--primary" [disabled]="guardando || motivos.length">{{ guardando ? 'Guardando…' : 'Guardar viaje' }}</button>
       <button type="button" class="pk-btn pk-btn--secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+    </div>
     </div>
   </form>
 

@@ -8,6 +8,10 @@ Formato de cada entrada:
 
 ```
 
+### 2026-11-11 — Fletes: la lista de productos del viaje se traba con muchos productos
+**Dónde:** `fletes/fletes.component.*` (`productosDelViaje`, `productosDeLaPaginaViaje`, `filtroViaje`, `.fl-tabla-wrap--viaje`, `.fl-pie`)
+**Debe comprobar:** con una campaña de 186 productos traída al viaje solo se pintan 25 renglones por página (8 páginas) y el scroll de la página ya no se traba; el buscador «entre los productos del viaje» (solo con más de 25) filtra por nombre o código sin acentos y vuelve a la página 1; quitar productos en la última página no deja una página vacía; la tabla tiene su propio scroll (unos 26rem) con el encabezado fijo; en pantallas de 900 px o más el resumen y «Guardar viaje / Cancelar» quedan pegados abajo (compactos) y en celular no; cambiar piezas o flete de un renglón actualiza el resumen al momento; las tablas de «Ligar ventas anteriores» y de ligas manuales también tienen su scroll. Comprobado en navegador con 186 productos (25 renglones y 75 campos en pantalla en vez de 186 y 558); falta el uso real en QA.
+
 ### 2026-11-11 — Campo «Categoría» de Nuevo/Actualizar producto muy alto (~65 px)
 **Dónde:** `src/tema-jade.scss` (`.pka-search__input` y `.pka-search` en la regla de buscadores en píldora)
 **Debe comprobar:** el campo Categoría (componente `palabra-clave-autocomplete`) mide lo mismo que Color y Piezas (~44 px) en Nuevo producto y Actualizar producto, de día y de noche, en escritorio y a 400 px; con una categoría elegida el chip y el ✕ siguen bien alineados; el desplegable de resultados sigue saliendo debajo; el diseño Clásico no cambia. El mismo componente se usa en otras pantallas con categoría: revisar que no se vea apretado.

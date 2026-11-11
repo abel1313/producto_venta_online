@@ -29,10 +29,12 @@
 .fl-res__datos { display: grid; min-width: 0; b { overflow-wrap: anywhere; color: var(--app-text); } small { color: var(--app-text-muted); } }
 .fl-res__estado { font-size: .8rem; color: var(--app-accent-text); white-space: nowrap; }
 
-.fl-tabla-wrap { overflow-x: auto; }
+.fl-tabla-wrap { overflow: auto; max-height: 30rem; overscroll-behavior: contain; }
+.fl-tabla-wrap--viaje { max-height: 26rem; }
+.fl-filtrar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; input { flex: 1; min-width: 12rem; } }
 .fl-tabla {
   width: 100%; border-collapse: collapse; font-size: .85rem;
-  th { background: var(--table-header-bg); color: var(--table-header-text); padding: .45rem .5rem; text-align: right; white-space: nowrap; font-weight: 600; }
+  th { background: var(--table-header-bg); color: var(--table-header-text); padding: .45rem .5rem; text-align: right; white-space: nowrap; font-weight: 600; position: sticky; top: 0; z-index: 1; }
   td { padding: .4rem .5rem; border-bottom: 1px solid var(--table-border, var(--app-border)); text-align: right; vertical-align: middle; }
   td input { width: 6.5rem; text-align: right; }
   .fl-izq { text-align: left; b { display: block; overflow-wrap: anywhere; color: var(--app-text); } small { color: var(--app-text-muted); } }
@@ -80,3 +82,14 @@
 .fl-bloque__titulo { margin: 1rem 0 .4rem; font-size: .95rem; color: var(--app-text); }
 
 .fl-importar, .fl-llenar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-block: .4rem; select { flex: 1; min-width: 12rem; } }
+
+// Resumen, avisos y botones del viaje: en pantallas anchas se quedan pegados abajo para no bajar y subir con muchos productos.
+.fl-pie { display: grid; gap: .6rem; }
+@media (min-width: 900px) {
+  .fl-pie {
+    position: sticky; bottom: 0; z-index: 5; gap: .4rem; padding-block: .45rem; background: var(--card-body-bg); border-top: 1px solid var(--app-border);
+    // Compacto: solo cifra y título de cada tarjeta, para no tapar la tabla.
+    .fl-resumen { grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); gap: .4rem; > div { padding: .25rem .6rem; } small { display: none; } strong { font-size: .95rem; } }
+    .fl-motivos { font-size: .8rem; }
+  }
+}

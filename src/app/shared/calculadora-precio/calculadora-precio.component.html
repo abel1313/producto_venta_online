@@ -20,7 +20,8 @@
 
       <label class="cp-campo">
         <span class="cp-etiqueta">Transporte por pieza</span>
-        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="transporte" (ngModelChange)="alCambiarCalculo()" placeholder="0.00"></span>
+        <span class="cp-dinero"><span>$</span><input type="number" min="0" step="0.01" inputmode="decimal" [(ngModel)]="transporte" (ngModelChange)="alEscribirTransporte()" placeholder="0.00"></span>
+        <small class="cp-ayuda cp-origen" *ngIf="transporteTomadoDe">🚚 Tomado del viaje «{{ transporteTomadoDe }}». Puedes cambiarlo.</small>
         <small class="cp-ayuda">Lo que gastaste en traer la mercancía, <strong>repartido entre las piezas</strong> del viaje. Cada juguete puede llevar un transporte distinto (uno grande ocupa más lugar que uno chico).</small>
       </label>
       <details class="cp-ayudita">
@@ -97,6 +98,10 @@
         🚚 Este producto <strong>ya tiene su flete registrado</strong> en {{ viajesTexto }}.
         <ng-container *ngIf="duplicaFlete"><strong>Si dejas marcado «Poner también el costo total», el flete se contará dos veces</strong> en tus reportes (ya va aparte en el viaje). Desmarca la casilla.</ng-container>
         <ng-container *ngIf="!duplicaFlete">El flete se lleva aparte, en Catálogo → Fletes. Aquí solo lo usas para calcular el precio; no se guarda en el costo.</ng-container>
+      </p>
+      <p class="cp-ayuda cp-alerta" *ngIf="difiereDelViaje" role="alert">
+        ⚖️ El viaje «{{ viajeVigente?.nombre }}» dice <strong>{{ fleteVigente | currency:'MXN':'symbol':'1.2-2' }}</strong> de flete por pieza y aquí pusiste <strong>{{ transporte | currency:'MXN':'symbol':'1.2-2' }}</strong>.
+        Al guardar el producto te preguntaré si quieres actualizar también el flete en el viaje.
       </p>
       <p class="cp-ayuda" *ngIf="viajesDelProducto.length">
         Usar el flete de un viaje como «Transporte por pieza»:

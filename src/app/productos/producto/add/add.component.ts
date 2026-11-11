@@ -179,6 +179,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   /** El cálculo que se hizo en la calculadora y todavía no se guarda: se manda al back cuando el producto se guarda (el producto nuevo aún no tiene id). */
   private calculoPendiente: ICalculoParaGuardar | null = null;
+  /** Si el flete del cálculo difiere del viaje vigente: después de guardar se le pregunta al dueño si lo actualiza también en el viaje. */
+  private viajePendiente: IResultadoCalculo['viaje'] | null = null;
   /** El último cálculo guardado del producto que se edita (null si nunca tuvo uno): se muestra en «Último cálculo de precio». */
   ultimoCalculo: ICalculoGuardado | null = null;
   /** Ya se preguntó si el producto tiene cálculo (para distinguir «cargando» de «nunca se calculó»). */
@@ -207,20 +209,53 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       costo?.markAsTouched();
     }
     this.calculoPendiente = r.calculo;
+    this.viajePendiente = r.viaje ?? null;
   }
 
   /** Después de guardar el producto: guarda el cálculo de precio (con el precio de venta que de verdad quedó). Si falla, el producto ya está guardado y solo se avisa. */
   private guardarCalculoPrecio(productoId: number | undefined, precioVenta: number): void {
     const calculo = this.calculoPendiente;
-    this.calculoPendiente = null;
+    const viaje = this.viajePendiente;
+    this.calculoPendiente = null; this.viajePendiente = null;
     if (!productoId || !calculo || !this.authService.isAdminService) return;
     this.calculoPrecioService.guardar(productoId, { ...calculo, precioCobrado: precioVenta }).subscribe({
-      next: guardado => { if (this.esActualizar) { this.ultimoCalculo = guardado; this.ultimoCalculoCargado = true; this.historialCalculos = null; } },
+      next: guardado => {
+        if (this.esActualizar) { this.ultimoCalculo = guardado; this.ultimoCalculoCargado = true; this.historialCalculos = null; }
+        if (viaje) this.preguntarActualizarViaje(productoId, viaje);
+      },
       error: () => Swal.fire({
         icon: 'warning',
         title: 'El producto se guardó, pero…',
         text: 'No se pudo guardar el cálculo de precio (el historial). El precio del producto sí quedó.'
       })
+    });
+  }
+
+  /**
+   * El flete que se usó en el cálculo es distinto al del viaje vigente del producto. Se le pregunta al dueño si lo actualiza también en el viaje; solo con su
+   * «sí» se cambia (nunca en silencio). Las ventas ya ligadas al viaje no cambian: guardan su propia copia del flete.
+   */
+  private async preguntarActualizarViaje(productoId: number, v: NonNullable<IResultadoCalculo['viaje']>): Promise<void> {
+    const fmt = (n: number) => '$' + (+n || 0).toFixed(2);
+    const r = await Swal.fire({
+      icon: 'question', title: '¿Actualizar también el viaje?',
+      text: `En el cálculo pusiste ${fmt(v.fleteNuevo)} de flete por pieza y el viaje «${v.nombre}» tiene ${fmt(v.fleteActual)}. ¿Quieres cambiar el flete de este producto en ese viaje a ${fmt(v.fleteNuevo)}? Las ventas que ya se ligaron al viaje no cambian.`,
+      showCancelButton: true, confirmButtonText: 'Sí, actualizar el viaje', cancelButtonText: 'No, dejar el viaje como está'
+    });
+    if (!r.isConfirmed) return;
+    // Se vuelve a leer el viaje justo antes de guardar (por si alguien lo editó) y solo se cambia el flete de este producto.
+    this.fletesService.deProducto(productoId).subscribe({
+      next: viajes => {
+        const viaje = viajes.find(x => x.id === v.viajeId);
+        const renglon = viaje?.productos.find(p => p.productoId === productoId);
+        if (!viaje || !renglon) { Swal.fire({ icon: 'warning', title: 'No se encontró el producto en el viaje', text: 'El viaje ya no lo tiene: no se cambió nada.' }); return; }
+        renglon.fletePorPieza = v.fleteNuevo;
+        this.fletesService.actualizar(v.viajeId, viaje).subscribe({
+          next: () => Swal.fire({ icon: 'success', title: 'Viaje actualizado', text: `El flete de este producto en «${v.nombre}» ahora es ${fmt(v.fleteNuevo)} por pieza.`, timer: 2500, showConfirmButton: false }),
+          error: e => Swal.fire({ icon: 'error', title: 'No se pudo actualizar el viaje', text: e?.error?.mensaje || 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' })
+        });
+      },
+      error: () => Swal.fire({ icon: 'error', title: 'No se pudo leer el viaje', text: 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' })
     });
   }
 

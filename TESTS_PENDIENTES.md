@@ -8,6 +8,10 @@ Formato de cada entrada:
 
 ```
 
+### 2026-11-11 — Fletes entrega 5: categoría, «Otros», agregar categoría completa e importar viaje en Campañas
+**Dónde:** `fletes/fletes.component.*` (buscador del viaje), `campanas/campanas.component.*` (selector «Otros» e «Importar los productos de un viaje»), `ProductoService.adminFiltrar(sinCategoria)`
+**Debe comprobar:** elegir una categoría en Nuevo viaje lista sus productos sin escribir; «Otros» lista solo los sin categoría; «Agregar los N de esta búsqueda» agrega todos los de todas las páginas, salta los ya agregados (sin duplicar) y muestra cuántos se agregaron/saltaron; en Campañas «Otros» filtra bien y «Importar viaje» no duplica productos que ya estaban ni rompe el precio de cada uno; celular 400 px sin scroll horizontal, día y noche.
+
 ### AAAA-MM-DD — Qué se hizo
 **Dónde:** componente / servicio / método
 **Tipo:** unitario (componente o servicio con HttpTestingController) · e2e (Playwright contra QA)

@@ -4,7 +4,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
-import { FletesService, IGastoViaje, IProductoViaje, IViaje } from './fletes.service';
+import { FletesService, IGastoViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
 
 interface IProductoBuscado { id: number; nombre: string; codigoBarras: string | null; precioCosto: number; stock: number; }
 
@@ -15,6 +15,10 @@ interface IProductoBuscado { id: number; nombre: string; codigoBarras: string | 
 })
 export class FletesComponent implements OnInit, OnDestroy {
   viajes: IViaje[] = [];
+  /** Cómo va cada viaje, por id (recuperado, falta, estado...). */
+  reportes = new Map<number, IReporteViaje>();
+  /** El viaje con su detalle de ventas abierto. */
+  abiertoId: number | null = null;
   cargando = false;
   error: string | null = null;
   edicion: IViaje | null = null;
@@ -53,10 +57,28 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.error = null;
     this.svc.listar().subscribe({
-      next: v => { this.viajes = v; this.cargando = false; },
+      next: v => { this.viajes = v; this.cargando = false; this.cargarReportes(); },
       error: () => { this.cargando = false; this.error = 'No se pudieron cargar los viajes. Intenta de nuevo.'; }
     });
   }
+
+  private cargarReportes(): void {
+    this.svc.reportes().subscribe(l => { this.reportes = new Map(l.map(r => [r.viajeId, r] as [number, IReporteViaje])); });
+  }
+
+  reporteDe(v: IViaje): IReporteViaje | undefined { return v.id == null ? undefined : this.reportes.get(v.id); }
+
+  /** Porcentaje del costo a cubrir que ya se recuperó con lo vendido (0 a 100). */
+  porcentajeRecuperado(r: IReporteViaje | undefined): number {
+    if (!r || !(r.costoACubrir > 0)) return 0;
+    return Math.min(100, Math.round((r.fleteRecuperado / r.costoACubrir) * 100));
+  }
+
+  etiquetaEstado(e: IReporteViaje['estado']): string {
+    return e === 'VENDIDO_POR_COMPLETO' ? 'Vendido por completo' : e === 'FLETE_CUBIERTO' ? 'Flete cubierto' : 'Abierto';
+  }
+
+  alternarDetalle(v: IViaje): void { this.abiertoId = this.abiertoId === v.id ? null : (v.id ?? null); }
 
   nuevo(): void {
     this.errorGuardar = null;

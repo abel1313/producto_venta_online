@@ -59,6 +59,13 @@
 }
 .fl-etiqueta { font-size: .72rem; padding: .15rem .5rem; border-radius: 999px; background: var(--pk-warning-soft, var(--app-tint)); color: var(--app-text); white-space: nowrap; &--ok { background: var(--badge-bg); color: var(--badge-text); } }
 
+// Avance del flete de cada viaje: barra de «recuperado» y detalle de lo vendido.
+.fl-avance { display: grid; gap: .4rem; }
+.fl-avance__texto { margin: 0; font-size: .8rem; color: var(--app-text-muted); b { color: var(--app-text); font-variant-numeric: tabular-nums; } }
+.fl-barra { height: .55rem; border-radius: 999px; background: var(--app-tint); border: 1px solid var(--app-border); overflow: hidden; }
+.fl-barra__lleno { display: block; height: 100%; background: var(--app-accent); border-radius: 999px; transition: width .3s ease; }
+.fl-tabla--chica { font-size: .78rem; th, td { padding: .3rem .4rem; } }
+
 @media (max-width: 560px) {
   .fl-fila--gasto { grid-template-columns: 1fr auto; > input:first-child { grid-column: 1 / -1; } }
 }

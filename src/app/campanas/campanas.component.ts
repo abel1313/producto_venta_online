@@ -109,11 +109,33 @@ export class CampanasComponent implements OnInit, OnDestroy {
 
   /** Los juguetes de la campaña que se ven: todos si no hay texto; si hay, los que coinciden en nombre o que el buscador del catálogo halló por nombre/código de barras. */
   get productosFiltrados(): ICampanaProducto[] {
-    const lista = this.edicion?.productos ?? [];
+    const lista = this.ordenados(this.edicion?.productos ?? []);
     const t = this.normalizar(this.filtroCampana);
     if (!t) return lista;
     return lista.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.normalizar(p.codigoBarras ?? '').includes(t));
   }
+
+  /**
+   * Un juguete con el precio de campaña IGUAL al precio de venta no tiene descuento real: se pinta la fila y esos juguetes salen primero para verlos de una vez.
+   * El color se calcula en vivo; el ORDEN solo se refresca al abrir la campaña, al agregar un juguete o al terminar de editar un precio (así la fila no se
+   * brinca de lugar mientras se escribe).
+   */
+  private idsSinDescuento = new Set<number>();
+
+  esIgualAVenta(p: ICampanaProducto): boolean {
+    return (p.precioVenta ?? 0) > 0 && Number.isFinite(+p.precio) && Math.abs(+p.precio - (p.precioVenta ?? 0)) < 0.005;
+  }
+
+  refrescarOrden(): void {
+    this.idsSinDescuento = new Set((this.edicion?.productos ?? []).filter(p => this.esIgualAVenta(p)).map(p => p.productoId));
+  }
+
+  private ordenados(lista: ICampanaProducto[]): ICampanaProducto[] {
+    if (!this.idsSinDescuento.size) return lista;
+    return [...lista.filter(p => this.idsSinDescuento.has(p.productoId)), ...lista.filter(p => !this.idsSinDescuento.has(p.productoId))];
+  }
+
+  get cuantosSinDescuento(): number { return (this.edicion?.productos ?? []).filter(p => this.esIgualAVenta(p)).length; }
 
   // ── Páginas de los juguetes de la campaña (en el navegador: la lista ya está completa en memoria) ──
   readonly porPaginaCampana = 12;
@@ -326,6 +348,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
     this.reporte = null;
     this.limpiarFiltroCampana();
     this.edicion = { ...c, productos: c.productos.map(p => ({ ...p })) };
+    this.refrescarOrden();
     this.abrirCatalogo();
   }
 
@@ -443,7 +466,8 @@ export class CampanasComponent implements OnInit, OnDestroy {
     if (p.precioRebaja > 0) { precio = p.precioRebaja; origen = 'precio con descuento del producto'; }
     else if (previo) { precio = previo.precio; origen = `precio de «${previo.campana}»`; }
     else { precio = p.precioVenta > 0 ? p.precioVenta : (null as unknown as number); origen = null; }
-    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, precio, origen }];
+    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, precio, origen, precioVenta: p.precioVenta, precioRebaja: p.precioRebaja }];
+    this.refrescarOrden();
   }
 
   /** El último precio de campaña de un juguete en las OTRAS campañas (la más reciente primero por fecha de fin, luego por id); null si nunca estuvo en una. */

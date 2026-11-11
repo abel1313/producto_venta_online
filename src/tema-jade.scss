@@ -194,3 +194,17 @@ html :where(#{$jade}) {
     transition-duration: 1ms !important;
   }
 }
+
+// ── Buscadores en píldora (2026-11-11) ───────────────────────────────────
+// La regla de «Campos» da a todo <input> el alto de un campo (44px). Los buscadores ya son una píldora con su propio
+// borde y relleno: el input de adentro más el relleno la dejaban de ~66px, «muy ancha». Aquí el input de adentro se
+// queda a ras y la píldora completa mide lo mismo que un campo (--input-height): Tienda → Buscar, Productos → Buscar,
+// Venta directa, Usuarios y el buscador de Tienda → venta. !important porque la regla de «Campos» pesa más por sus :not().
+#{$jade} :is(.vb-search__input, .pl-search__input, .bu-search__input, .vd-search__input, .buscador-input .form-control):not(#_) {
+  min-height: 0 !important;
+  height: calc(var(--input-height) - 12px);
+  padding-block: 0;
+  border-radius: 0;
+}
+#{$jade} :is(.vb-search, .pl-search, .bu-search):not(#_) { padding-block: 5px; }
+#{$jade} .vd-search:not(#_) { padding-block: 5px; }

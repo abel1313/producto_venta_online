@@ -17,13 +17,28 @@ Formato de cada entrada:
 
 ---
 
-### 2026-11-11 — Reporte por categoría: selector «Tipo de reporte» (Completo / Ventas)
+### 2026-11-11 — Buscadores en píldora: misma altura que un campo (44 px)
+**Dónde:** `src/tema-jade.scss` (sección «Buscadores en píldora»).
+**Debe comprobar:**
+- [ ] Tienda → Buscar, Productos → Buscar, Venta directa, Usuarios y el buscador de Tienda → venta miden lo mismo que un campo de formulario (44 px), de día y de noche; ya no se ven «anchos».
+- [ ] El botón de la cámara y el 📱 de Tienda → Buscar siguen cabiendo dentro de la píldora sin agrandarla; el texto y el placeholder se ven completos; el foco sigue mostrando el borde.
+- [ ] Con el diseño «Clásico» (sin capa Jade) y en Login/Registro no cambia nada.
+
+### 2026-11-11 — Campañas: precio de venta y de descuento (solo lectura) y filas sin descuento
+**Dónde:** `campanas/campanas.component.{ts,html,scss}`, `campanas.service.ts`.
+**Debe comprobar:**
+- [ ] En «Juguetes y su precio de campaña» cada fila muestra «Precio de venta» y «Con descuento» deshabilitados (no se pueden editar) y «Precio de campaña» editable; un producto sin descuento muestra «—».
+- [ ] Un juguete con precio de campaña **igual** al precio de venta: fila marcada con el color de aviso, sale al inicio de la lista y arriba aparece «⚠ N juguetes con el precio de campaña igual al de venta».
+- [ ] Al escribir un precio la fila no se brinca de lugar; se reacomoda al salir del campo. Al agregar un juguete nuevo con precio igual al de venta, también sale marcado.
+- [ ] Guardar la campaña no manda precioVenta ni precioRebaja; celular (≤560 px): los tres precios debajo del nombre; día y noche.
+
+### 2026-11-11 — Reporte por categoría: un solo reporte con inversión, flete y tipo de precio
 **Dónde:** `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
 **Debe comprobar:**
-- [ ] El selector «Tipo de reporte» aparece en los filtros; «Completo» se ve igual que antes (tarjetas, columnas y totales).
-- [ ] «Ventas: a qué precio se vendió»: 4 tarjetas de tipo (venta, rebaja, campaña, otro, con piezas) en lugar de las de flete/por vender; tabla con piezas y $ por tipo y «Piezas con tipo estimado»; fila de totales completa.
-- [ ] Cambiar el selector no cambia lo que se ve hasta volver a pulsar «Ver reporte»; Excel y PDF salen con el tipo elegido (nombre `reporte-ventas-por-tipo-de-precio-…`).
-- [ ] Día y noche, escritorio y celular; la tabla hace scroll horizontal dentro de su caja.
+- [ ] No hay selector «Tipo de reporte». Tarjetas: productos, inversión, flete, total vendido, ganancia, a precio normal, a rebaja, a campaña.
+- [ ] Tabla: columnas Inversión y Flete por producto; por cada tipo (normal, rebaja, campaña) piezas · precio · total, **vacío** si no se vendió así; «Otro» y «Piezas con tipo estimado»; «por vender» al final; fila de totales completa.
+- [ ] Caso A/B/C: A vendió 2 normales → solo en Normal; B vendió 1 en campaña → solo en Campaña con su precio; C 1 normal + 1 campaña → en las dos; totales = suma.
+- [ ] Excel y PDF salen con el mismo diseño; día y noche, escritorio y celular (scroll horizontal dentro de su caja).
 
 ### 2026-11-10 — Reportes → pestaña «🗂️ Por categoría» (solo administrador)
 **Dónde:** `reportes/reporte-categoria/*` (componente nuevo), `reportes/service/reportes.service.ts` (`getPorCategoria`, `generarReporteCategoria`, `getReportesGenerados`, `getEstadoReporteGenerado`, `descargarReporteGenerado`), `reportes.component.{ts,html}` (pestaña), `reportes.module.ts`, `loading.interceptor.ts` (`/v1/reportes/ventas/por-categoria/generados` sin overlay).

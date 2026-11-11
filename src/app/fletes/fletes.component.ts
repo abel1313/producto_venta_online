@@ -39,6 +39,9 @@ export class FletesComponent implements OnInit, OnDestroy {
   guardando = false;
   errorGuardar: string | null = null;
   ocupadoId: number | null = null;
+  /** El archivo que se está armando (id del viaje + formato), para no pedirlo dos veces ni dejar el botón libre. */
+  descargando: string | null = null;
+  errorDescarga: string | null = null;
 
   // Buscador de productos para agregarlos al viaje
   texto = '';
@@ -90,6 +93,27 @@ export class FletesComponent implements OnInit, OnDestroy {
 
   etiquetaEstado(e: IReporteViaje['estado']): string {
     return e === 'VENDIDO_POR_COMPLETO' ? 'Vendido por completo' : e === 'FLETE_CUBIERTO' ? 'Flete cubierto' : 'Abierto';
+  }
+
+  /** Baja el reporte del viaje en Excel o PDF. */
+  descargar(v: IViaje, formato: 'XLSX' | 'PDF'): void {
+    if (v.id == null || this.descargando) return;
+    this.descargando = `${v.id}-${formato}`;
+    this.errorDescarga = null;
+    this.svc.descargarReporte(v.id, formato).subscribe({
+      next: blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte-viaje-${(v.nombre || 'viaje').replace(/[^\w\-]+/g, '-')}.${formato === 'PDF' ? 'pdf' : 'xlsx'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        this.descargando = null;
+      },
+      error: () => { this.descargando = null; this.errorDescarga = 'No se pudo armar el archivo del viaje. Intenta de nuevo.'; }
+    });
   }
 
   alternarDetalle(v: IViaje): void { this.abiertoId = this.abiertoId === v.id ? null : (v.id ?? null); }

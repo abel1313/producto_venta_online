@@ -168,6 +168,7 @@
   </div>
 
   <p class="fl-vacio" *ngIf="cargando">Cargando viajes…</p>
+  <p class="pk-error" *ngIf="errorDescarga">{{ errorDescarga }}</p>
   <p class="pk-error" *ngIf="error">{{ error }}</p>
   <p class="fl-vacio" *ngIf="!cargando && !error && !edicion && !ligando && !viajes.length">Todavía no hay viajes. Crea el primero con «Nuevo viaje».</p>
 
@@ -211,6 +212,8 @@
         </table>
       </div>
       <div class="fl-acciones">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="descargar(v, 'XLSX')" [disabled]="!!descargando" title="Baja el reporte de este viaje en Excel">{{ descargando === v.id + '-XLSX' ? 'Armando…' : '⬇ Excel' }}</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="descargar(v, 'PDF')" [disabled]="!!descargando" title="Baja el reporte de este viaje en PDF">{{ descargando === v.id + '-PDF' ? 'Armando…' : '⬇ PDF' }}</button>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="abrirLigar(v)" [disabled]="!v.productos.length" title="Marca qué ventas anteriores salieron de este viaje">Ligar ventas anteriores</button>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="editar(v)">Editar</button>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="eliminar(v)" [disabled]="ocupadoId === v.id">Eliminar</button>

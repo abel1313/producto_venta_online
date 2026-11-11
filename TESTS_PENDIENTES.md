@@ -32,6 +32,12 @@ Formato de cada entrada:
 - [ ] Al escribir un precio la fila no se brinca de lugar; se reacomoda al salir del campo. Al agregar un juguete nuevo con precio igual al de venta, también sale marcado.
 - [ ] Guardar la campaña no manda precioVenta ni precioRebaja; celular (≤560 px): los tres precios debajo del nombre; día y noche.
 
+### 2026-11-11 — Fletes entrega 4: botones ⬇ Excel y ⬇ PDF del viaje
+**Dónde:** `fletes/*` (botones en cada tarjeta, `descargar`), `fletes.service.ts` (`descargarReporte`).
+**Debe comprobar:**
+- [ ] Cada tarjeta de Fletes tiene ⬇ Excel y ⬇ PDF; mientras se arma dice «Armando…» y los dos botones se bloquean; el archivo se descarga con nombre `reporte-viaje-<nombre>.xlsx|pdf`.
+- [ ] Si falla, sale «No se pudo armar el archivo del viaje» y los botones vuelven a servir; día y noche, celular y escritorio.
+
 ### 2026-11-11 — Fletes entrega 3: ligar ventas anteriores, calculadora con viaje y bloque en el producto
 **Dónde:** `fletes/*` (panel «Ligar ventas anteriores»), `shared/calculadora-precio/*`, `productos/producto/add/*`.
 **Debe comprobar:**

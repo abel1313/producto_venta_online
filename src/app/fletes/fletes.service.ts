@@ -76,6 +76,11 @@ export class FletesService {
     return this.http.post<{ data: number }>(`${this.url}/${viajeId}/ligar`, { productoId, ligas }).pipe(map(r => r.data));
   }
 
+  /** El reporte del viaje como archivo (Excel o PDF): bytes. El back lo arma al momento. */
+  descargarReporte(viajeId: number, formato: 'XLSX' | 'PDF'): Observable<Blob> {
+    return this.http.get(`${this.url}/${viajeId}/reporte/archivo`, { params: new HttpParams().set('formato', formato), responseType: 'blob' });
+  }
+
   crear(v: IViaje): Observable<IViaje> {
     return this.http.post<{ data: IViaje }>(this.url, this.cuerpo(v)).pipe(map(r => r.data));
   }

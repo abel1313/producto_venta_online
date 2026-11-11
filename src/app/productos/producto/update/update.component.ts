@@ -183,7 +183,11 @@ export class UpdateComponent implements OnInit, OnDestroy {
       if (!result.isConfirmed) return;
       this.eliminando.add(item.dto.id);
 
-      this.serviceProducto.deleteImagen(item.dto.id).subscribe({
+      // Se borra por el back (igual que el borrado en lote): quita la relación local, limpia las cachés y avisa al micro. Antes se llamaba directo al
+      // micro con el id de la IMAGEN en un endpoint que espera el de la relación: no encontraba nada, no borraba y respondía éxito.
+      const productoId = this.productoActualizar?.idProducto ?? this.idProductoCargado;
+      if (productoId == null) { this.eliminando.delete(item.dto.id); return; }
+      this.imagenesService.eliminarImagenesBatch(productoId, [item.dto.id]).subscribe({
         next: (res: any) => {
           this.eliminando.delete(item.dto.id);
           this.displayImages = this.displayImages.filter(v => v.dto.id !== item.dto.id);

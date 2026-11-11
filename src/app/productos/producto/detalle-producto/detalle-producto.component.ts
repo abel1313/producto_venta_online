@@ -217,7 +217,8 @@ toggleMarcar(img: ImagenUpdateDto): void {
     acceptLabel: 'Sí, eliminar',
     rejectLabel: 'Cancelar',
     accept: () => {
-      this.service.deleteImagen(product.id!).subscribe({
+      // Por el back (relación local, cachés y micro), igual que el borrado en lote: el borrado directo al micro no encontraba la imagen y no borraba nada.
+      this.imagenesService.eliminarImagenesBatch(this.idProducto, [product.id!]).subscribe({
         next: () => {
           this.productoDtoImagen = this.productoDtoImagen.filter(
             (img: ImagenUpdateDto) => img.id !== product.id

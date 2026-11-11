@@ -75,3 +75,5 @@
 @media (max-width: 560px) {
   .fl-fila--gasto { grid-template-columns: 1fr auto; > input:first-child { grid-column: 1 / -1; } }
 }
+
+.fl-auto { display: block; font-size: .7rem; color: var(--app-accent-text); }

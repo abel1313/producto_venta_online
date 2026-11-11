@@ -1,4 +1,4 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -38,6 +38,9 @@ export interface IReporteViaje {
   renglones: { productoId: number; nombre: string | null; codigoBarras: string | null; piezasCompradas: number; piezasVendidas: number; piezasRestantes: number; totalVendido: number }[];
 }
 
+/** Una línea de venta con piezas que todavía no se ligan a ningún viaje (`pendientes` de `cantidad`). */
+export interface ILineaSinViaje { detalleVentaId: number; ventaId: number; fecha: string | null; cantidad: number; pendientes: number; precioUnitario: number; }
+
 /** Fletes: viajes de compra (flete, gastos y productos que llegaron). Solo administrador. Contrato: `CAMBIOS_FRONT.md` del back, sección «Fletes». */
 @Injectable({ providedIn: 'root' })
 export class FletesService {
@@ -56,6 +59,21 @@ export class FletesService {
   reportes(): Observable<IReporteViaje[]> {
     return this.http.get<{ lista: IReporteViaje[] }>(`${this.url}/reportes`).pipe(
       map(r => r.lista ?? []), catchError(() => of([] as IReporteViaje[])));
+  }
+
+  /** Ventas anteriores (no devueltas) del producto con piezas aún sin ligar a un viaje. La lista va en `lista`; vacía responde 404. */
+  lineasSinViaje(productoId: number, desde?: string, hasta?: string): Observable<ILineaSinViaje[]> {
+    let params = new HttpParams().set('productoId', String(productoId));
+    if (desde) params = params.set('desde', desde);
+    if (hasta) params = params.set('hasta', hasta);
+    return this.http.get<{ lista: ILineaSinViaje[] }>(`${this.url}/ligas/sin-viaje`, { params }).pipe(
+      map(r => r.lista ?? []),
+      catchError(e => (e?.status === 404 ? of([] as ILineaSinViaje[]) : (() => { throw e; })())));
+  }
+
+  /** Liga a mano piezas de ventas anteriores al viaje (guarda el flete por pieza de ese viaje). Devuelve cuántas piezas se ligaron. */
+  ligarVentas(viajeId: number, productoId: number, ligas: { detalleVentaId: number; cantidad: number }[]): Observable<number> {
+    return this.http.post<{ data: number }>(`${this.url}/${viajeId}/ligar`, { productoId, ligas }).pipe(map(r => r.data));
   }
 
   crear(v: IViaje): Observable<IViaje> {

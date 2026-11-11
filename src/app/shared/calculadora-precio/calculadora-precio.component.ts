@@ -104,7 +104,17 @@ export class CalculadoraPrecioComponent implements OnChanges {
 
   /** Va a duplicar el flete: el producto ya lo tiene en un viaje y aquí se está poniendo también (como transporte o en el costo total que se guarda). */
   get duplicaFlete(): boolean {
-    return this.viajesDelProducto.length > 0 && ((this.actualizarCosto && this.costoCambia) || (+(this.transporte ?? 0) > 0));
+    // El transporte de aquí solo sirve para calcular el precio y NO se guarda en el costo; lo que duplica el flete es «Poner también el costo total».
+    return this.viajesDelProducto.length > 0 && this.actualizarCosto && this.costoCambia;
+  }
+
+  /** El flete por pieza que este producto lleva en un viaje (0 si no está). */
+  fleteDelViaje(v: IViaje): number { return v.productos.find(p => p.productoId === this.productoId)?.fletePorPieza ?? 0; }
+
+  /** Usa el flete por pieza de un viaje como «Transporte por pieza» (solo para calcular el precio; no cambia el costo guardado ni el viaje). */
+  usarFleteDeViaje(v: IViaje): void {
+    this.transporte = this.fleteDelViaje(v) || null;
+    this.alCambiarCalculo();
   }
 
   /** Comisión elegida (% del precio): tarifa + IVA de la terminal. 0 si es sin comisión. */

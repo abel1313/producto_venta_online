@@ -59,9 +59,22 @@
       </div>
 
       <div class="fl-buscar">
-        <input class="pk-input" name="buscar" [ngModel]="texto" (ngModelChange)="alEscribir($event)" placeholder="Buscar producto por nombre o código de barras…" aria-label="Buscar un producto para agregarlo al viaje">
+        <select class="pk-input fl-categoria" name="categoriaBuscar" [ngModel]="categoria" (ngModelChange)="alElegirCategoria($event)" aria-label="Categoría de los productos a buscar">
+          <option value="">Todas las categorías</option>
+          <option [value]="OTROS">Otros (sin categoría)</option>
+          <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+        </select>
+        <input class="pk-input" name="buscar" [ngModel]="texto" (ngModelChange)="alEscribir($event)" placeholder="Nombre o código de barras (opcional si eliges categoría)…" aria-label="Buscar un producto para agregarlo al viaje">
         <span class="pk-hint" *ngIf="buscando">Buscando…</span>
       </div>
+      <div class="fl-categoria-barra" *ngIf="resultados.length">
+        <span class="pk-hint">{{ totalRegistros }} producto(s) · página {{ pagina }} de {{ totalPaginas }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarTodosDeLaBusqueda()" [disabled]="agregandoCategoria"
+                title="Agrega todos los productos de esta búsqueda (de todas las páginas) que todavía no están en el viaje">
+          {{ agregandoCategoria ? 'Agregando…' : '＋ Agregar los ' + totalRegistros + ' de esta búsqueda' }}
+        </button>
+      </div>
+      <p class="pk-hint fl-aviso-cat" *ngIf="avisoCategoria">{{ avisoCategoria }}</p>
       <ul class="fl-resultados" *ngIf="resultados.length">
         <li *ngFor="let p of resultados">
           <span class="fl-res__datos"><b>{{ p.nombre }}</b><small>{{ p.codigoBarras || 'sin código' }} · stock {{ p.stock }}</small></span>
@@ -69,7 +82,12 @@
           <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="!estaAgregado(p)" (click)="agregarProducto(p)">＋ Agregar</button>
         </li>
       </ul>
-      <p class="pk-hint" *ngIf="texto.trim().length >= 2 && !buscando && !resultados.length">No encontré productos con eso.</p>
+      <div class="fl-paginas" *ngIf="totalPaginas > 1">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina - 1)" [disabled]="pagina <= 1">‹ Anterior</button>
+        <span class="pk-hint">Página {{ pagina }} de {{ totalPaginas }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente ›</button>
+      </div>
+      <p class="pk-hint" *ngIf="(categoria || texto.trim().length >= 2) && !buscando && !resultados.length">No encontré productos con eso.</p>
 
       <div class="fl-tabla-wrap" *ngIf="v.productos.length">
         <table class="fl-tabla">

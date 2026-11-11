@@ -94,6 +94,7 @@
           <h4 class="cp-productos__titulo">Agregar juguetes: catálogo de productos <span class="cp-opcional">({{ totalRegistros }} en total)</span></h4>
           <select class="pk-input" name="categoria" *ngIf="categorias.length" [ngModel]="categoria" (ngModelChange)="alCambiarCategoria($event)" aria-label="Categoría del catálogo">
             <option value="">Todas las categorías</option>
+            <option [value]="OTROS">Otros (sin categoría)</option>
             <option *ngFor="let cat of categorias" [value]="cat">{{ cat }}</option>
           </select>
           <input class="pk-input" name="filtro" [ngModel]="filtro" (ngModelChange)="alEscribir($event)" autocomplete="off"
@@ -103,6 +104,16 @@
             ＋ Agregar los {{ faltanDeLaPagina }} de esta página
           </button>
         </div>
+
+        <!-- Traer de una vez los productos de un viaje (flete) -->
+        <div class="cp-importar" *ngIf="viajes.length">
+          <select class="pk-input" name="viajeImportar" [(ngModel)]="viajeElegido" aria-label="Viaje del que traer los productos">
+            <option [ngValue]="''">Importar los productos de un viaje (flete)…</option>
+            <option *ngFor="let v of viajes" [ngValue]="v.id">{{ v.nombre }} ({{ v.productos.length }} productos)</option>
+          </select>
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="importarViaje()" [disabled]="viajeElegido === '' || importando">{{ importando ? 'Importando…' : '＋ Importar' }}</button>
+        </div>
+        <p class="pk-hint cp-importar__aviso" *ngIf="avisoImportar">{{ avisoImportar }}</p>
 
         <p class="cp-vacio" *ngIf="cargandoCatalogo">Cargando productos…</p>
         <p class="pk-error" *ngIf="errorCatalogo">{{ errorCatalogo }}</p>

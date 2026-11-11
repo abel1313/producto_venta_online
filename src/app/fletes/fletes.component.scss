@@ -18,7 +18,10 @@
 .fl-num { display: inline-flex; align-items: center; gap: .25rem; color: var(--app-text-muted); input { width: 100%; } }
 .fl-check { display: inline-flex; align-items: center; gap: .35rem; font-size: .85rem; color: var(--app-text); white-space: nowrap; }
 
-.fl-buscar { display: flex; align-items: center; gap: .5rem; input { flex: 1; min-width: 0; } }
+.fl-buscar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; input { flex: 1; min-width: 12rem; } .fl-categoria { flex: 0 1 14rem; min-width: 10rem; } }
+.fl-categoria-barra, .fl-paginas { display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; margin-block: .4rem; }
+.fl-paginas { justify-content: center; }
+.fl-aviso-cat { color: var(--app-accent-text); }
 .fl-resultados {
   list-style: none; margin: 0; padding: 0; display: grid; border: 1px solid var(--app-border); border-radius: 10px; overflow: hidden;
   li { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .45rem .6rem; border-bottom: 1px solid var(--app-hairline, var(--app-border)); &:last-child { border-bottom: 0; } }

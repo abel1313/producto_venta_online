@@ -47,24 +47,54 @@ export class FletesComponent implements OnInit, OnDestroy {
   texto = '';
   resultados: IProductoBuscado[] = [];
   buscando = false;
-  private readonly buscador$ = new Subject<string>();
+  /** Categoría elegida para buscar: '' = todas, OTROS = productos sin categoría, o el nombre de una categoría. */
+  readonly OTROS = '__OTROS__';
+  categorias: string[] = [];
+  categoria = '';
+  pagina = 1;
+  totalPaginas = 1;
+  totalRegistros = 0;
+  readonly porPagina = 12;
+  agregandoCategoria = false;
+  avisoCategoria: string | null = null;
+  private readonly buscador$ = new Subject<void>();
   private readonly destroy$ = new Subject<void>();
 
   constructor(private readonly svc: FletesService, private readonly productos: ProductoService) {}
 
   ngOnInit(): void {
     this.cargar();
+    this.productos.categoriasAdmin().pipe(catchError(() => of([] as string[])), takeUntil(this.destroy$)).subscribe(cs => this.categorias = cs);
     this.buscador$.pipe(
       debounceTime(350),
-      switchMap(t => {
-        if (t.trim().length < 2) { this.buscando = false; return of<IProductoBuscado[]>([]); }
+      switchMap(() => {
+        const t = this.texto.trim();
+        // Sin categoría elegida hace falta escribir al menos 2 letras; con categoría (u "Otros") se lista aunque no se escriba nada.
+        if (!this.categoria && t.length < 2) { this.buscando = false; this.resultados = []; this.totalPaginas = 1; this.totalRegistros = 0; return of(null); }
         this.buscando = true;
-        return this.productos.adminFiltrar({ nombreOCodigo: t.trim() }, 1, 8).pipe(
-          map(r => (r?.t ?? []).map((p: any) => ({ id: p.idProducto, nombre: p.nombre, codigoBarras: p.codigoBarras ?? null, precioCosto: +(p.precioCosto ?? 0), stock: p.stock }))),
-          catchError(() => of<IProductoBuscado[]>([])));
+        return this.productos.adminFiltrar(this.filtros(), this.pagina, this.porPagina).pipe(catchError(() => of(null)));
       }),
       takeUntil(this.destroy$)
-    ).subscribe(r => { this.resultados = r; this.buscando = false; });
+    ).subscribe(r => {
+      this.buscando = false;
+      if (r === null) { if (this.categoria || this.texto.trim().length >= 2) { this.resultados = []; this.totalPaginas = 1; this.totalRegistros = 0; } return; }
+      this.resultados = this.aBuscados(r?.t);
+      this.totalPaginas = Math.max(1, r?.totalPaginas ?? 1);
+      this.totalRegistros = r?.totalRegistros ?? this.resultados.length;
+    });
+  }
+
+  private filtros(): { nombreOCodigo?: string; categoria?: string; sinCategoria?: boolean } {
+    const t = this.texto.trim();
+    return {
+      nombreOCodigo: t.length >= 2 ? t : undefined,
+      categoria: this.categoria && this.categoria !== this.OTROS ? this.categoria : undefined,
+      sinCategoria: this.categoria === this.OTROS ? true : undefined
+    };
+  }
+
+  private aBuscados(lista: any[] | undefined): IProductoBuscado[] {
+    return (lista ?? []).map((p: any) => ({ id: p.idProducto, nombre: p.nombre, codigoBarras: p.codigoBarras ?? null, precioCosto: +(p.precioCosto ?? 0), stock: p.stock }));
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
@@ -233,8 +263,46 @@ export class FletesComponent implements OnInit, OnDestroy {
   agregarGasto(): void { this.edicion?.gastos.push({ concepto: '', monto: 0, cuentaParaCubrir: true }); }
   quitarGasto(g: IGastoViaje): void { if (this.edicion) this.edicion.gastos = this.edicion.gastos.filter(x => x !== g); }
 
-  alEscribir(t: string): void { this.texto = t; this.buscador$.next(t); }
-  private limpiarBuscador(): void { this.texto = ''; this.resultados = []; }
+  alEscribir(t: string): void { this.texto = t; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
+  alElegirCategoria(c: string): void { this.categoria = c; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
+  irAPagina(n: number): void { if (n < 1 || n > this.totalPaginas || n === this.pagina) return; this.pagina = n; this.buscador$.next(); }
+  private limpiarBuscador(): void { this.texto = ''; this.categoria = ''; this.pagina = 1; this.totalPaginas = 1; this.totalRegistros = 0; this.resultados = []; this.avisoCategoria = null; }
+
+  /** Productos de la búsqueda actual (categoría y/o texto) que todavía NO están en el viaje, de la lista que se ve en pantalla. */
+  get pendientesDeLaPagina(): number { return this.resultados.filter(p => !this.estaAgregado(p)).length; }
+
+  /**
+   * Agrega TODOS los productos de la búsqueda actual (no solo los de la página que se ve): baja todas las páginas, se salta los que ya están
+   * en el viaje (nunca duplica) y reparte el flete por igual al final. Sirve para meter una categoría entera de una vez.
+   */
+  async agregarTodosDeLaBusqueda(): Promise<void> {
+    const e = this.edicion;
+    if (!e || this.agregandoCategoria || this.totalRegistros === 0) return;
+    this.agregandoCategoria = true; this.avisoCategoria = null;
+    try {
+      const todos: IProductoBuscado[] = [];
+      const tam = 100;
+      let pag = 1, paginas = 1;
+      do {
+        const r: any = await this.productos.adminFiltrar(this.filtros(), pag, tam).toPromise();
+        todos.push(...this.aBuscados(r?.t));
+        paginas = Math.max(1, r?.totalPaginas ?? 1);
+        pag++;
+      } while (pag <= paginas && pag <= 50);
+      const nuevos = todos.filter(p => !this.estaAgregado(p));
+      const unicos = nuevos.filter((p, i) => nuevos.findIndex(x => x.id === p.id) === i);
+      const yaEstaban = todos.length - unicos.length;
+      if (unicos.length) {
+        e.productos = [...e.productos, ...unicos.map(p => ({ productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, piezas: 1, costoUnitario: p.precioCosto, fletePorPieza: 0 }))];
+        this.repartirPorIgual();
+      }
+      this.avisoCategoria = `Se agregaron ${unicos.length} producto(s)` + (yaEstaban ? ` y se saltaron ${yaEstaban} que ya estaban en el viaje` : '') + '. Ajusta las piezas de cada uno.';
+    } catch {
+      this.avisoCategoria = 'No se pudieron traer los productos. Intenta de nuevo.';
+    } finally {
+      this.agregandoCategoria = false;
+    }
+  }
 
   estaAgregado(p: IProductoBuscado): boolean { return !!this.edicion?.productos.some(x => x.productoId === p.id); }
 
@@ -244,7 +312,7 @@ export class FletesComponent implements OnInit, OnDestroy {
     // Llega con 1 pieza, su costo de compra de hoy y el flete que sale de repartir el costo a cubrir entre todas las piezas (incluida esta).
     e.productos = [...e.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, piezas: 1, costoUnitario: p.precioCosto, fletePorPieza: 0 }];
     this.repartirPorIgual();
-    this.limpiarBuscador();
+    // Se conserva la búsqueda (categoría y página) para poder seguir agregando de la misma lista.
   }
 
   quitarProducto(p: IProductoViaje): void { if (this.edicion) this.edicion.productos = this.edicion.productos.filter(x => x.productoId !== p.productoId); }

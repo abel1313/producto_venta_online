@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { of } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { CampanasService } from 'src/app/campanas/campanas.service';
-import { FletesService, IViaje } from '../../fletes/fletes.service';
+import { FletesService, IReporteViaje, IViaje } from '../../fletes/fletes.service';
 import { aDos, costoTotal, escenarios, gananciaYMargen, IEscenarioPrecio, precioConGananciaMinima, precioConMargen, recargoSobreCosto, redondearA, transportePorPieza } from './calculo-precio';
 import { CalculoPrecioService, ICalculoParaGuardar, IComisionTerminal } from './calculo-precio.service';
 
@@ -13,6 +15,8 @@ export interface IResultadoCalculo {
   costoTotal: number;
   /** Lo que se guarda en el historial del producto después de guardarlo. */
   calculo: ICalculoParaGuardar;
+  /** Solo si el flete que se usó en el cálculo es distinto al del viaje vigente del producto: al guardar se le pregunta al dueño si lo actualiza también en el viaje. */
+  viaje?: { viajeId: number; nombre: string; fleteActual: number; fleteNuevo: number };
 }
 
 /**
@@ -66,13 +70,20 @@ export class CalculadoraPrecioComponent implements OnChanges {
 
   /** Los viajes de compra en los que llegó este producto (con su flete ya registrado). Sirve para avisar antes de contar el flete dos veces. */
   viajesDelProducto: IViaje[] = [];
+  /**
+   * El viaje que se está vendiendo ahora (el más viejo que todavía tiene piezas de este producto por vender; si ya no queda ninguna, el más reciente).
+   * Su flete por pieza es el que se pone solo en «Transporte por pieza»: así el viaje y el cálculo parten del mismo número.
+   */
+  viajeVigente: IViaje | null = null;
+  /** El nombre del viaje del que se tomó el transporte que está puesto (null si lo escribió el dueño). */
+  transporteTomadoDe: string | null = null;
 
   constructor(private readonly calculos: CalculoPrecioService, private readonly campanas: CampanasService, private readonly fletes: FletesService) {}
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['visible'] && this.visible) {
       this.compra = this.costoInicial && this.costoInicial > 0 ? this.costoInicial : null;
-      this.transporte = null; this.otros = null; this.gastoViaje = null; this.piezasViaje = null;
+      this.transporte = null; this.otros = null; this.gastoViaje = null; this.piezasViaje = null; this.transporteTomadoDe = null;
       this.margen = 30; this.paso = 5; this.elegido = null;
       this.comisionId = null; this.gananciaMin = null; this.precioMercado = null; this.actualizarCosto = true;
       this.cargarCatalogos();
@@ -86,13 +97,53 @@ export class CalculadoraPrecioComponent implements OnChanges {
     const id = this.productoId;
     if (!id) return;
     // Si el producto ya tiene su flete en un viaje de compra, «poner el costo total» (que incluye el flete) lo contaría dos veces: se desmarca solo y se avisa.
-    this.fletes.deProducto(id).subscribe(v => { this.viajesDelProducto = v; if (v.length) this.actualizarCosto = false; });
+    this.viajeVigente = null;
+    this.fletes.deProducto(id).subscribe(v => {
+      this.viajesDelProducto = v;
+      if (!v.length) return;
+      this.actualizarCosto = false;
+      // Qué viaje se está vendiendo ahora: se ven las piezas que le quedan a este producto en cada uno.
+      this.fletes.reportes().pipe(catchError(() => of([] as IReporteViaje[]))).subscribe(rs => {
+        this.viajeVigente = this.elegirViajeVigente(v, rs);
+        this.ponerFleteDelViaje();
+      });
+    });
     this.campanas.activa().subscribe(c => {
       const p = c?.productos?.find(x => x.productoId === id);
       this.precioCampana = p ? +p.precio : null;
       this.nombreCampana = p && c ? c.nombre : null;
     });
   }
+
+  /** El viaje vigente: el más viejo con piezas de este producto por vender; si ninguno tiene, el más reciente. */
+  private elegirViajeVigente(viajes: IViaje[], reportes: IReporteViaje[]): IViaje | null {
+    const id = this.productoId;
+    const restantes = (v: IViaje) => reportes.find(r => r.viajeId === v.id)?.renglones.find(x => x.productoId === id)?.piezasRestantes ?? 0;
+    const porFecha = (a: IViaje, b: IViaje) => (a.fecha ?? '').localeCompare(b.fecha ?? '') || (a.id ?? 0) - (b.id ?? 0);
+    const conPiezas = viajes.filter(v => restantes(v) > 0).sort(porFecha);
+    if (conPiezas.length) return conPiezas[0];
+    return [...viajes].sort(porFecha).pop() ?? null;
+  }
+
+  /** Pone en «Transporte por pieza» el flete del viaje vigente, SOLO si el dueño todavía no escribió nada (nunca pisa lo que ya puso). */
+  private ponerFleteDelViaje(): void {
+    const v = this.viajeVigente;
+    if (!v || (this.transporte != null && this.transporte !== 0)) return;
+    const f = this.fleteDelViaje(v);
+    if (f > 0) { this.transporte = f; this.transporteTomadoDe = v.nombre; this.alCambiarCalculo(); }
+  }
+
+  /** El flete por pieza del viaje vigente (null si no hay). */
+  get fleteVigente(): number | null { return this.viajeVigente ? this.fleteDelViaje(this.viajeVigente) : null; }
+
+  /** El transporte puesto aquí es distinto al del viaje vigente: se avisa (no se bloquea nada). */
+  get difiereDelViaje(): boolean {
+    const f = this.fleteVigente;
+    return f != null && f > 0 && (this.transporte || 0) > 0 && Math.abs((this.transporte || 0) - f) > 0.004;
+  }
+
+  /** El dueño escribió el transporte a mano: ya no es «tomado del viaje». */
+  alEscribirTransporte(): void { this.transporteTomadoDe = null; this.alCambiarCalculo(); }
 
   /** El texto con los viajes del producto y su flete por pieza, para el aviso («Juguetes Reyes 1: $20.00 por pieza»). */
   get viajesTexto(): string {
@@ -114,6 +165,7 @@ export class CalculadoraPrecioComponent implements OnChanges {
   /** Usa el flete por pieza de un viaje como «Transporte por pieza» (solo para calcular el precio; no cambia el costo guardado ni el viaje). */
   usarFleteDeViaje(v: IViaje): void {
     this.transporte = this.fleteDelViaje(v) || null;
+    this.transporteTomadoDe = this.transporte ? v.nombre : null;
     this.alCambiarCalculo();
   }
 
@@ -170,7 +222,10 @@ export class CalculadoraPrecioComponent implements OnChanges {
         comisionPct: this.comisionPct, comisionDescripcion: this.comisionDescripcion,
         margenPct: this.margen ?? 0, precioCalculado: this.sugerido ?? p, precioCobrado: p,
         actualizoPrecioCompra: this.actualizarCosto && this.costoCambia
-      }
+      },
+      viaje: this.difiereDelViaje && this.viajeVigente?.id != null
+        ? { viajeId: this.viajeVigente.id, nombre: this.viajeVigente.nombre, fleteActual: this.fleteVigente ?? 0, fleteNuevo: this.transporte || 0 }
+        : undefined
     });
     this.cerrar();
   }

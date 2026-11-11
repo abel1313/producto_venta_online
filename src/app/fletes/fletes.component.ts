@@ -4,7 +4,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
-import { FletesService, IGastoViaje, ILineaSinViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
+import { FletesService, IGastoViaje, ILigaManual, ILineaSinViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
 
 interface IProductoBuscado { id: number; nombre: string; codigoBarras: string | null; precioCosto: number; stock: number; }
 
@@ -29,6 +29,9 @@ export class FletesComponent implements OnInit, OnDestroy {
   lineasSinViaje: ILineaSinViaje[] = [];
   /** Piezas a ligar por línea de venta (detalleVentaId → cantidad); 0 o vacío = no se liga. */
   cantidades: Record<number, number> = {};
+  /** Las ligas hechas a mano de este viaje, para poder deshacerlas. */
+  ligasManuales: ILigaManual[] = [];
+  deshaciendoId: number | null = null;
   buscandoVentas = false;
   guardandoLigas = false;
   errorLigar: string | null = null;
@@ -157,10 +160,39 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.ligarProductoId = v.productos.length === 1 ? v.productos[0].productoId : null;
     this.ligarDesde = ''; this.ligarHasta = '';
     this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null;
+    this.cargarLigasManuales();
     if (this.ligarProductoId != null) this.buscarVentas();
   }
 
-  cerrarLigar(): void { this.ligando = null; this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null; }
+  private cargarLigasManuales(): void {
+    const id = this.ligando?.id;
+    if (id == null) { this.ligasManuales = []; return; }
+    this.svc.ligasManuales(id).subscribe({ next: l => { if (this.ligando?.id === id) this.ligasManuales = l; }, error: () => { this.ligasManuales = []; } });
+  }
+
+  /** Deshace una liga hecha a mano: pide confirmación, las piezas vuelven a «sin viaje» y se refresca todo. */
+  async deshacerLiga(l: ILigaManual): Promise<void> {
+    if (this.deshaciendoId != null) return;
+    const r = await Swal.fire({
+      icon: 'question', title: '¿Deshacer esta liga?',
+      text: `La venta #${l.ventaId} (${l.cantidad} pieza(s) de «${l.producto}») ya no contará como salida de este viaje: vuelve a «sin viaje» y su flete se estima como antes. La venta no cambia.`,
+      showCancelButton: true, confirmButtonText: 'Sí, deshacer', cancelButtonText: 'No'
+    });
+    if (!r.isConfirmed) return;
+    this.deshaciendoId = l.ligaId; this.errorLigar = null; this.avisoLigar = null;
+    this.svc.quitarLiga(l.ligaId).subscribe({
+      next: () => {
+        this.deshaciendoId = null;
+        this.avisoLigar = `Listo: se deshizo la liga de la venta #${l.ventaId}.`;
+        this.cargarLigasManuales();
+        this.cargarReportes();
+        if (this.ligarProductoId != null) this.buscarVentas();
+      },
+      error: e => { this.deshaciendoId = null; this.errorLigar = this.mensaje(e, 'No se pudo deshacer la liga. Intenta de nuevo.'); }
+    });
+  }
+
+  cerrarLigar(): void { this.ligando = null; this.ligasManuales = []; this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null; }
 
   alElegirProducto(id: number | null): void {
     this.ligarProductoId = id;
@@ -224,6 +256,7 @@ export class FletesComponent implements OnInit, OnDestroy {
         this.guardandoLigas = false;
         this.avisoLigar = `Listo: se ligaron ${n} pieza(s) a «${this.ligando?.nombre}».`;
         this.cargarReportes();
+        this.cargarLigasManuales();
         this.buscarVentas();
       },
       error: e => { this.guardandoLigas = false; this.errorLigar = this.mensaje(e, 'No se pudo ligar. Intenta de nuevo.'); }
@@ -231,6 +264,7 @@ export class FletesComponent implements OnInit, OnDestroy {
   }
 
   porIdLinea(_: number, l: ILineaSinViaje): number { return l.detalleVentaId; }
+  porIdLiga(_: number, l: ILigaManual): number { return l.ligaId; }
 
   nuevo(): void {
     this.errorGuardar = null;

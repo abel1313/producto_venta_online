@@ -173,6 +173,24 @@
     <ul class="fl-motivos" *ngIf="lineasSinViaje.length && motivosLigar.length" aria-live="polite"><li *ngFor="let m of motivosLigar">{{ m }}</li></ul>
     <p class="pk-error" *ngIf="errorLigar">{{ errorLigar }}</p>
     <p class="fl-ok" *ngIf="avisoLigar" role="status">{{ avisoLigar }}</p>
+
+    <!-- Ligas hechas a mano: aquí se deshacen si te equivocaste -->
+    <h4 class="fl-bloque__titulo" *ngIf="ligasManuales.length">Ligas hechas a mano en este viaje <span class="fl-opcional">({{ ligasManuales.length }})</span></h4>
+    <div class="fl-tabla-wrap" *ngIf="ligasManuales.length">
+      <table class="fl-tabla">
+        <thead><tr><th class="fl-izq">Venta</th><th>Fecha</th><th class="fl-izq">Producto</th><th>Piezas</th><th>Flete por pieza</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of ligasManuales; trackBy: porIdLiga">
+            <td class="fl-izq"><b>#{{ l.ventaId }}</b></td>
+            <td>{{ l.fecha | date:'dd/MM/yyyy' }}</td>
+            <td class="fl-izq">{{ l.producto }}</td>
+            <td>{{ l.cantidad }}</td>
+            <td class="fl-num-celda">{{ l.fletePorPieza | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td><button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="deshacerLiga(l)" [disabled]="deshaciendoId != null">{{ deshaciendoId === l.ligaId ? 'Deshaciendo…' : '↩ Deshacer' }}</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
     <div class="fl-acciones">
       <button type="button" class="pk-btn pk-btn--primary" (click)="guardarLigas()" [disabled]="guardandoLigas || motivosLigar.length || !lineasSinViaje.length">{{ guardandoLigas ? 'Ligando…' : 'Ligar al viaje' }}</button>
       <button type="button" class="pk-btn pk-btn--secondary" (click)="cerrarLigar()" [disabled]="guardandoLigas">Cerrar</button>

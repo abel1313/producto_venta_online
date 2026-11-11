@@ -26,6 +26,18 @@ export interface IViaje {
   compraTotal?: number; piezasTotal?: number; fleteSugeridoPorPieza?: number;
 }
 
+/** Cómo va un viaje (de `GET /v1/fletes/reportes`): lo ya calculado por el back con las ventas ligadas. */
+export interface IReporteViaje {
+  viajeId: number; nombre: string; fecha: string;
+  /** ABIERTO, FLETE_CUBIERTO (lo recuperado ya llegó al costo a cubrir) o VENDIDO_POR_COMPLETO. */
+  estado: 'ABIERTO' | 'FLETE_CUBIERTO' | 'VENDIDO_POR_COMPLETO';
+  fleteTotal: number; costoACubrir: number; fleteRecuperado: number; faltaPorCubrir: number; fleteComoGanancia: number;
+  pagadoConVentaId: number | null; pagadoEn: string | null;
+  piezasCompradas: number; piezasVendidas: number; piezasRestantes: number;
+  totalVendido: number; costoVendido: number; gananciaVendida: number;
+  renglones: { productoId: number; nombre: string | null; codigoBarras: string | null; piezasCompradas: number; piezasVendidas: number; piezasRestantes: number; totalVendido: number }[];
+}
+
 /** Fletes: viajes de compra (flete, gastos y productos que llegaron). Solo administrador. Contrato: `CAMBIOS_FRONT.md` del back, sección «Fletes». */
 @Injectable({ providedIn: 'root' })
 export class FletesService {
@@ -38,6 +50,12 @@ export class FletesService {
     return this.http.get<{ lista: IViaje[] }>(this.url).pipe(
       map(r => r.lista ?? []),
       catchError(e => (e?.status === 404 ? of([] as IViaje[]) : (() => { throw e; })())));
+  }
+
+  /** Cómo va cada viaje (recuperado, falta, estado, piezas vendidas). Si falla, la lista se ve sin barras (nunca se cae). */
+  reportes(): Observable<IReporteViaje[]> {
+    return this.http.get<{ lista: IReporteViaje[] }>(`${this.url}/reportes`).pipe(
+      map(r => r.lista ?? []), catchError(() => of([] as IReporteViaje[])));
   }
 
   crear(v: IViaje): Observable<IViaje> {

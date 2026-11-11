@@ -32,6 +32,13 @@ Formato de cada entrada:
 - [ ] Al escribir un precio la fila no se brinca de lugar; se reacomoda al salir del campo. Al agregar un juguete nuevo con precio igual al de venta, también sale marcado.
 - [ ] Guardar la campaña no manda precioVenta ni precioRebaja; celular (≤560 px): los tres precios debajo del nombre; día y noche.
 
+### 2026-11-11 — Fletes entrega 2: avance de cada viaje y flete real en el reporte por categoría
+**Dónde:** `fletes/*` (barra de recuperado, detalle de productos), `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
+**Debe comprobar:**
+- [ ] Cada tarjeta de Fletes muestra su estado (Abierto / Flete cubierto / Vendido por completo), la barra «Recuperado $X de $Y», «falta», «ya es ganancia», piezas vendidas y quedan, y la fecha en que se cubrió; «Ver productos» abre el detalle por producto.
+- [ ] Si el reporte de viajes falla, la lista se ve igual sin barras (nada se rompe); día y noche, celular y escritorio.
+- [ ] Reportes → Por categoría: columnas «Flete real (viajes)» y «Piezas sin viaje» con su total; la tarjeta Flete dice «(real $X)»; la leyenda explica real vs estimado.
+
 ### 2026-11-11 — Fletes (Catálogo → Fletes) y aviso de flete duplicado en la calculadora
 **Dónde:** `fletes/*` (servicio, módulo, componente), `app-routing.module.ts`, `navbar` (item + `GROUP_ROUTES`), `shared/calculadora-precio/*`.
 **Debe comprobar:**

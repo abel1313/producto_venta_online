@@ -14,6 +14,9 @@ export interface IProductoViaje {
 }
 
 /** Un viaje de compra. Lo que no se manda (solo lectura) lo calcula el back: costo a cubrir, flete asignado, lo que falta, excedente... */
+/** Una liga hecha a mano (de `GET /v1/fletes/{id}/ligas`): `ligaId` es lo que se manda para deshacerla. */
+export interface ILigaManual { ligaId: number; ventaId: number; detalleVentaId: number; fecha: string | null; productoId: number; producto: string; cantidad: number; fletePorPieza: number; }
+
 export interface IViaje {
   id?: number;
   nombre: string;
@@ -74,6 +77,16 @@ export class FletesService {
   /** Liga a mano piezas de ventas anteriores al viaje (guarda el flete por pieza de ese viaje). Devuelve cuántas piezas se ligaron. */
   ligarVentas(viajeId: number, productoId: number, ligas: { detalleVentaId: number; cantidad: number }[]): Observable<number> {
     return this.http.post<{ data: number }>(`${this.url}/${viajeId}/ligar`, { productoId, ligas }).pipe(map(r => r.data));
+  }
+
+  /** Las ligas hechas a mano de un viaje (para poder deshacerlas). Vacío si no hay. */
+  ligasManuales(viajeId: number): Observable<ILigaManual[]> {
+    return this.http.get<{ lista: ILigaManual[] }>(`${this.url}/${viajeId}/ligas`).pipe(map(r => r.lista ?? []));
+  }
+
+  /** Deshace una liga hecha a mano: las piezas vuelven a quedar «sin viaje». No toca la venta. */
+  quitarLiga(ligaId: number): Observable<void> {
+    return this.http.delete<unknown>(`${this.url}/ligas/${ligaId}`).pipe(map(() => undefined));
   }
 
   /** El reporte del viaje como archivo (Excel o PDF): bytes. El back lo arma al momento. */

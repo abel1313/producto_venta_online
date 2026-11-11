@@ -8,6 +8,10 @@ Formato de cada entrada:
 
 ```
 
+### 2026-11-11 — Fletes: deshacer ligas manuales
+**Dónde:** `fletes/fletes.component.*` (tabla «Ligas hechas a mano en este viaje»), `FletesService.ligasManuales/quitarLiga`
+**Debe comprobar:** tras ligar ventas anteriores aparece la liga en la tabla; «↩ Deshacer» pide confirmación, la quita, la venta vuelve a salir en «Buscar ventas» como pendiente y la barra de «recuperado» del viaje baja; las ligas automáticas (hechas al vender) NO aparecen ni se pueden deshacer; sin ligas manuales la tabla no se muestra.
+
 ### 2026-11-11 — Fletes: el flete por pieza de los productos agregados se calcula solo
 **Dónde:** `fletes/fletes.component.ts` (`recalcularAutomaticos`, `autoIds`, `alEscribirFlete`)
 **Debe comprobar:** viaje nuevo con flete $100 + gasolina $40 (cubrir $140): agregar un producto de 5 piezas → flete $28 por pieza con etiqueta «auto»; agregar un segundo de 5 piezas → ambos $14 (reparte lo que falta entre las piezas automáticas); editar el flete de uno a mano → deja de ser «auto» y el otro se ajusta a lo que falta; al editar un viaje ya guardado y cubierto, un producto agregado queda en $0 y NO cambia el flete de los que ya estaban; cambiar piezas, flete total o gastos recalcula solo los «auto»; «Repartir el flete por igual» fija todos.

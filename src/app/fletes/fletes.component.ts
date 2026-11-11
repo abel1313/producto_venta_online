@@ -272,6 +272,7 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.errorGuardar = null;
     this.limpiarBuscador();
     this.sinFleteIds.clear();
+    this.filtroViaje = ''; this.paginaViaje = 1;
     this.edicion = { nombre: '', fecha: this.hoy(), fleteTotal: 0, nota: null, gastos: [], productos: [] };
   }
 
@@ -279,6 +280,7 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.errorGuardar = null;
     this.limpiarBuscador();
     this.sinFleteIds.clear();
+    this.filtroViaje = ''; this.paginaViaje = 1;
     this.edicion = { ...v, gastos: v.gastos.map(g => ({ ...g })), productos: v.productos.map(p => ({ ...p })) };
   }
 
@@ -382,6 +384,44 @@ export class FletesComponent implements OnInit, OnDestroy {
     e.productos.forEach(p => p.fletePorPieza = por);
     this.sinFleteIds.clear();
   }
+
+  // ── Lista de productos del viaje: buscador, páginas y scroll (con 150+ productos pintar todo a la vez se traba) ──
+  readonly porPaginaViaje = 25;
+  filtroViaje = '';
+  paginaViaje = 1;
+  private cacheFuente: IProductoViaje[] | null = null;
+  private cacheFiltro = '';
+  private cacheLista: IProductoViaje[] = [];
+
+  private normalizar(t: string): string {
+    return (t ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  }
+
+  /** Los productos del viaje que coinciden con el buscador (todos si está vacío). Se recalcula solo si cambió la lista o el texto. */
+  get productosDelViaje(): IProductoViaje[] {
+    const fuente = this.edicion?.productos ?? [];
+    const t = this.normalizar(this.filtroViaje);
+    if (this.cacheFuente === fuente && this.cacheFiltro === t) return this.cacheLista;
+    this.cacheFuente = fuente; this.cacheFiltro = t;
+    this.cacheLista = !t ? fuente : fuente.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.normalizar(p.codigoBarras ?? '').includes(t));
+    return this.cacheLista;
+  }
+
+  get totalPaginasViaje(): number { return Math.max(1, Math.ceil(this.productosDelViaje.length / this.porPaginaViaje)); }
+  /** La página que se ve: si se quitaron productos y la última página desapareció, se queda en la última que existe. */
+  get paginaActualViaje(): number { return Math.min(Math.max(1, this.paginaViaje), this.totalPaginasViaje); }
+  get productosDeLaPaginaViaje(): IProductoViaje[] {
+    const i = (this.paginaActualViaje - 1) * this.porPaginaViaje;
+    return this.productosDelViaje.slice(i, i + this.porPaginaViaje);
+  }
+  get rangoViaje(): string {
+    const n = this.productosDelViaje.length;
+    if (!n) return '0';
+    const i = (this.paginaActualViaje - 1) * this.porPaginaViaje;
+    return `${i + 1}–${Math.min(i + this.porPaginaViaje, n)} de ${n}`;
+  }
+  irAPaginaViaje(n: number): void { this.paginaViaje = Math.min(Math.max(1, n), this.totalPaginasViaje); }
+  alEscribirFiltroViaje(t: string): void { this.filtroViaje = t; this.paginaViaje = 1; }
 
   // ── Productos sin flete guardado ──
   /** ¿Este renglón entró sin flete guardado y todavía está en $0 por llenar? */

@@ -108,17 +108,70 @@
     </div>
   </form>
 
+  <!-- ── Ligar ventas anteriores a un viaje ── -->
+  <section class="fl-form" *ngIf="ligando as v" aria-label="Ligar ventas anteriores">
+    <h3 class="fl-form__titulo">Ligar ventas anteriores a «{{ v.nombre }}»</h3>
+    <p class="pk-hint">
+      Las ventas hechas antes de los viajes no saben de cuál salieron sus piezas. Aquí le dices al sistema cuáles salieron de este viaje: se les guarda el flete
+      por pieza del viaje y el reporte usa el flete real en lugar del estimado. No cambia la venta, su total ni su ganancia. Solo salen ventas no devueltas
+      con piezas todavía sin ligar.
+    </p>
+    <div class="fl-grid">
+      <label class="pk-field fl-ancho">
+        <span class="pk-label">Producto del viaje</span>
+        <select class="pk-input" name="ligarProducto" [ngModel]="ligarProductoId" (ngModelChange)="alElegirProducto($event)">
+          <option [ngValue]="null">Elige un producto…</option>
+          <option *ngFor="let p of v.productos" [ngValue]="p.productoId">{{ p.nombre || ('Producto ' + p.productoId) }} · {{ p.piezas }} pieza(s)</option>
+        </select>
+      </label>
+      <label class="pk-field"><span class="pk-label">Ventas desde <span class="fl-opcional">(opcional)</span></span><input class="pk-input" type="date" name="ligarDesde" [(ngModel)]="ligarDesde"></label>
+      <label class="pk-field"><span class="pk-label">Hasta <span class="fl-opcional">(opcional)</span></span><input class="pk-input" type="date" name="ligarHasta" [(ngModel)]="ligarHasta"></label>
+    </div>
+    <div class="fl-acciones">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="buscarVentas()" [disabled]="ligarProductoId == null || buscandoVentas">{{ buscandoVentas ? 'Buscando…' : 'Buscar ventas' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="llenarAutomatico()" [disabled]="!lineasSinViaje.length"
+              title="Llena las cantidades con las piezas pendientes, de la venta más vieja a la más nueva, sin pasar de lo que le queda al viaje">Llenar de la más vieja a la más nueva</button>
+    </div>
+    <p class="pk-hint" *ngIf="restantesDelViaje != null">A este producto le quedan <b>{{ restantesDelViaje }}</b> pieza(s) por vender en este viaje.</p>
+    <p class="fl-vacio" *ngIf="ligarProductoId != null && !buscandoVentas && !lineasSinViaje.length && !errorLigar">No hay ventas con piezas sin ligar para ese producto en ese periodo.</p>
+
+    <div class="fl-tabla-wrap" *ngIf="lineasSinViaje.length">
+      <table class="fl-tabla">
+        <thead><tr><th class="fl-izq">Venta</th><th>Fecha</th><th>Piezas</th><th>Sin ligar</th><th>Precio c/u</th><th>Ligar al viaje</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of lineasSinViaje; trackBy: porIdLinea">
+            <td class="fl-izq"><b>#{{ l.ventaId }}</b></td>
+            <td>{{ l.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ l.cantidad }}</td>
+            <td>{{ l.pendientes }}</td>
+            <td class="fl-num-celda">{{ l.precioUnitario | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td><input class="pk-input" type="number" [name]="'lg' + l.detalleVentaId" min="0" [max]="l.pendientes" step="1" inputmode="numeric" [(ngModel)]="cantidades[l.detalleVentaId]" aria-label="Piezas a ligar de esta venta"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="fl-resumen-ligar" *ngIf="lineasSinViaje.length">Se ligarán <b>{{ piezasAligar }}</b> pieza(s).</p>
+    <ul class="fl-motivos" *ngIf="lineasSinViaje.length && motivosLigar.length" aria-live="polite"><li *ngFor="let m of motivosLigar">{{ m }}</li></ul>
+    <p class="pk-error" *ngIf="errorLigar">{{ errorLigar }}</p>
+    <p class="fl-ok" *ngIf="avisoLigar" role="status">{{ avisoLigar }}</p>
+    <div class="fl-acciones">
+      <button type="button" class="pk-btn pk-btn--primary" (click)="guardarLigas()" [disabled]="guardandoLigas || motivosLigar.length || !lineasSinViaje.length">{{ guardandoLigas ? 'Ligando…' : 'Ligar al viaje' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="cerrarLigar()" [disabled]="guardandoLigas">Cerrar</button>
+    </div>
+  </section>
+
   <!-- ── Lista de viajes ── -->
-  <div class="fl-lista-cab" *ngIf="!edicion">
+  <div class="fl-lista-cab" *ngIf="!edicion && !ligando">
     <h3>Viajes registrados <span class="fl-opcional" *ngIf="viajes.length">({{ viajes.length }})</span></h3>
     <button type="button" class="pk-btn pk-btn--primary" (click)="nuevo()">＋ Nuevo viaje</button>
   </div>
 
   <p class="fl-vacio" *ngIf="cargando">Cargando viajes…</p>
   <p class="pk-error" *ngIf="error">{{ error }}</p>
-  <p class="fl-vacio" *ngIf="!cargando && !error && !edicion && !viajes.length">Todavía no hay viajes. Crea el primero con «Nuevo viaje».</p>
+  <p class="fl-vacio" *ngIf="!cargando && !error && !edicion && !ligando && !viajes.length">Todavía no hay viajes. Crea el primero con «Nuevo viaje».</p>
 
-  <ul class="fl-cards" *ngIf="!edicion && viajes.length">
+  <ul class="fl-cards" *ngIf="!edicion && !ligando && viajes.length">
     <li class="fl-card" *ngFor="let v of viajes; trackBy: porIdViaje">
       <div class="fl-card__cab">
         <div>
@@ -158,6 +211,7 @@
         </table>
       </div>
       <div class="fl-acciones">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="abrirLigar(v)" [disabled]="!v.productos.length" title="Marca qué ventas anteriores salieron de este viaje">Ligar ventas anteriores</button>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="editar(v)">Editar</button>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="eliminar(v)" [disabled]="ocupadoId === v.id">Eliminar</button>
       </div>

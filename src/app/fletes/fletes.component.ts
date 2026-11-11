@@ -4,7 +4,7 @@ import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
-import { FletesService, IGastoViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
+import { FletesService, IGastoViaje, ILineaSinViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
 
 interface IProductoBuscado { id: number; nombre: string; codigoBarras: string | null; precioCosto: number; stock: number; }
 
@@ -19,6 +19,20 @@ export class FletesComponent implements OnInit, OnDestroy {
   reportes = new Map<number, IReporteViaje>();
   /** El viaje con su detalle de ventas abierto. */
   abiertoId: number | null = null;
+
+  // ── Ligar ventas anteriores a un viaje ──
+  /** El viaje al que se están ligando ventas anteriores (null = panel cerrado). */
+  ligando: IViaje | null = null;
+  ligarProductoId: number | null = null;
+  ligarDesde = '';
+  ligarHasta = '';
+  lineasSinViaje: ILineaSinViaje[] = [];
+  /** Piezas a ligar por línea de venta (detalleVentaId → cantidad); 0 o vacío = no se liga. */
+  cantidades: Record<number, number> = {};
+  buscandoVentas = false;
+  guardandoLigas = false;
+  errorLigar: string | null = null;
+  avisoLigar: string | null = null;
   cargando = false;
   error: string | null = null;
   edicion: IViaje | null = null;
@@ -79,6 +93,88 @@ export class FletesComponent implements OnInit, OnDestroy {
   }
 
   alternarDetalle(v: IViaje): void { this.abiertoId = this.abiertoId === v.id ? null : (v.id ?? null); }
+
+  // ── Ligar ventas anteriores ──
+  abrirLigar(v: IViaje): void {
+    this.cancelar();
+    this.ligando = v;
+    this.ligarProductoId = v.productos.length === 1 ? v.productos[0].productoId : null;
+    this.ligarDesde = ''; this.ligarHasta = '';
+    this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null;
+    if (this.ligarProductoId != null) this.buscarVentas();
+  }
+
+  cerrarLigar(): void { this.ligando = null; this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null; }
+
+  alElegirProducto(id: number | null): void {
+    this.ligarProductoId = id;
+    this.lineasSinViaje = []; this.cantidades = {}; this.errorLigar = null; this.avisoLigar = null;
+    if (id != null) this.buscarVentas();
+  }
+
+  buscarVentas(): void {
+    if (this.ligarProductoId == null) return;
+    this.buscandoVentas = true; this.errorLigar = null; this.avisoLigar = null;
+    this.svc.lineasSinViaje(this.ligarProductoId, this.ligarDesde || undefined, this.ligarHasta || undefined).subscribe({
+      next: l => { this.lineasSinViaje = l; this.cantidades = {}; this.buscandoVentas = false; },
+      error: e => { this.buscandoVentas = false; this.errorLigar = this.mensaje(e, 'No se pudieron buscar las ventas.'); }
+    });
+  }
+
+  /** Las piezas que le quedan por vender al producto elegido en este viaje (del reporte del viaje). */
+  get restantesDelViaje(): number | null {
+    const r = this.ligando ? this.reporteDe(this.ligando) : undefined;
+    const p = r?.renglones.find(x => x.productoId === this.ligarProductoId);
+    return p ? p.piezasRestantes : null;
+  }
+
+  get piezasAligar(): number {
+    return this.lineasSinViaje.reduce((s, l) => s + (this.cantidadValida(l) ? +this.cantidades[l.detalleVentaId] : 0), 0);
+  }
+
+  cantidadValida(l: ILineaSinViaje): boolean {
+    const c = +(this.cantidades[l.detalleVentaId] ?? 0);
+    return Number.isInteger(c) && c >= 1 && c <= l.pendientes;
+  }
+
+  /** Lo que impide guardar, en palabras del dueño. */
+  get motivosLigar(): string[] {
+    const m: string[] = [];
+    const pedidas = this.lineasSinViaje.filter(l => +(this.cantidades[l.detalleVentaId] ?? 0) !== 0);
+    if (!pedidas.length) { m.push('Escribe cuántas piezas ligar en al menos una venta.'); return m; }
+    if (pedidas.some(l => !this.cantidadValida(l))) m.push('Cada cantidad debe ser un número entero de 1 hasta las piezas pendientes de esa venta.');
+    const restantes = this.restantesDelViaje;
+    if (restantes != null && this.piezasAligar > restantes) m.push(`Este producto solo tiene ${restantes} pieza(s) por vender en este viaje y quieres ligar ${this.piezasAligar}.`);
+    return m;
+  }
+
+  /** Llena las cantidades con todas las piezas pendientes, de la venta más vieja a la más nueva, sin pasar de lo que le queda al viaje. */
+  llenarAutomatico(): void {
+    let falta = this.restantesDelViaje ?? Number.MAX_SAFE_INTEGER;
+    const c: Record<number, number> = {};
+    for (const l of this.lineasSinViaje) {
+      const toma = Math.min(l.pendientes, falta);
+      if (toma > 0) { c[l.detalleVentaId] = toma; falta -= toma; }
+    }
+    this.cantidades = c;
+  }
+
+  guardarLigas(): void {
+    if (!this.ligando?.id || this.ligarProductoId == null || this.guardandoLigas || this.motivosLigar.length) return;
+    const ligas = this.lineasSinViaje.filter(l => this.cantidadValida(l)).map(l => ({ detalleVentaId: l.detalleVentaId, cantidad: +this.cantidades[l.detalleVentaId] }));
+    this.guardandoLigas = true; this.errorLigar = null; this.avisoLigar = null;
+    this.svc.ligarVentas(this.ligando.id, this.ligarProductoId, ligas).subscribe({
+      next: n => {
+        this.guardandoLigas = false;
+        this.avisoLigar = `Listo: se ligaron ${n} pieza(s) a «${this.ligando?.nombre}».`;
+        this.cargarReportes();
+        this.buscarVentas();
+      },
+      error: e => { this.guardandoLigas = false; this.errorLigar = this.mensaje(e, 'No se pudo ligar. Intenta de nuevo.'); }
+    });
+  }
+
+  porIdLinea(_: number, l: ILineaSinViaje): number { return l.detalleVentaId; }
 
   nuevo(): void {
     this.errorGuardar = null;

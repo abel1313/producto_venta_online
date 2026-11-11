@@ -95,8 +95,14 @@
       <p class="cp-ayuda" *ngIf="precioMinimoGanancia && !bajoMinimo && !pierde">Tu precio mínimo para ganar {{ gananciaMin | currency:'MXN':'symbol':'1.2-2' }} limpios es {{ precioMinimoGanancia | currency:'MXN':'symbol':'1.2-2' }}.</p>
       <p class="cp-ayuda cp-alerta" *ngIf="viajesDelProducto.length" role="alert">
         🚚 Este producto <strong>ya tiene su flete registrado</strong> en {{ viajesTexto }}.
-        <ng-container *ngIf="duplicaFlete"><strong>Si sigues con el transporte aquí o con «Poner también el costo total», el flete se contará dos veces</strong> en tus reportes. Déjalo en 0 y desmarca la casilla.</ng-container>
-        <ng-container *ngIf="!duplicaFlete">El flete se lleva aparte, en Catálogo → Fletes; por eso aquí no hace falta ponerlo.</ng-container>
+        <ng-container *ngIf="duplicaFlete"><strong>Si dejas marcado «Poner también el costo total», el flete se contará dos veces</strong> en tus reportes (ya va aparte en el viaje). Desmarca la casilla.</ng-container>
+        <ng-container *ngIf="!duplicaFlete">El flete se lleva aparte, en Catálogo → Fletes. Aquí solo lo usas para calcular el precio; no se guarda en el costo.</ng-container>
+      </p>
+      <p class="cp-ayuda" *ngIf="viajesDelProducto.length">
+        Usar el flete de un viaje como «Transporte por pieza»:
+        <ng-container *ngFor="let v of viajesDelProducto; let ultimo = last">
+          <button type="button" class="cp-enlace" (click)="usarFleteDeViaje(v)">«{{ v.nombre }}» ({{ fleteDelViaje(v) | currency:'MXN':'symbol':'1.2-2' }} por pieza)</button><ng-container *ngIf="!ultimo"> · </ng-container>
+        </ng-container>
       </p>
       <label class="cp-check" *ngIf="costoCambia">
         <input type="checkbox" [(ngModel)]="actualizarCosto">

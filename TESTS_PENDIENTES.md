@@ -32,6 +32,14 @@ Formato de cada entrada:
 - [ ] Al escribir un precio la fila no se brinca de lugar; se reacomoda al salir del campo. Al agregar un juguete nuevo con precio igual al de venta, también sale marcado.
 - [ ] Guardar la campaña no manda precioVenta ni precioRebaja; celular (≤560 px): los tres precios debajo del nombre; día y noche.
 
+### 2026-11-11 — Fletes entrega 3: ligar ventas anteriores, calculadora con viaje y bloque en el producto
+**Dónde:** `fletes/*` (panel «Ligar ventas anteriores»), `shared/calculadora-precio/*`, `productos/producto/add/*`.
+**Debe comprobar:**
+- [ ] Fletes → «Ligar ventas anteriores» en un viaje: elegir producto, fechas opcionales, «Buscar ventas», cantidades por venta, «Llenar de la más vieja a la más nueva» (no pasa de lo que le queda al viaje), resumen «Se ligarán N pieza(s)» y avisos claros si algo no cuadra; «Ligar al viaje» guarda y refresca el avance del viaje.
+- [ ] Calculadora: en un producto con viaje salen los botones «Usar el flete de un viaje» (llenan «Transporte por pieza»); el aviso de flete duplicado solo salta con «Poner también el costo total» marcada; sin viaje no cambia nada.
+- [ ] Actualizar producto: bloque «🚚 Viajes de compra» (solo lectura) con fecha, viaje, piezas, costo y flete por pieza; no aparece en producto nuevo ni sin viajes.
+- [ ] Día y noche, celular y escritorio.
+
 ### 2026-11-11 — Fletes entrega 2: avance de cada viaje y flete real en el reporte por categoría
 **Dónde:** `fletes/*` (barra de recuperado, detalle de productos), `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
 **Debe comprobar:**

@@ -1,3 +1,4 @@
+import { FletesService, IViaje } from '../../../fletes/fletes.service';
 import { AfterViewInit, Component, ElementRef, Input, OnChanges, OnDestroy, OnInit, SimpleChanges, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -33,6 +34,9 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   @Input() nombreCard    = 'Agregar Producto';
   @Input() productoUpdate: IProductoDTORec | null = null;
+
+  /** Los viajes de compra en los que llegó este producto (solo al actualizar; solo lectura). */
+  viajesProducto: IViaje[] = [];
 
   formProductos!: FormGroup;
   imagenesCargadas: IImagenDto[] = [];
@@ -96,7 +100,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     private readonly router:  Router,
     private readonly varianteService: VarianteService,
     private readonly aceptaMsiService: AceptaMsiService,
-    private readonly calculoPrecioService: CalculoPrecioService
+    private readonly calculoPrecioService: CalculoPrecioService,
+    private readonly fletesService: FletesService
   ) {}
 
   // ── Ciclo de vida ──────────────────────────────────────────────────
@@ -309,6 +314,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
 
   private cargarProductoUpdate(): void {
     const p = this.productoUpdate!;
+    this.viajesProducto = [];
+    if (p.idProducto) this.fletesService.deProducto(p.idProducto).subscribe(v => this.viajesProducto = v);
     const codigo = this.extraerCodigo(p.codigoBarras);
     const tieneCodigo = !!codigo;
     this.codigoBarrasOriginal = codigo || null;

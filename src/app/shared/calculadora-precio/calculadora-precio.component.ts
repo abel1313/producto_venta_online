@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { CampanasService } from 'src/app/campanas/campanas.service';
+import { FletesService, IViaje } from '../../fletes/fletes.service';
 import { aDos, costoTotal, escenarios, gananciaYMargen, IEscenarioPrecio, precioConGananciaMinima, precioConMargen, recargoSobreCosto, redondearA, transportePorPieza } from './calculo-precio';
 import { CalculoPrecioService, ICalculoParaGuardar, IComisionTerminal } from './calculo-precio.service';
 
@@ -63,7 +64,10 @@ export class CalculadoraPrecioComponent implements OnChanges {
   /** Precio que el dueño decidió cobrar (null = el redondeado sugerido). */
   private elegido: number | null = null;
 
-  constructor(private readonly calculos: CalculoPrecioService, private readonly campanas: CampanasService) {}
+  /** Los viajes de compra en los que llegó este producto (con su flete ya registrado). Sirve para avisar antes de contar el flete dos veces. */
+  viajesDelProducto: IViaje[] = [];
+
+  constructor(private readonly calculos: CalculoPrecioService, private readonly campanas: CampanasService, private readonly fletes: FletesService) {}
 
   ngOnChanges(c: SimpleChanges): void {
     if (c['visible'] && this.visible) {
@@ -78,14 +82,29 @@ export class CalculadoraPrecioComponent implements OnChanges {
   /** Lee las comisiones de terminal y, si el producto ya existe, su precio de campaña. Si algo no se puede leer, esa parte simplemente no aparece. */
   private cargarCatalogos(): void {
     this.calculos.comisiones().subscribe(l => this.comisiones = l);
-    this.precioCampana = null; this.nombreCampana = null;
+    this.precioCampana = null; this.nombreCampana = null; this.viajesDelProducto = [];
     const id = this.productoId;
     if (!id) return;
+    // Si el producto ya tiene su flete en un viaje de compra, «poner el costo total» (que incluye el flete) lo contaría dos veces: se desmarca solo y se avisa.
+    this.fletes.deProducto(id).subscribe(v => { this.viajesDelProducto = v; if (v.length) this.actualizarCosto = false; });
     this.campanas.activa().subscribe(c => {
       const p = c?.productos?.find(x => x.productoId === id);
       this.precioCampana = p ? +p.precio : null;
       this.nombreCampana = p && c ? c.nombre : null;
     });
+  }
+
+  /** El texto con los viajes del producto y su flete por pieza, para el aviso («Juguetes Reyes 1: $20.00 por pieza»). */
+  get viajesTexto(): string {
+    const fmt = (n: number) => '$' + (+n || 0).toFixed(2);
+    return this.viajesDelProducto
+      .map(v => `«${v.nombre}» (${fmt(v.productos.find(p => p.productoId === this.productoId)?.fletePorPieza ?? 0)} de flete por pieza)`)
+      .join(', ');
+  }
+
+  /** Va a duplicar el flete: el producto ya lo tiene en un viaje y aquí se está poniendo también (como transporte o en el costo total que se guarda). */
+  get duplicaFlete(): boolean {
+    return this.viajesDelProducto.length > 0 && ((this.actualizarCosto && this.costoCambia) || (+(this.transporte ?? 0) > 0));
   }
 
   /** Comisión elegida (% del precio): tarifa + IVA de la terminal. 0 si es sin comisión. */

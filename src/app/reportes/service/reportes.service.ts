@@ -154,6 +154,7 @@ export interface TotalesReporteCategoria {
   piezasPorVender: number; gananciaPorVender: number; gananciaTotal: number;
   gananciaPorVenderRebaja: number; gananciaPorVenderCampana: number; gananciaTotalRebaja: number; gananciaTotalCampana: number;
   fleteVendido: number; fleteEnStock: number;
+  sumaCompra: number; sumaVenta: number; sumaRebaja: number; sumaCampana: number;
 }
 
 export interface PaginaReporteCategoria {

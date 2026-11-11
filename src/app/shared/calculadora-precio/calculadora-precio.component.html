@@ -93,6 +93,11 @@
       </div>
       <p class="cp-ayuda cp-alerta" *ngIf="bajoMinimo">⚠️ Este precio deja menos de tu ganancia mínima de {{ gananciaMin | currency:'MXN':'symbol':'1.2-2' }}. Para alcanzarla cobra al menos <strong>{{ precioMinimoGanancia | currency:'MXN':'symbol':'1.2-2' }}</strong>.</p>
       <p class="cp-ayuda" *ngIf="precioMinimoGanancia && !bajoMinimo && !pierde">Tu precio mínimo para ganar {{ gananciaMin | currency:'MXN':'symbol':'1.2-2' }} limpios es {{ precioMinimoGanancia | currency:'MXN':'symbol':'1.2-2' }}.</p>
+      <p class="cp-ayuda cp-alerta" *ngIf="viajesDelProducto.length" role="alert">
+        🚚 Este producto <strong>ya tiene su flete registrado</strong> en {{ viajesTexto }}.
+        <ng-container *ngIf="duplicaFlete"><strong>Si sigues con el transporte aquí o con «Poner también el costo total», el flete se contará dos veces</strong> en tus reportes. Déjalo en 0 y desmarca la casilla.</ng-container>
+        <ng-container *ngIf="!duplicaFlete">El flete se lleva aparte, en Catálogo → Fletes; por eso aquí no hace falta ponerlo.</ng-container>
+      </p>
       <label class="cp-check" *ngIf="costoCambia">
         <input type="checkbox" [(ngModel)]="actualizarCosto">
         <span>Poner también el costo total real (<strong>{{ costo | currency:'MXN':'symbol':'1.2-2' }}</strong>) en «Precio de compra».

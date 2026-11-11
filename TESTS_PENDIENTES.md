@@ -32,6 +32,16 @@ Formato de cada entrada:
 - [ ] Al escribir un precio la fila no se brinca de lugar; se reacomoda al salir del campo. Al agregar un juguete nuevo con precio igual al de venta, también sale marcado.
 - [ ] Guardar la campaña no manda precioVenta ni precioRebaja; celular (≤560 px): los tres precios debajo del nombre; día y noche.
 
+### 2026-11-11 — Fletes (Catálogo → Fletes) y aviso de flete duplicado en la calculadora
+**Dónde:** `fletes/*` (servicio, módulo, componente), `app-routing.module.ts`, `navbar` (item + `GROUP_ROUTES`), `shared/calculadora-precio/*`.
+**Debe comprobar:**
+- [ ] Menú Catálogo → «🚚 Fletes» (solo administrador; hay que volver a entrar tras correr la migración). Lista de viajes en tarjetas con flete total, costo a cubrir, compra, productos/piezas y la etiqueta «Falta repartir $X» / «Flete repartido».
+- [ ] Nuevo viaje: nombre, fecha (hoy por defecto), flete total, nota; gastos opcionales con «Cuenta para cubrir»; buscar producto por nombre o código y agregarlo (1 pieza, su costo de hoy); «Repartir el flete por igual» pone en todos costo a cubrir ÷ piezas.
+- [ ] El resumen en vivo cambia al escribir: costo a cubrir, flete repartido, falta por repartir (color de aviso) y flete de más; sin nombre/fecha o con piezas inválidas no deja guardar y dice por qué.
+- [ ] Guardar, editar (se ve lo guardado) y eliminar (con confirmación) un viaje; el mismo producto no se agrega dos veces.
+- [ ] Calculadora de precio en un producto que está en un viaje: aviso «ya tiene su flete registrado en «viaje» (…por pieza)»; con transporte > 0 o con la casilla de costo total marcada dice que se contará dos veces; la casilla arranca desmarcada. En un producto sin viaje no cambia nada.
+- [ ] Día y noche, escritorio y celular (≤560 px).
+
 ### 2026-11-11 — Reporte por categoría: un solo reporte con inversión, flete y tipo de precio
 **Dónde:** `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
 **Debe comprobar:**

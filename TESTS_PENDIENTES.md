@@ -8,6 +8,10 @@ Formato de cada entrada:
 
 ```
 
+### 2026-11-11 — Campo «Categoría» de Nuevo/Actualizar producto muy alto (~65 px)
+**Dónde:** `src/tema-jade.scss` (`.pka-search__input` y `.pka-search` en la regla de buscadores en píldora)
+**Debe comprobar:** el campo Categoría (componente `palabra-clave-autocomplete`) mide lo mismo que Color y Piezas (~44 px) en Nuevo producto y Actualizar producto, de día y de noche, en escritorio y a 400 px; con una categoría elegida el chip y el ✕ siguen bien alineados; el desplegable de resultados sigue saliendo debajo; el diseño Clásico no cambia. El mismo componente se usa en otras pantallas con categoría: revisar que no se vea apretado.
+
 ### 2026-11-11 — Fletes: deshacer ligas manuales
 **Dónde:** `fletes/fletes.component.*` (tabla «Ligas hechas a mano en este viaje»), `FletesService.ligasManuales/quitarLiga`
 **Debe comprobar:** tras ligar ventas anteriores aparece la liga en la tabla; «↩ Deshacer» pide confirmación, la quita, la venta vuelve a salir en «Buscar ventas» como pendiente y la barra de «recuperado» del viaje baja; las ligas automáticas (hechas al vender) NO aparecen ni se pueden deshacer; sin ligas manuales la tabla no se muestra.

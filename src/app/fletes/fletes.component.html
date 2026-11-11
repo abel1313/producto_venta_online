@@ -26,7 +26,7 @@
       </label>
       <label class="pk-field">
         <span class="pk-label">Flete total $</span>
-        <input class="pk-input" type="number" name="flete" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.fleteTotal">
+        <input class="pk-input" type="number" name="flete" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.fleteTotal" (ngModelChange)="recalcularAutomaticos()">
         <span class="pk-hint">Lo que costó traer todo en este viaje.</span>
       </label>
       <label class="pk-field fl-ancho">
@@ -44,8 +44,8 @@
       <p class="pk-hint" *ngIf="!v.gastos.length">Gasolina, comida, bolsas, etiquetas… Solo si quieres que cuenten: marca «Cuenta para cubrir» y se suman al flete.</p>
       <div class="fl-fila fl-fila--gasto" *ngFor="let g of v.gastos; let i = index">
         <input class="pk-input" [name]="'gc' + i" [(ngModel)]="g.concepto" maxlength="100" placeholder="Concepto (ej.: gasolina)" aria-label="Concepto del gasto">
-        <label class="fl-num"><span>$</span><input class="pk-input" type="number" [name]="'gm' + i" min="0.01" step="0.01" inputmode="decimal" [(ngModel)]="g.monto" aria-label="Monto del gasto"></label>
-        <label class="fl-check"><input type="checkbox" [name]="'gk' + i" [(ngModel)]="g.cuentaParaCubrir"> Cuenta para cubrir</label>
+        <label class="fl-num"><span>$</span><input class="pk-input" type="number" [name]="'gm' + i" min="0.01" step="0.01" inputmode="decimal" [(ngModel)]="g.monto" (ngModelChange)="recalcularAutomaticos()" aria-label="Monto del gasto"></label>
+        <label class="fl-check"><input type="checkbox" [name]="'gk' + i" [(ngModel)]="g.cuentaParaCubrir" (ngModelChange)="recalcularAutomaticos()"> Cuenta para cubrir</label>
         <button type="button" class="pk-btn pk-btn--icon" (click)="quitarGasto(g)" aria-label="Quitar gasto">✕</button>
       </div>
     </div>
@@ -97,9 +97,9 @@
           <tbody>
             <tr *ngFor="let p of v.productos; trackBy: porIdProducto">
               <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
-              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"></td>
+              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" (ngModelChange)="recalcularAutomaticos()" aria-label="Piezas"></td>
               <td><input class="pk-input" type="number" [name]="'co' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.costoUnitario" aria-label="Costo por pieza"></td>
-              <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" aria-label="Flete por pieza"></td>
+              <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" (ngModelChange)="alEscribirFlete(p)" aria-label="Flete por pieza"><small class="fl-auto" *ngIf="esAutomatico(p)" title="Lo calcula el sistema con lo que falta por cubrir; si lo escribes tú, deja de moverse solo">auto</small></td>
               <td class="fl-num-celda">{{ fleteRenglon(p) | currency:'MXN':'symbol':'1.2-2' }}</td>
               <td><button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button></td>
             </tr>

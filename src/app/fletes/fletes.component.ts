@@ -55,6 +55,8 @@ export class FletesComponent implements OnInit, OnDestroy {
   totalPaginas = 1;
   totalRegistros = 0;
   readonly porPagina = 12;
+  /** Productos del viaje cuyo flete por pieza lo calcula el sistema solo (los agregados en esta sesión); al escribir su flete a mano dejan de serlo. */
+  private autoIds = new Set<number>();
   agregandoCategoria = false;
   avisoCategoria: string | null = null;
   private readonly buscador$ = new Subject<void>();
@@ -233,12 +235,14 @@ export class FletesComponent implements OnInit, OnDestroy {
   nuevo(): void {
     this.errorGuardar = null;
     this.limpiarBuscador();
+    this.autoIds.clear();
     this.edicion = { nombre: '', fecha: this.hoy(), fleteTotal: 0, nota: null, gastos: [], productos: [] };
   }
 
   editar(v: IViaje): void {
     this.errorGuardar = null;
     this.limpiarBuscador();
+    this.autoIds.clear();
     this.edicion = { ...v, gastos: v.gastos.map(g => ({ ...g })), productos: v.productos.map(p => ({ ...p })) };
   }
 
@@ -261,7 +265,7 @@ export class FletesComponent implements OnInit, OnDestroy {
 
   // ── Formulario ──
   agregarGasto(): void { this.edicion?.gastos.push({ concepto: '', monto: 0, cuentaParaCubrir: true }); }
-  quitarGasto(g: IGastoViaje): void { if (this.edicion) this.edicion.gastos = this.edicion.gastos.filter(x => x !== g); }
+  quitarGasto(g: IGastoViaje): void { if (this.edicion) { this.edicion.gastos = this.edicion.gastos.filter(x => x !== g); this.recalcularAutomaticos(); } }
 
   alEscribir(t: string): void { this.texto = t; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
   alElegirCategoria(c: string): void { this.categoria = c; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
@@ -294,9 +298,10 @@ export class FletesComponent implements OnInit, OnDestroy {
       const yaEstaban = todos.length - unicos.length;
       if (unicos.length) {
         e.productos = [...e.productos, ...unicos.map(p => ({ productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, piezas: 1, costoUnitario: p.precioCosto, fletePorPieza: 0 }))];
-        this.repartirPorIgual();
+        unicos.forEach(p => this.autoIds.add(p.id));
+        this.recalcularAutomaticos();
       }
-      this.avisoCategoria = `Se agregaron ${unicos.length} producto(s)` + (yaEstaban ? ` y se saltaron ${yaEstaban} que ya estaban en el viaje` : '') + '. Ajusta las piezas de cada uno.';
+      this.avisoCategoria = `Se agregaron ${unicos.length} producto(s)` + (yaEstaban ? ` y se saltaron ${yaEstaban} que ya estaban en el viaje` : '') + '. Ajusta las piezas de cada uno: su flete se recalcula solo.';
     } catch {
       this.avisoCategoria = 'No se pudieron traer los productos. Intenta de nuevo.';
     } finally {
@@ -311,11 +316,17 @@ export class FletesComponent implements OnInit, OnDestroy {
     if (!e || this.estaAgregado(p)) return;
     // Llega con 1 pieza, su costo de compra de hoy y el flete que sale de repartir el costo a cubrir entre todas las piezas (incluida esta).
     e.productos = [...e.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, piezas: 1, costoUnitario: p.precioCosto, fletePorPieza: 0 }];
-    this.repartirPorIgual();
+    this.autoIds.add(p.id);
+    this.recalcularAutomaticos();
     // Se conserva la búsqueda (categoría y página) para poder seguir agregando de la misma lista.
   }
 
-  quitarProducto(p: IProductoViaje): void { if (this.edicion) this.edicion.productos = this.edicion.productos.filter(x => x.productoId !== p.productoId); }
+  quitarProducto(p: IProductoViaje): void {
+    if (!this.edicion) return;
+    this.edicion.productos = this.edicion.productos.filter(x => x.productoId !== p.productoId);
+    this.autoIds.delete(p.productoId);
+    this.recalcularAutomaticos();
+  }
 
   /** Pone en TODOS los productos el flete por pieza = costo a cubrir ÷ piezas del viaje (después se puede cambiar uno por uno). */
   repartirPorIgual(): void {
@@ -323,6 +334,34 @@ export class FletesComponent implements OnInit, OnDestroy {
     if (!e || !this.piezasTotal) return;
     const por = Math.round((this.costoACubrir / this.piezasTotal) * 100) / 100;
     e.productos.forEach(p => p.fletePorPieza = por);
+    // Ya quedó fijo en todos: ninguno se vuelve a mover solo.
+    this.autoIds.clear();
+  }
+
+  /** ¿El flete de este renglón lo está calculando el sistema? (se muestra una etiqueta «auto»). */
+  esAutomatico(p: IProductoViaje): boolean { return this.autoIds.has(p.productoId); }
+
+  /** El dueño escribió el flete de un renglón: desde ahí es manual y el sistema ya no lo mueve. */
+  alEscribirFlete(p: IProductoViaje): void {
+    this.autoIds.delete(p.productoId);
+    this.recalcularAutomaticos();
+  }
+
+  /**
+   * Calcula solo el flete por pieza de los productos agregados: lo que TODAVÍA falta por cubrir (costo a cubrir − el flete de los productos que ya
+   * tenían su flete puesto a mano) se reparte entre las piezas de los automáticos. Los productos que ya estaban en el viaje no se tocan. Si el viaje
+   * ya estaba cubierto, los nuevos quedan en $0 (nada que cubrir). Se vuelve a calcular al cambiar piezas, gastos, flete total o quitar un producto.
+   */
+  recalcularAutomaticos(): void {
+    const e = this.edicion;
+    if (!e) return;
+    const autos = e.productos.filter(p => this.autoIds.has(p.productoId));
+    if (!autos.length) return;
+    const fijo = e.productos.filter(p => !this.autoIds.has(p.productoId)).reduce((s, p) => s + (+p.piezas || 0) * (+p.fletePorPieza || 0), 0);
+    const falta = Math.max(0, this.costoACubrir - fijo);
+    const piezas = autos.reduce((s, p) => s + (+p.piezas || 0), 0);
+    const por = piezas > 0 ? Math.round((falta / piezas) * 100) / 100 : 0;
+    autos.forEach(p => p.fletePorPieza = por);
   }
 
   // ── Cuentas en vivo (el back las vuelve a calcular al guardar) ──

@@ -26,7 +26,7 @@
       </label>
       <label class="pk-field">
         <span class="pk-label">Flete total $</span>
-        <input class="pk-input" type="number" name="flete" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.fleteTotal" (ngModelChange)="recalcularAutomaticos()">
+        <input class="pk-input" type="number" name="flete" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.fleteTotal">
         <span class="pk-hint">Lo que costó traer todo en este viaje.</span>
       </label>
       <label class="pk-field fl-ancho">
@@ -44,8 +44,8 @@
       <p class="pk-hint" *ngIf="!v.gastos.length">Gasolina, comida, bolsas, etiquetas… Solo si quieres que cuenten: marca «Cuenta para cubrir» y se suman al flete.</p>
       <div class="fl-fila fl-fila--gasto" *ngFor="let g of v.gastos; let i = index">
         <input class="pk-input" [name]="'gc' + i" [(ngModel)]="g.concepto" maxlength="100" placeholder="Concepto (ej.: gasolina)" aria-label="Concepto del gasto">
-        <label class="fl-num"><span>$</span><input class="pk-input" type="number" [name]="'gm' + i" min="0.01" step="0.01" inputmode="decimal" [(ngModel)]="g.monto" (ngModelChange)="recalcularAutomaticos()" aria-label="Monto del gasto"></label>
-        <label class="fl-check"><input type="checkbox" [name]="'gk' + i" [(ngModel)]="g.cuentaParaCubrir" (ngModelChange)="recalcularAutomaticos()"> Cuenta para cubrir</label>
+        <label class="fl-num"><span>$</span><input class="pk-input" type="number" [name]="'gm' + i" min="0.01" step="0.01" inputmode="decimal" [(ngModel)]="g.monto" aria-label="Monto del gasto"></label>
+        <label class="fl-check"><input type="checkbox" [name]="'gk' + i" [(ngModel)]="g.cuentaParaCubrir"> Cuenta para cubrir</label>
         <button type="button" class="pk-btn pk-btn--icon" (click)="quitarGasto(g)" aria-label="Quitar gasto">✕</button>
       </div>
     </div>
@@ -58,6 +58,18 @@
                 title="Pone en todos el mismo flete por pieza: el costo a cubrir ÷ las piezas del viaje">Repartir el flete por igual</button>
       </div>
 
+      <div class="fl-importar" *ngIf="campanas.length">
+        <select class="pk-input" name="campanaImportar" [(ngModel)]="campanaElegida" aria-label="Campaña de la que traer los productos">
+          <option [ngValue]="''">Traer los productos de una campaña…</option>
+          <option *ngFor="let c of campanas" [ngValue]="c.id">{{ c.nombre }} ({{ c.productos.length }} productos)</option>
+        </select>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="importarCampana()" [disabled]="campanaElegida === '' || importandoCampana">{{ importandoCampana ? 'Trayendo…' : '＋ Traer' }}</button>
+      </div>
+      <div class="fl-llenar" *ngIf="cuantosSinFlete">
+        <span class="pk-hint">{{ cuantosSinFlete }} producto(s) sin flete guardado. Faltan por cubrir {{ faltaParaLlenar | currency:'MXN':'symbol':'1.2-2' }}.</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="llenarFleteQueFalta()" [disabled]="faltaParaLlenar <= 0"
+                title="Reparte lo que falta por cubrir solo entre los productos sin flete guardado. Si no lo pulsas, quedan en $0 y lo que se venda de ellos es ganancia">Llenar el flete que falta</button>
+      </div>
       <div class="fl-buscar">
         <select class="pk-input fl-categoria" name="categoriaBuscar" [ngModel]="categoria" (ngModelChange)="alElegirCategoria($event)" aria-label="Categoría de los productos a buscar">
           <option value="">Todas las categorías</option>
@@ -97,9 +109,9 @@
           <tbody>
             <tr *ngFor="let p of v.productos; trackBy: porIdProducto">
               <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
-              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" (ngModelChange)="recalcularAutomaticos()" aria-label="Piezas"></td>
+              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"></td>
               <td><input class="pk-input" type="number" [name]="'co' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.costoUnitario" aria-label="Costo por pieza"></td>
-              <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" (ngModelChange)="alEscribirFlete(p)" aria-label="Flete por pieza"><small class="fl-auto" *ngIf="esAutomatico(p)" title="Lo calcula el sistema con lo que falta por cubrir; si lo escribes tú, deja de moverse solo">auto</small></td>
+              <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" (ngModelChange)="alEscribirFlete(p)" aria-label="Flete por pieza"><small class="fl-auto" *ngIf="sinFleteGuardado(p)" title="Este producto no tenía flete guardado en «Calcular precio»: queda en $0 hasta que lo escribas o pulses «Llenar el flete que falta»">sin flete guardado</small></td>
               <td class="fl-num-celda">{{ fleteRenglon(p) | currency:'MXN':'symbol':'1.2-2' }}</td>
               <td><button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button></td>
             </tr>

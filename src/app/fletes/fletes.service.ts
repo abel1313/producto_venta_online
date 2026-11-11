@@ -1,6 +1,6 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, of } from 'rxjs';
+import { Observable, forkJoin, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from 'src/environments/environment';
 
@@ -16,6 +16,9 @@ export interface IProductoViaje {
 /** Un viaje de compra. Lo que no se manda (solo lectura) lo calcula el back: costo a cubrir, flete asignado, lo que falta, excedente... */
 /** Una liga hecha a mano (de `GET /v1/fletes/{id}/ligas`): `ligaId` es lo que se manda para deshacerla. */
 export interface ILigaManual { ligaId: number; ventaId: number; detalleVentaId: number; fecha: string | null; productoId: number; producto: string; cantidad: number; fletePorPieza: number; }
+
+/** Un producto listo para entrar a un viaje (de `GET /v1/fletes/guardados`): su costo de hoy y el flete por pieza que ya guardó en su último «Calcular precio» (0 = sin flete guardado). */
+export interface IProductoParaViaje { productoId: number; nombre: string; codigoBarras: string | null; precioCosto: number; stock: number; transporte: number; }
 
 export interface IViaje {
   id?: number;
@@ -77,6 +80,16 @@ export class FletesService {
   /** Liga a mano piezas de ventas anteriores al viaje (guarda el flete por pieza de ese viaje). Devuelve cuántas piezas se ligaron. */
   ligarVentas(viajeId: number, productoId: number, ligas: { detalleVentaId: number; cantidad: number }[]): Observable<number> {
     return this.http.post<{ data: number }>(`${this.url}/${viajeId}/ligar`, { productoId, ligas }).pipe(map(r => r.data));
+  }
+
+  /** Los productos con su costo y su flete guardado, para precargar un viaje de una sola consulta (de 300 en 300 ids). */
+  productosParaViaje(ids: number[]): Observable<IProductoParaViaje[]> {
+    const unicos = Array.from(new Set(ids));
+    if (!unicos.length) return of([] as IProductoParaViaje[]);
+    const partes: number[][] = [];
+    for (let i = 0; i < unicos.length; i += 300) partes.push(unicos.slice(i, i + 300));
+    return forkJoin(partes.map(parte => this.http.get<{ lista: IProductoParaViaje[] }>(`${this.url}/guardados`, { params: new HttpParams().set('productoIds', parte.join(',')) })
+      .pipe(map(r => r.lista ?? [])))).pipe(map(listas => ([] as IProductoParaViaje[]).concat(...listas)));
   }
 
   /** Las ligas hechas a mano de un viaje (para poder deshacerlas). Vacío si no hay. */

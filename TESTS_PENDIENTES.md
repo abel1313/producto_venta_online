@@ -12,9 +12,9 @@ Formato de cada entrada:
 **Dónde:** `fletes/fletes.component.*` (tabla «Ligas hechas a mano en este viaje»), `FletesService.ligasManuales/quitarLiga`
 **Debe comprobar:** tras ligar ventas anteriores aparece la liga en la tabla; «↩ Deshacer» pide confirmación, la quita, la venta vuelve a salir en «Buscar ventas» como pendiente y la barra de «recuperado» del viaje baja; las ligas automáticas (hechas al vender) NO aparecen ni se pueden deshacer; sin ligas manuales la tabla no se muestra.
 
-### 2026-11-11 — Fletes: el flete por pieza de los productos agregados se calcula solo
-**Dónde:** `fletes/fletes.component.ts` (`recalcularAutomaticos`, `autoIds`, `alEscribirFlete`)
-**Debe comprobar:** viaje nuevo con flete $100 + gasolina $40 (cubrir $140): agregar un producto de 5 piezas → flete $28 por pieza con etiqueta «auto»; agregar un segundo de 5 piezas → ambos $14 (reparte lo que falta entre las piezas automáticas); editar el flete de uno a mano → deja de ser «auto» y el otro se ajusta a lo que falta; al editar un viaje ya guardado y cubierto, un producto agregado queda en $0 y NO cambia el flete de los que ya estaban; cambiar piezas, flete total o gastos recalcula solo los «auto»; «Repartir el flete por igual» fija todos.
+### 2026-11-11 — Fletes: el flete por pieza sale de lo guardado en «Calcular precio» (reemplaza al cálculo automático)
+**Dónde:** `fletes/fletes.component.*` (`incorporar`, `importarCampana`, `llenarFleteQueFalta`, `sinFleteIds`), `FletesService.productosParaViaje`, `admin/cache` (tipo CAMPANA)
+**Debe comprobar:** al agregar productos (uno por uno, categoría o campaña) llegan con 1 pieza, su costo y su flete guardado; los sin flete guardado quedan en $0 con la marca y NO se llenan solos; «Llenar el flete que falta» reparte lo que falta (a cubrir − el flete de los demás) solo entre ellos y no toca a los otros; sin pulsarlo quedan en $0; volver a traer la misma campaña o categoría no duplica; cambiar piezas, gastos o flete total NO mueve ningún flete; editar un viaje guardado y agregar productos no cambia los que ya estaban; con más de 300 productos se parte en varias consultas; el recuadro 🧪 muestra «campaña de …» para el dato de la prueba F.
 
 ### 2026-11-11 — Fletes entrega 5: categoría, «Otros», agregar categoría completa e importar viaje en Campañas
 **Dónde:** `fletes/fletes.component.*` (buscador del viaje), `campanas/campanas.component.*` (selector «Otros» e «Importar los productos de un viaje»), `ProductoService.adminFiltrar(sinCategoria)`

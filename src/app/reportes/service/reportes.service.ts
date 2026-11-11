@@ -126,8 +126,6 @@ export interface CorteDeCaja {
 // ── Reporte por categoría / por productos elegidos (solo administrador) ───────────────────────────────────────────────────────
 
 export type VistaReporteCategoria = 'TODOS' | 'VENDIDOS' | 'NO_VENDIDOS';
-/** COMPLETO = precios, ventas, por vender y flete; VENTAS = lo vendido repartido por tipo de precio (venta, rebaja, campaña, otro). */
-export type TipoReporteCategoria = 'COMPLETO' | 'VENTAS';
 
 /** Lo que se pide: categoría vacía = todo; sinCategoria = «Otros»; productoIds = solo esos productos. */
 export interface FiltroReporteCategoria {
@@ -137,7 +135,6 @@ export interface FiltroReporteCategoria {
   sinCategoria?:  boolean;
   productoIds?:   number[];
   vista:          VistaReporteCategoria;
-  tipoReporte?:   TipoReporteCategoria;
 }
 
 export interface FilaReporteCategoria {
@@ -151,6 +148,7 @@ export interface FilaReporteCategoria {
   fleteEnLoVendido: number; fleteEnStock: number;
   piezasVenta: number; montoVenta: number; piezasRebaja: number; montoRebaja: number;
   piezasCampana: number; montoCampana: number; piezasOtro: number; montoOtro: number; piezasEstimadas: number;
+  inversion: number; fleteTotal: number;
 }
 
 export interface TotalesReporteCategoria {
@@ -162,6 +160,7 @@ export interface TotalesReporteCategoria {
   sumaCompra: number; sumaVenta: number; sumaRebaja: number; sumaCampana: number;
   piezasVenta: number; piezasRebaja: number; piezasCampana: number; piezasOtro: number;
   montoVenta: number; montoRebaja: number; montoCampana: number; montoOtro: number; piezasEstimadas: number;
+  inversion: number;
 }
 
 export interface PaginaReporteCategoria {
@@ -233,7 +232,7 @@ export class ReportesService {
 
   /** El reporte en pantalla (paginado, solo lectura). El back responde 400 con `mensaje` si algo del filtro no es válido. */
   getPorCategoria(f: FiltroReporteCategoria, pagina: number, size: number): Observable<PaginaReporteCategoria> {
-    let params = new HttpParams().set('desde', f.desde).set('hasta', f.hasta).set('vista', f.vista).set('tipoReporte', f.tipoReporte ?? 'COMPLETO')
+    let params = new HttpParams().set('desde', f.desde).set('hasta', f.hasta).set('vista', f.vista)
       .set('pagina', String(pagina)).set('size', String(size));
     if (f.productoIds?.length) params = params.set('productoIds', f.productoIds.join(','));
     else if (f.sinCategoria) params = params.set('sinCategoria', 'true');
@@ -244,7 +243,7 @@ export class ReportesService {
   /** Pide el Excel o PDF: el back lo arma en segundo plano y responde al instante con su id (PENDIENTE). */
   generarReporteCategoria(f: FiltroReporteCategoria, formato: 'XLSX' | 'PDF'): Observable<ReporteGenerado> {
     return this.http.post<{ data: ReporteGenerado }>(`${this.baseCategoria}/generar`, {
-      desde: f.desde, hasta: f.hasta, categoria: f.categoria || null, sinCategoria: !!f.sinCategoria, productoIds: f.productoIds ?? [], vista: f.vista, tipoReporte: f.tipoReporte ?? 'COMPLETO', formato
+      desde: f.desde, hasta: f.hasta, categoria: f.categoria || null, sinCategoria: !!f.sinCategoria, productoIds: f.productoIds ?? [], vista: f.vista, formato
     }).pipe(map(r => r.data));
   }
 

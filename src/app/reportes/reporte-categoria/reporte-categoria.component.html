@@ -149,7 +149,11 @@
         </tbody>
         <tfoot>
           <tr>
-            <th class="rc-izq" colspan="7">Totales ({{ resultado.totales.productos }} productos, todas las páginas)</th>
+            <th class="rc-izq" colspan="3">Totales ({{ resultado.totales.productos }} productos, todas las páginas)</th>
+            <th class="rc-num">{{ resultado.totales.sumaCompra | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.sumaVenta | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.sumaRebaja | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.sumaCampana | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.piezas | number:'1.0-0' }}</th>
             <th></th>
             <th class="rc-num">{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</th>

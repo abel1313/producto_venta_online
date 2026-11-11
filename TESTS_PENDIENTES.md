@@ -17,6 +17,14 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-11 — Reporte por categoría: selector «Tipo de reporte» (Completo / Ventas)
+**Dónde:** `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
+**Debe comprobar:**
+- [ ] El selector «Tipo de reporte» aparece en los filtros; «Completo» se ve igual que antes (tarjetas, columnas y totales).
+- [ ] «Ventas: a qué precio se vendió»: 4 tarjetas de tipo (venta, rebaja, campaña, otro, con piezas) en lugar de las de flete/por vender; tabla con piezas y $ por tipo y «Piezas con tipo estimado»; fila de totales completa.
+- [ ] Cambiar el selector no cambia lo que se ve hasta volver a pulsar «Ver reporte»; Excel y PDF salen con el tipo elegido (nombre `reporte-ventas-por-tipo-de-precio-…`).
+- [ ] Día y noche, escritorio y celular; la tabla hace scroll horizontal dentro de su caja.
+
 ### 2026-11-10 — Reportes → pestaña «🗂️ Por categoría» (solo administrador)
 **Dónde:** `reportes/reporte-categoria/*` (componente nuevo), `reportes/service/reportes.service.ts` (`getPorCategoria`, `generarReporteCategoria`, `getReportesGenerados`, `getEstadoReporteGenerado`, `descargarReporteGenerado`), `reportes.component.{ts,html}` (pestaña), `reportes.module.ts`, `loading.interceptor.ts` (`/v1/reportes/ventas/por-categoria/generados` sin overlay).
 **Tipo:** e2e (Playwright contra QA) · unitario de componente (HttpTestingController).

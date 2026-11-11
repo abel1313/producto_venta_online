@@ -5,7 +5,7 @@ import { catchError, debounceTime, map, switchMap, takeUntil, takeWhile } from '
 import { AuthService } from '../../auth/auth.service';
 import { ProductoService } from '../../productos/service/producto.service';
 import {
-  FiltroReporteCategoria, PaginaReporteCategoria, ReporteGenerado, ReportesService, VistaReporteCategoria
+  FiltroReporteCategoria, PaginaReporteCategoria, ReporteGenerado, ReportesService, TipoReporteCategoria, VistaReporteCategoria
 } from '../service/reportes.service';
 
 /** Un producto que el administrador puede elegir para el reporte. */
@@ -36,6 +36,9 @@ export class ReporteCategoriaComponent implements OnInit, OnDestroy {
   categorias: string[] = [];
   categoria = '';
   vista: VistaReporteCategoria = 'TODOS';
+  tipoReporte: TipoReporteCategoria = 'COMPLETO';
+  /** El tipo con el que se armó lo que se ve en pantalla (no cambia hasta volver a consultar). */
+  tipoMostrado: TipoReporteCategoria = 'COMPLETO';
 
   // Productos elegidos
   busqueda = '';
@@ -102,7 +105,7 @@ export class ReporteCategoriaComponent implements OnInit, OnDestroy {
   }
 
   private get filtro(): FiltroReporteCategoria {
-    const base = { desde: this.desde, hasta: this.hasta, vista: this.vista };
+    const base = { desde: this.desde, hasta: this.hasta, vista: this.vista, tipoReporte: this.tipoReporte };
     if (this.modo === 'productos') return { ...base, productoIds: this.elegidos.map(e => e.id) };
     if (this.categoria === this.OTROS) return { ...base, sinCategoria: true };
     return { ...base, categoria: this.categoria || undefined };
@@ -133,7 +136,7 @@ export class ReporteCategoriaComponent implements OnInit, OnDestroy {
     this.cargando = true;
     this.error = null;
     this.svc.getPorCategoria(this.filtro, pagina, this.porPagina).subscribe({
-      next: r => { this.resultado = r; this.pagina = r.pagina; this.cargando = false; },
+      next: r => { this.resultado = r; this.tipoMostrado = this.tipoReporte; this.pagina = r.pagina; this.cargando = false; },
       error: (e: HttpErrorResponse) => {
         this.cargando = false;
         this.resultado = null;

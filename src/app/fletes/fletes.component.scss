@@ -69,7 +69,10 @@
 .fl-avance__texto { margin: 0; font-size: .8rem; color: var(--app-text-muted); b { color: var(--app-text); font-variant-numeric: tabular-nums; } }
 .fl-barra { height: .55rem; border-radius: 999px; background: var(--app-tint); border: 1px solid var(--app-border); overflow: hidden; }
 .fl-barra__lleno { display: block; height: 100%; background: var(--app-accent); border-radius: 999px; transition: width .3s ease; }
-.fl-tabla--chica { font-size: .78rem; th, td { padding: .3rem .4rem; } }
+.fl-card > *, .fl-avance { min-width: 0; }
+.fl-tabla-wrap--card { max-height: 20rem; }
+.fl-filtro-card { width: 100%; }
+.fl-tabla--chica { font-size: .78rem; th, td { padding: .3rem .3rem; } th { font-size: .66rem; letter-spacing: 0; text-transform: none; } .fl-izq { min-width: 9rem; } }
 
 .fl-resumen-ligar { margin: 0; color: var(--app-text); }
 .fl-ok { margin: 0; padding: .5rem .75rem; border-radius: 8px; background: var(--badge-bg); color: var(--badge-text); font-size: .85rem; }

@@ -8,6 +8,10 @@ Formato de cada entrada:
 
 ```
 
+### 2026-11-12 — Fletes: «Ver productos» de la card se desbordaba y «Piezas» no se entendía
+**Dónde:** `fletes/fletes.component.*` (`.fl-tabla-wrap--card`, `renglonesVisibles`, `filtroDetalle`, encabezado «Piezas del viaje» y su ayuda)
+**Debe comprobar:** en la card de un viaje con 150+ productos, «Ver productos» abre una tabla que NO se sale de la card, tiene su propio scroll (unos 20rem) con encabezado fijo y un buscador (con más de 8 productos) que filtra por nombre o código; al abrir otra card el buscador se limpia; a 400 px no hay scroll horizontal de la página. En Editar viaje la columna se llama «Piezas del viaje» y una nota explica que NO cambian el stock del producto. Comprobado en navegador con 186 productos; falta el uso real en QA.
+
 ### 2026-11-11 — Un solo flete entre el viaje y «Calcular precio»
 **Dónde:** `shared/calculadora-precio/*` (`viajeVigente`, `ponerFleteDelViaje`, `difiereDelViaje`, `viaje` en `IResultadoCalculo`), `productos/producto/add/add.component.ts` (`preguntarActualizarViaje`)
 **Debe comprobar:** un producto en un viaje con flete $20: al abrir «Calcular precio» el transporte sale en $20 con «Tomado del viaje X» y no pisa un valor que ya escribiste; con varios viajes se toma el más viejo que todavía tiene piezas del producto por vender (si ninguno tiene, el más reciente); al cambiar el transporte a $30 sale el aviso «el viaje dice $20 y aquí pusiste $30»; al «Usar este precio» y guardar el producto sale «¿Actualizar también el viaje?»: «Sí» deja el flete del producto en el viaje en $30 (sin tocar los otros productos del viaje ni las ventas ya ligadas), «No» lo deja en $20; si el transporte es igual al del viaje no pregunta nada; un producto sin viajes se comporta como antes; si el viaje ya no tiene el producto o falla el guardado, el producto y su cálculo ya quedaron guardados y solo se avisa. No se comprobó en pantalla (solo compila).

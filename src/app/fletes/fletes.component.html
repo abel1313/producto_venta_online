@@ -114,7 +114,7 @@
       <div class="fl-tabla-wrap fl-tabla-wrap--viaje" *ngIf="v.productos.length">
         <table class="fl-tabla">
           <thead>
-            <tr><th class="fl-izq">Producto</th><th>Piezas</th><th>Costo c/u $</th><th>Flete por pieza $</th><th>Flete del renglón</th><th></th></tr>
+            <tr><th class="fl-izq">Producto</th><th title="Cuántas piezas de este producto llegaron en ESTE viaje. No cambia el stock de la tienda.">Piezas del viaje</th><th>Costo c/u $</th><th>Flete por pieza $</th><th>Flete del renglón</th><th></th></tr>
           </thead>
           <tbody>
             <tr *ngFor="let p of productosDeLaPaginaViaje; trackBy: porIdProducto">
@@ -129,6 +129,7 @@
         </table>
       </div>
       <p class="pk-hint" *ngIf="v.productos.length && !productosDelViaje.length">Ningún producto del viaje coincide con lo que escribiste.</p>
+      <p class="pk-hint" *ngIf="v.productos.length">«Piezas del viaje» son las que llegaron en este viaje (sirven para repartir el flete y saber cuántas quedan por vender). <b>No cambian el stock</b> del producto: el stock se actualiza en Catálogo → Productos.</p>
       <p class="pk-hint" *ngIf="!v.productos.length">Todavía no hay productos. Busca arriba y agrégalos con ＋.</p>
     </div>
 
@@ -261,16 +262,23 @@
         </p>
         <p class="fl-avance__texto">Vendidas {{ r.piezasVendidas }} de {{ r.piezasCompradas }} piezas · quedan {{ r.piezasRestantes }}<ng-container *ngIf="r.pagadoEn"> · flete cubierto el {{ r.pagadoEn | date:'dd/MM/yyyy' }}</ng-container></p>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternarDetalle(v)" [attr.aria-expanded]="abiertoId === v.id">{{ abiertoId === v.id ? 'Ocultar productos' : 'Ver productos' }}</button>
-        <table class="fl-tabla fl-tabla--chica" *ngIf="abiertoId === v.id">
-          <thead><tr><th class="fl-izq">Producto</th><th>Compradas</th><th>Vendidas</th><th>Quedan</th><th>Vendido $</th></tr></thead>
-          <tbody>
-            <tr *ngFor="let p of r.renglones">
-              <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
-              <td>{{ p.piezasCompradas }}</td><td>{{ p.piezasVendidas }}</td><td>{{ p.piezasRestantes }}</td>
-              <td class="fl-num-celda">{{ p.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <ng-container *ngIf="abiertoId === v.id">
+          <input class="pk-input fl-filtro-card" *ngIf="r.renglones.length > 8" name="filtroDetalle" [ngModel]="filtroDetalle" (ngModelChange)="filtroDetalle = $event" autocomplete="off"
+                 placeholder="Buscar en los productos de este viaje…" aria-label="Buscar en los productos de este viaje">
+          <div class="fl-tabla-wrap fl-tabla-wrap--card">
+            <table class="fl-tabla fl-tabla--chica">
+              <thead><tr><th class="fl-izq">Producto</th><th title="Piezas que llegaron en este viaje">Llegaron</th><th>Vendidas</th><th>Quedan</th><th>Vendido $</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let p of renglonesVisibles(r)">
+                  <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
+                  <td>{{ p.piezasCompradas }}</td><td>{{ p.piezasVendidas }}</td><td>{{ p.piezasRestantes }}</td>
+                  <td class="fl-num-celda">{{ p.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="pk-hint" *ngIf="filtroDetalle.trim() && !renglonesVisibles(r).length">Ningún producto de este viaje coincide.</p>
+        </ng-container>
       </div>
       <div class="fl-acciones">
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="descargar(v, 'XLSX')" [disabled]="!!descargando" title="Baja el reporte de este viaje en Excel">{{ descargando === v.id + '-XLSX' ? 'Armando…' : '⬇ Excel' }}</button>

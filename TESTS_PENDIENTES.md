@@ -948,3 +948,7 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 **Dónde:** `productos/producto/all/all.component.ts` (`onScroll`, `buscarProductoScroll`).
 - [ ] Con JUGUETES/«Con stock»/«Habilitados» (o sin filtros) y más de 12 resultados, al bajar la lista se cargan las siguientes páginas hasta el final; en pantalla con zoom o alta densidad también.
 - [ ] Al llegar al final no se piden dos veces la misma página (sin productos repetidos).
+
+## Fletes · la pregunta «¿Actualizar también el viaje?» se cerraba sola (2026-11-12)
+Cambio: `productos/producto/add/add.component.ts` — después de guardar el producto, el aviso «¡Producto actualizado!» (y la pregunta de artículos) esperan a que se conteste la pregunta del viaje; antes la tapaban y te sacaban a Productos → Buscar.
+Debe comprobar: en Actualizar un producto que está en un viaje, cambiar «Transporte por pieza» → Usar este precio → Guardar: la pregunta se queda hasta que se responda; con «Sí» sale «Viaje actualizado» y luego «Producto actualizado»; con «No» sigue «Producto actualizado»; sin cambiar el transporte no pregunta nada; sin viaje el aviso de guardado sale igual que antes. Nuevo producto sin viaje: igual que antes.

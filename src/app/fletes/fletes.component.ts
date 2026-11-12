@@ -153,7 +153,7 @@ export class FletesComponent implements OnInit, OnDestroy {
     });
   }
 
-  alternarDetalle(v: IViaje): void { this.abiertoId = this.abiertoId === v.id ? null : (v.id ?? null); }
+  alternarDetalle(v: IViaje): void { this.filtroDetalle = ''; this.abiertoId = this.abiertoId === v.id ? null : (v.id ?? null); }
 
   // ── Ligar ventas anteriores ──
   abrirLigar(v: IViaje): void {
@@ -383,6 +383,16 @@ export class FletesComponent implements OnInit, OnDestroy {
     const por = Math.round((this.costoACubrir / this.piezasTotal) * 100) / 100;
     e.productos.forEach(p => p.fletePorPieza = por);
     this.sinFleteIds.clear();
+  }
+
+  /** Texto con el que se filtran los productos del detalle abierto de una card («Ver productos»). */
+  filtroDetalle = '';
+
+  /** Los renglones del detalle de un viaje que coinciden con el buscador de la card (todos si está vacío). */
+  renglonesVisibles(r: IReporteViaje): IReporteViaje['renglones'] {
+    const t = this.normalizar(this.filtroDetalle);
+    if (!t) return r.renglones;
+    return r.renglones.filter(p => this.normalizar(p.nombre ?? '').includes(t) || this.normalizar(p.codigoBarras ?? '').includes(t));
   }
 
   // ── Lista de productos del viaje: buscador, páginas y scroll (con 150+ productos pintar todo a la vez se traba) ──

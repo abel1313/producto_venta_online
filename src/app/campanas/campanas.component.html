@@ -64,7 +64,7 @@
 
         <div class="cp-productos__lista" *ngIf="c.productos.length">
           <div class="cp-fila" [class.cp-fila--sin-descuento]="esIgualAVenta(p)" *ngFor="let p of productosDeLaPagina; trackBy: porIdDeProducto">
-            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.codigoBarras">Código: {{ p.codigoBarras }}</small><small class="cp-fila__origen" *ngIf="p.origen">{{ p.origen }}</small></span>
+            <span class="cp-fila__nombre">{{ p.nombre || ('Producto ' + p.productoId) }}<small class="cp-fila__origen" *ngIf="p.codigoBarras">Código: {{ p.codigoBarras }}</small><small class="cp-fila__origen" *ngIf="p.stock != null" [class.cp-fila__origen--agotado]="p.stock <= 0">Stock: {{ p.stock }}<ng-container *ngIf="p.stock <= 0"> · agotado</ng-container></small><small class="cp-fila__origen" *ngIf="p.origen">{{ p.origen }}</small></span>
             <div class="cp-fila__precios">
               <label class="cp-fila__precio">
                 <span>Precio de venta $</span>

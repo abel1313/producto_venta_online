@@ -30,6 +30,7 @@
   padding: .45rem 0; border-bottom: 1px solid var(--app-hairline, var(--app-border));
   &__nombre { min-width: 0; overflow-wrap: anywhere; color: var(--app-text); }
   &__origen { display: block; font-size: .72rem; color: var(--app-text-muted); }
+  &__origen--agotado { color: var(--pk-danger); font-weight: 600; }
   // Los tres precios van SIEMPRE en su propio renglón (esta lista vive en una columna angosta del formulario): antes iban al lado del nombre y lo dejaban sin ancho.
   // Tres casillas del MISMO tamaño, una bajo otra: etiqueta a la izquierda y campo a la derecha con el mismo ancho y alineados.
   &__precios { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: 1fr; gap: .5rem .9rem; }

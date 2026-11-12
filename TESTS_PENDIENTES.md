@@ -570,3 +570,8 @@ Formato de cada entrada:
 **Dónde:** `productos/producto/all/all.component.ts` (`onScroll`, `buscarProductoScroll`).
 - [ ] Con JUGUETES/«Con stock»/«Habilitados» (o sin filtros) y más de 12 resultados, al bajar la lista se cargan las siguientes páginas hasta el final; en pantalla con zoom o alta densidad también.
 - [ ] Al llegar al final no se piden dos veces la misma página (sin productos repetidos).
+
+### Campañas · el nombre del juguete salía en vertical, letra por letra (2026-11-12, visto en producción)
+Causa: la fila de cada juguete tenía el nombre y los tres precios en una sola fila (`1fr auto auto`); la columna de precios pedía todo su ancho en una línea y no dejaba ancho al nombre, y esa lista vive en una columna angosta del formulario.
+Cambio: `campanas.component.scss` — el nombre y la ✕ van siempre arriba y los tres precios siempre en su propio renglón, a cualquier ancho.
+Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el nombre y el código se leen completos (sin letras en vertical), los precios de venta, con descuento y de campaña salen debajo, la ✕ queda arriba a la derecha, con un juguete de nombre largo, a pantalla ancha y en celular (400 px), de día y de noche. La fila marcada «sin descuento» conserva su franja de aviso.

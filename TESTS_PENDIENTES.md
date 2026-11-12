@@ -952,3 +952,8 @@ Necesitas la PC y el celular, los dos con **el mismo usuario** (administrador) e
 ## Fletes · la pregunta «¿Actualizar también el viaje?» se cerraba sola (2026-11-12)
 Cambio: `productos/producto/add/add.component.ts` — después de guardar el producto, el aviso «¡Producto actualizado!» (y la pregunta de artículos) esperan a que se conteste la pregunta del viaje; antes la tapaban y te sacaban a Productos → Buscar.
 Debe comprobar: en Actualizar un producto que está en un viaje, cambiar «Transporte por pieza» → Usar este precio → Guardar: la pregunta se queda hasta que se responda; con «Sí» sale «Viaje actualizado» y luego «Producto actualizado»; con «No» sigue «Producto actualizado»; sin cambiar el transporte no pregunta nada; sin viaje el aviso de guardado sale igual que antes. Nuevo producto sin viaje: igual que antes.
+
+### Campañas · el nombre del juguete salía en vertical, letra por letra (2026-11-12, visto en producción)
+Causa: la fila de cada juguete tenía el nombre y los tres precios en una sola fila (`1fr auto auto`); la columna de precios pedía todo su ancho en una línea y no dejaba ancho al nombre, y esa lista vive en una columna angosta del formulario.
+Cambio: `campanas.component.scss` — el nombre y la ✕ van siempre arriba y los tres precios siempre en su propio renglón, a cualquier ancho.
+Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el nombre y el código se leen completos (sin letras en vertical), los precios de venta, con descuento y de campaña salen debajo, la ✕ queda arriba a la derecha, con un juguete de nombre largo, a pantalla ancha y en celular (400 px), de día y de noche. La fila marcada «sin descuento» conserva su franja de aviso.

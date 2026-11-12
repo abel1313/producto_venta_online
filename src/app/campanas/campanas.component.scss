@@ -107,3 +107,6 @@
 .cp-motivos { margin: 0; padding: .55rem .8rem .55rem 1.8rem; border-radius: 10px; font-size: .85rem; display: grid; gap: .2rem;
   background: var(--pk-warning-soft, var(--app-tint)); color: var(--app-text); border: 1px solid var(--app-hairline, var(--app-border)); }
 .cp-fila__precio input.cp-invalido { border-color: var(--pk-danger); box-shadow: 0 0 0 1px var(--pk-danger); }
+
+.cp-importar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-block: .4rem; select { flex: 1; min-width: 12rem; } }
+.cp-importar__aviso { color: var(--app-accent-text); }

@@ -17,6 +17,65 @@ Formato de cada entrada:
 
 ---
 
+### 2026-11-12 — Fletes: la pregunta «¿Actualizar también el viaje?» se cerraba sola
+**Dónde:** `productos/producto/add/add.component.ts` — después de guardar el producto, el aviso «¡Producto actualizado!» (y la pregunta de artículos) esperan a que se conteste la pregunta del viaje; antes la tapaban y te sacaban a Productos → Buscar.
+**Debe comprobar:** en Actualizar un producto que está en un viaje, cambiar «Transporte por pieza» → Usar este precio → Guardar: la pregunta se queda hasta que se responda; con «Sí» sale «Viaje actualizado» y luego «Producto actualizado»; con «No» sigue «Producto actualizado»; sin cambiar el transporte no pregunta nada; sin viaje el aviso de guardado sale igual que antes. Nuevo producto sin viaje: igual que antes.
+
+### 2026-11-12 — Fletes: «Ver productos» de la card se desbordaba y «Piezas» no se entendía
+**Dónde:** `fletes/fletes.component.*` (`.fl-tabla-wrap--card`, `renglonesVisibles`, `filtroDetalle`, encabezado «Piezas del viaje» y su ayuda)
+**Debe comprobar:** en la card de un viaje con 150+ productos, «Ver productos» abre una tabla que NO se sale de la card, tiene su propio scroll (unos 20rem) con encabezado fijo y un buscador (con más de 8 productos) que filtra por nombre o código; al abrir otra card el buscador se limpia; a 400 px no hay scroll horizontal de la página. En Editar viaje la columna se llama «Piezas del viaje» y una nota explica que NO cambian el stock del producto. Comprobado en navegador con 186 productos; falta el uso real en QA.
+
+### 2026-11-11 — Un solo flete entre el viaje y «Calcular precio»
+**Dónde:** `shared/calculadora-precio/*` (`viajeVigente`, `ponerFleteDelViaje`, `difiereDelViaje`, `viaje` en `IResultadoCalculo`), `productos/producto/add/add.component.ts` (`preguntarActualizarViaje`)
+**Debe comprobar:** un producto en un viaje con flete $20: al abrir «Calcular precio» el transporte sale en $20 con «Tomado del viaje X» y no pisa un valor que ya escribiste; con varios viajes se toma el más viejo que todavía tiene piezas del producto por vender (si ninguno tiene, el más reciente); al cambiar el transporte a $30 sale el aviso «el viaje dice $20 y aquí pusiste $30»; al «Usar este precio» y guardar el producto sale «¿Actualizar también el viaje?»: «Sí» deja el flete del producto en el viaje en $30 (sin tocar los otros productos del viaje ni las ventas ya ligadas), «No» lo deja en $20; si el transporte es igual al del viaje no pregunta nada; un producto sin viajes se comporta como antes; si el viaje ya no tiene el producto o falla el guardado, el producto y su cálculo ya quedaron guardados y solo se avisa. No se comprobó en pantalla (solo compila).
+
+### 2026-11-11 — Fletes: la lista de productos del viaje se traba con muchos productos
+**Dónde:** `fletes/fletes.component.*` (`productosDelViaje`, `productosDeLaPaginaViaje`, `filtroViaje`, `.fl-tabla-wrap--viaje`, `.fl-pie`)
+**Debe comprobar:** con una campaña de 186 productos traída al viaje solo se pintan 25 renglones por página (8 páginas) y el scroll de la página ya no se traba; el buscador «entre los productos del viaje» (solo con más de 25) filtra por nombre o código sin acentos y vuelve a la página 1; quitar productos en la última página no deja una página vacía; la tabla tiene su propio scroll (unos 26rem) con el encabezado fijo; en pantallas de 900 px o más el resumen y «Guardar viaje / Cancelar» quedan pegados abajo (compactos) y en celular no; cambiar piezas o flete de un renglón actualiza el resumen al momento; las tablas de «Ligar ventas anteriores» y de ligas manuales también tienen su scroll. Comprobado en navegador con 186 productos (25 renglones y 75 campos en pantalla en vez de 186 y 558); falta el uso real en QA.
+
+### 2026-11-11 — Fletes: deshacer ligas manuales
+**Dónde:** `fletes/fletes.component.*` (tabla «Ligas hechas a mano en este viaje»), `FletesService.ligasManuales/quitarLiga`
+**Debe comprobar:** tras ligar ventas anteriores aparece la liga en la tabla; «↩ Deshacer» pide confirmación, la quita, la venta vuelve a salir en «Buscar ventas» como pendiente y la barra de «recuperado» del viaje baja; las ligas automáticas (hechas al vender) NO aparecen ni se pueden deshacer; sin ligas manuales la tabla no se muestra.
+
+### 2026-11-11 — Fletes: el flete por pieza sale de lo guardado en «Calcular precio» (reemplaza al cálculo automático)
+**Dónde:** `fletes/fletes.component.*` (`incorporar`, `importarCampana`, `llenarFleteQueFalta`, `sinFleteIds`), `FletesService.productosParaViaje`, `admin/cache` (tipo CAMPANA)
+**Debe comprobar:** al agregar productos (uno por uno, categoría o campaña) llegan con 1 pieza, su costo y su flete guardado; los sin flete guardado quedan en $0 con la marca y NO se llenan solos; «Llenar el flete que falta» reparte lo que falta (a cubrir − el flete de los demás) solo entre ellos y no toca a los otros; sin pulsarlo quedan en $0; volver a traer la misma campaña o categoría no duplica; cambiar piezas, gastos o flete total NO mueve ningún flete; editar un viaje guardado y agregar productos no cambia los que ya estaban; con más de 300 productos se parte en varias consultas; el recuadro 🧪 muestra «campaña de …» para el dato de la prueba F.
+
+### 2026-11-11 — Fletes entrega 5: categoría, «Otros», agregar categoría completa e importar viaje en Campañas
+**Dónde:** `fletes/fletes.component.*` (buscador del viaje), `campanas/campanas.component.*` (selector «Otros» e «Importar los productos de un viaje»), `ProductoService.adminFiltrar(sinCategoria)`
+**Debe comprobar:** elegir una categoría en Nuevo viaje lista sus productos sin escribir; «Otros» lista solo los sin categoría; «Agregar los N de esta búsqueda» agrega todos los de todas las páginas, salta los ya agregados (sin duplicar) y muestra cuántos se agregaron/saltaron; en Campañas «Otros» filtra bien y «Importar viaje» no duplica productos que ya estaban ni rompe el precio de cada uno; celular 400 px sin scroll horizontal, día y noche.
+
+### 2026-11-11 — Fletes entrega 4: botones ⬇ Excel y ⬇ PDF del viaje
+**Dónde:** `fletes/*` (botones en cada tarjeta, `descargar`), `fletes.service.ts` (`descargarReporte`).
+**Debe comprobar:**
+- [ ] Cada tarjeta de Fletes tiene ⬇ Excel y ⬇ PDF; mientras se arma dice «Armando…» y los dos botones se bloquean; el archivo se descarga con nombre `reporte-viaje-<nombre>.xlsx|pdf`.
+- [ ] Si falla, sale «No se pudo armar el archivo del viaje» y los botones vuelven a servir; día y noche, celular y escritorio.
+
+### 2026-11-11 — Fletes entrega 3: ligar ventas anteriores, calculadora con viaje y bloque en el producto
+**Dónde:** `fletes/*` (panel «Ligar ventas anteriores»), `shared/calculadora-precio/*`, `productos/producto/add/*`.
+**Debe comprobar:**
+- [ ] Fletes → «Ligar ventas anteriores» en un viaje: elegir producto, fechas opcionales, «Buscar ventas», cantidades por venta, «Llenar de la más vieja a la más nueva» (no pasa de lo que le queda al viaje), resumen «Se ligarán N pieza(s)» y avisos claros si algo no cuadra; «Ligar al viaje» guarda y refresca el avance del viaje.
+- [ ] Calculadora: en un producto con viaje salen los botones «Usar el flete de un viaje» (llenan «Transporte por pieza»); el aviso de flete duplicado solo salta con «Poner también el costo total» marcada; sin viaje no cambia nada.
+- [ ] Actualizar producto: bloque «🚚 Viajes de compra» (solo lectura) con fecha, viaje, piezas, costo y flete por pieza; no aparece en producto nuevo ni sin viajes.
+- [ ] Día y noche, celular y escritorio.
+
+### 2026-11-11 — Fletes entrega 2: avance de cada viaje y flete real en el reporte por categoría
+**Dónde:** `fletes/*` (barra de recuperado, detalle de productos), `reportes/reporte-categoria/*`, `reportes/service/reportes.service.ts`.
+**Debe comprobar:**
+- [ ] Cada tarjeta de Fletes muestra su estado (Abierto / Flete cubierto / Vendido por completo), la barra «Recuperado $X de $Y», «falta», «ya es ganancia», piezas vendidas y quedan, y la fecha en que se cubrió; «Ver productos» abre el detalle por producto.
+- [ ] Si el reporte de viajes falla, la lista se ve igual sin barras (nada se rompe); día y noche, celular y escritorio.
+- [ ] Reportes → Por categoría: columnas «Flete real (viajes)» y «Piezas sin viaje» con su total; la tarjeta Flete dice «(real $X)»; la leyenda explica real vs estimado.
+
+### 2026-11-11 — Fletes (Catálogo → Fletes) y aviso de flete duplicado en la calculadora
+**Dónde:** `fletes/*` (servicio, módulo, componente), `app-routing.module.ts`, `navbar` (item + `GROUP_ROUTES`), `shared/calculadora-precio/*`.
+**Debe comprobar:**
+- [ ] Menú Catálogo → «🚚 Fletes» (solo administrador; hay que volver a entrar tras correr la migración). Lista de viajes en tarjetas con flete total, costo a cubrir, compra, productos/piezas y la etiqueta «Falta repartir $X» / «Flete repartido».
+- [ ] Nuevo viaje: nombre, fecha (hoy por defecto), flete total, nota; gastos opcionales con «Cuenta para cubrir»; buscar producto por nombre o código y agregarlo (1 pieza, su costo de hoy); «Repartir el flete por igual» pone en todos costo a cubrir ÷ piezas.
+- [ ] El resumen en vivo cambia al escribir: costo a cubrir, flete repartido, falta por repartir (color de aviso) y flete de más; sin nombre/fecha o con piezas inválidas no deja guardar y dice por qué.
+- [ ] Guardar, editar (se ve lo guardado) y eliminar (con confirmación) un viaje; el mismo producto no se agrega dos veces.
+- [ ] Calculadora de precio en un producto que está en un viaje: aviso «ya tiene su flete registrado en «viaje» (…por pieza)»; con transporte > 0 o con la casilla de costo total marcada dice que se contará dos veces; la casilla arranca desmarcada. En un producto sin viaje no cambia nada.
+- [ ] Día y noche, escritorio y celular (≤560 px).
+
 ### 2026-11-11 — Buscadores en píldora: misma altura que un campo (44 px)
 **Dónde:** `src/tema-jade.scss` (sección «Buscadores en píldora»).
 **Debe comprobar:**

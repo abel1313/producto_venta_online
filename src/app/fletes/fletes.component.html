@@ -1,0 +1,292 @@
+<section class="pk-page fl">
+
+  <app-boton-volver fallback="/productos/buscar"></app-boton-volver>
+
+  <header class="fl-hero">
+    <p class="pk-kicker">Catálogo · solo administrador</p>
+    <h2 class="pk-title">Fletes</h2>
+    <p class="pk-subtitle">
+      Un viaje de compra: «hoy fui a comprar, el flete me costó $100 y traje estos productos». Aquí solo se <b>registra</b>: no cambia el stock, los precios
+      ni los reportes que ya tienes. Cada producto lleva su flete por pieza; el viaje te dice cuánto flete falta por repartir.
+    </p>
+  </header>
+
+  <!-- ── Formulario ── -->
+  <form class="fl-form" *ngIf="edicion as v" (ngSubmit)="guardar()" (keydown.enter)="evitarEnvioConEnter($event)" autocomplete="off">
+    <h3 class="fl-form__titulo">{{ v.id ? 'Editar viaje' : 'Nuevo viaje de compra' }}</h3>
+
+    <div class="fl-grid">
+      <label class="pk-field fl-ancho">
+        <span class="pk-label">Nombre del viaje</span>
+        <input class="pk-input" name="nombre" [(ngModel)]="v.nombre" maxlength="100" placeholder="Ej.: Juguetes Reyes, viaje 1">
+      </label>
+      <label class="pk-field">
+        <span class="pk-label">Fecha de la compra</span>
+        <input class="pk-input" type="date" name="fecha" [(ngModel)]="v.fecha">
+      </label>
+      <label class="pk-field">
+        <span class="pk-label">Flete total $</span>
+        <input class="pk-input" type="number" name="flete" min="0" step="0.01" inputmode="decimal" [(ngModel)]="v.fleteTotal">
+        <span class="pk-hint">Lo que costó traer todo en este viaje.</span>
+      </label>
+      <label class="pk-field fl-ancho">
+        <span class="pk-label">Nota <span class="fl-opcional">(opcional)</span></span>
+        <input class="pk-input" name="nota" [(ngModel)]="v.nota" maxlength="255" placeholder="Ej.: proveedor, quién lo trajo…">
+      </label>
+    </div>
+
+    <!-- Gastos extra -->
+    <div class="fl-bloque">
+      <div class="fl-bloque__cab">
+        <h4>Otros gastos del viaje <span class="fl-opcional">(opcional)</span></h4>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarGasto()">＋ Agregar gasto</button>
+      </div>
+      <p class="pk-hint" *ngIf="!v.gastos.length">Gasolina, comida, bolsas, etiquetas… Solo si quieres que cuenten: marca «Cuenta para cubrir» y se suman al flete.</p>
+      <div class="fl-fila fl-fila--gasto" *ngFor="let g of v.gastos; let i = index">
+        <input class="pk-input" [name]="'gc' + i" [(ngModel)]="g.concepto" maxlength="100" placeholder="Concepto (ej.: gasolina)" aria-label="Concepto del gasto">
+        <label class="fl-num"><span>$</span><input class="pk-input" type="number" [name]="'gm' + i" min="0.01" step="0.01" inputmode="decimal" [(ngModel)]="g.monto" aria-label="Monto del gasto"></label>
+        <label class="fl-check"><input type="checkbox" [name]="'gk' + i" [(ngModel)]="g.cuentaParaCubrir"> Cuenta para cubrir</label>
+        <button type="button" class="pk-btn pk-btn--icon" (click)="quitarGasto(g)" aria-label="Quitar gasto">✕</button>
+      </div>
+    </div>
+
+    <!-- Productos -->
+    <div class="fl-bloque">
+      <div class="fl-bloque__cab">
+        <h4>Productos que llegaron en el viaje <span class="fl-opcional">({{ v.productos.length }})</span></h4>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="repartirPorIgual()" [disabled]="!v.productos.length"
+                title="Pone en todos el mismo flete por pieza: el costo a cubrir ÷ las piezas del viaje">Repartir el flete por igual</button>
+      </div>
+
+      <div class="fl-importar" *ngIf="campanas.length">
+        <select class="pk-input" name="campanaImportar" [(ngModel)]="campanaElegida" aria-label="Campaña de la que traer los productos">
+          <option [ngValue]="''">Traer los productos de una campaña…</option>
+          <option *ngFor="let c of campanas" [ngValue]="c.id">{{ c.nombre }} ({{ c.productos.length }} productos)</option>
+        </select>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="importarCampana()" [disabled]="campanaElegida === '' || importandoCampana">{{ importandoCampana ? 'Trayendo…' : '＋ Traer' }}</button>
+      </div>
+      <div class="fl-llenar" *ngIf="cuantosSinFlete">
+        <span class="pk-hint">{{ cuantosSinFlete }} producto(s) sin flete guardado. Faltan por cubrir {{ faltaParaLlenar | currency:'MXN':'symbol':'1.2-2' }}.</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="llenarFleteQueFalta()" [disabled]="faltaParaLlenar <= 0"
+                title="Reparte lo que falta por cubrir solo entre los productos sin flete guardado. Si no lo pulsas, quedan en $0 y lo que se venda de ellos es ganancia">Llenar el flete que falta</button>
+      </div>
+      <div class="fl-buscar">
+        <select class="pk-input fl-categoria" name="categoriaBuscar" [ngModel]="categoria" (ngModelChange)="alElegirCategoria($event)" aria-label="Categoría de los productos a buscar">
+          <option value="">Todas las categorías</option>
+          <option [value]="OTROS">Otros (sin categoría)</option>
+          <option *ngFor="let c of categorias" [value]="c">{{ c }}</option>
+        </select>
+        <input class="pk-input" name="buscar" [ngModel]="texto" (ngModelChange)="alEscribir($event)" placeholder="Nombre o código de barras (opcional si eliges categoría)…" aria-label="Buscar un producto para agregarlo al viaje">
+        <span class="pk-hint" *ngIf="buscando">Buscando…</span>
+      </div>
+      <div class="fl-categoria-barra" *ngIf="resultados.length">
+        <span class="pk-hint">{{ totalRegistros }} producto(s) · página {{ pagina }} de {{ totalPaginas }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="agregarTodosDeLaBusqueda()" [disabled]="agregandoCategoria"
+                title="Agrega todos los productos de esta búsqueda (de todas las páginas) que todavía no están en el viaje">
+          {{ agregandoCategoria ? 'Agregando…' : '＋ Agregar los ' + totalRegistros + ' de esta búsqueda' }}
+        </button>
+      </div>
+      <p class="pk-hint fl-aviso-cat" *ngIf="avisoCategoria">{{ avisoCategoria }}</p>
+      <ul class="fl-resultados" *ngIf="resultados.length">
+        <li *ngFor="let p of resultados">
+          <span class="fl-res__datos"><b>{{ p.nombre }}</b><small>{{ p.codigoBarras || 'sin código' }} · stock {{ p.stock }}</small></span>
+          <span class="fl-res__estado" *ngIf="estaAgregado(p)">✓ En el viaje</span>
+          <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" *ngIf="!estaAgregado(p)" (click)="agregarProducto(p)">＋ Agregar</button>
+        </li>
+      </ul>
+      <div class="fl-paginas" *ngIf="totalPaginas > 1">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina - 1)" [disabled]="pagina <= 1">‹ Anterior</button>
+        <span class="pk-hint">Página {{ pagina }} de {{ totalPaginas }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPagina(pagina + 1)" [disabled]="pagina >= totalPaginas">Siguiente ›</button>
+      </div>
+      <p class="pk-hint" *ngIf="(categoria || texto.trim().length >= 2) && !buscando && !resultados.length">No encontré productos con eso.</p>
+
+      <div class="fl-filtrar" *ngIf="v.productos.length > porPaginaViaje">
+        <input class="pk-input" name="filtroViaje" [ngModel]="filtroViaje" (ngModelChange)="alEscribirFiltroViaje($event)" autocomplete="off"
+               placeholder="Buscar entre los productos del viaje (nombre o código)…" aria-label="Buscar entre los productos del viaje">
+        <span class="pk-hint">Mostrando {{ rangoViaje }}</span>
+      </div>
+      <div class="fl-paginas" *ngIf="totalPaginasViaje > 1">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPaginaViaje(paginaActualViaje - 1)" [disabled]="paginaActualViaje <= 1">‹ Anterior</button>
+        <span class="pk-hint">Página {{ paginaActualViaje }} de {{ totalPaginasViaje }}</span>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="irAPaginaViaje(paginaActualViaje + 1)" [disabled]="paginaActualViaje >= totalPaginasViaje">Siguiente ›</button>
+      </div>
+      <div class="fl-tabla-wrap fl-tabla-wrap--viaje" *ngIf="v.productos.length">
+        <table class="fl-tabla">
+          <thead>
+            <tr><th class="fl-izq">Producto</th><th title="Cuántas piezas de este producto llegaron en ESTE viaje. No cambia el stock de la tienda.">Piezas del viaje</th><th>Costo c/u $</th><th>Flete por pieza $</th><th>Flete del renglón</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let p of productosDeLaPaginaViaje; trackBy: porIdProducto">
+              <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
+              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"></td>
+              <td><input class="pk-input" type="number" [name]="'co' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.costoUnitario" aria-label="Costo por pieza"></td>
+              <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" (ngModelChange)="alEscribirFlete(p)" aria-label="Flete por pieza"><small class="fl-auto" *ngIf="sinFleteGuardado(p)" title="Este producto no tenía flete guardado en «Calcular precio»: queda en $0 hasta que lo escribas o pulses «Llenar el flete que falta»">sin flete guardado</small></td>
+              <td class="fl-num-celda">{{ fleteRenglon(p) | currency:'MXN':'symbol':'1.2-2' }}</td>
+              <td><button type="button" class="pk-btn pk-btn--icon" (click)="quitarProducto(p)" [attr.aria-label]="'Quitar ' + p.nombre">✕</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="pk-hint" *ngIf="v.productos.length && !productosDelViaje.length">Ningún producto del viaje coincide con lo que escribiste.</p>
+      <p class="pk-hint" *ngIf="v.productos.length">«Piezas del viaje» son las que llegaron en este viaje (sirven para repartir el flete y saber cuántas quedan por vender). <b>No cambian el stock</b> del producto: el stock se actualiza en Catálogo → Productos.</p>
+      <p class="pk-hint" *ngIf="!v.productos.length">Todavía no hay productos. Busca arriba y agrégalos con ＋.</p>
+    </div>
+
+    <div class="fl-pie">
+    <!-- Resumen en vivo -->
+    <div class="fl-resumen" aria-live="polite">
+      <div><span>Costo a cubrir</span><strong>{{ costoACubrir | currency:'MXN':'symbol':'1.2-2' }}</strong><small>flete + gastos que cuentan</small></div>
+      <div><span>Flete repartido en las piezas</span><strong>{{ fleteAsignado | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ piezasTotal }} piezas</small></div>
+      <div [class.fl-aviso]="falta > 0"><span>Falta por repartir</span><strong>{{ falta | currency:'MXN':'symbol':'1.2-2' }}</strong><small *ngIf="falta > 0">las piezas aún no cubren el flete</small><small *ngIf="falta === 0">cubierto</small></div>
+      <div *ngIf="sobra > 0"><span>Flete de más</span><strong>{{ sobra | currency:'MXN':'symbol':'1.2-2' }}</strong><small>el sobrante es ganancia</small></div>
+    </div>
+
+    <ul class="fl-motivos" *ngIf="motivos.length" aria-live="polite"><li *ngFor="let m of motivos">{{ m }}</li></ul>
+    <p class="pk-error" *ngIf="errorGuardar">{{ errorGuardar }}</p>
+
+    <div class="fl-acciones">
+      <button type="submit" class="pk-btn pk-btn--primary" [disabled]="guardando || motivos.length">{{ guardando ? 'Guardando…' : 'Guardar viaje' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="cancelar()" [disabled]="guardando">Cancelar</button>
+    </div>
+    </div>
+  </form>
+
+  <!-- ── Ligar ventas anteriores a un viaje ── -->
+  <section class="fl-form" *ngIf="ligando as v" aria-label="Ligar ventas anteriores">
+    <h3 class="fl-form__titulo">Ligar ventas anteriores a «{{ v.nombre }}»</h3>
+    <p class="pk-hint">
+      Las ventas hechas antes de los viajes no saben de cuál salieron sus piezas. Aquí le dices al sistema cuáles salieron de este viaje: se les guarda el flete
+      por pieza del viaje y el reporte usa el flete real en lugar del estimado. No cambia la venta, su total ni su ganancia. Solo salen ventas no devueltas
+      con piezas todavía sin ligar.
+    </p>
+    <div class="fl-grid">
+      <label class="pk-field fl-ancho">
+        <span class="pk-label">Producto del viaje</span>
+        <select class="pk-input" name="ligarProducto" [ngModel]="ligarProductoId" (ngModelChange)="alElegirProducto($event)">
+          <option [ngValue]="null">Elige un producto…</option>
+          <option *ngFor="let p of v.productos" [ngValue]="p.productoId">{{ p.nombre || ('Producto ' + p.productoId) }} · {{ p.piezas }} pieza(s)</option>
+        </select>
+      </label>
+      <label class="pk-field"><span class="pk-label">Ventas desde <span class="fl-opcional">(opcional)</span></span><input class="pk-input" type="date" name="ligarDesde" [(ngModel)]="ligarDesde"></label>
+      <label class="pk-field"><span class="pk-label">Hasta <span class="fl-opcional">(opcional)</span></span><input class="pk-input" type="date" name="ligarHasta" [(ngModel)]="ligarHasta"></label>
+    </div>
+    <div class="fl-acciones">
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="buscarVentas()" [disabled]="ligarProductoId == null || buscandoVentas">{{ buscandoVentas ? 'Buscando…' : 'Buscar ventas' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="llenarAutomatico()" [disabled]="!lineasSinViaje.length"
+              title="Llena las cantidades con las piezas pendientes, de la venta más vieja a la más nueva, sin pasar de lo que le queda al viaje">Llenar de la más vieja a la más nueva</button>
+    </div>
+    <p class="pk-hint" *ngIf="restantesDelViaje != null">A este producto le quedan <b>{{ restantesDelViaje }}</b> pieza(s) por vender en este viaje.</p>
+    <p class="fl-vacio" *ngIf="ligarProductoId != null && !buscandoVentas && !lineasSinViaje.length && !errorLigar">No hay ventas con piezas sin ligar para ese producto en ese periodo.</p>
+
+    <div class="fl-tabla-wrap" *ngIf="lineasSinViaje.length">
+      <table class="fl-tabla">
+        <thead><tr><th class="fl-izq">Venta</th><th>Fecha</th><th>Piezas</th><th>Sin ligar</th><th>Precio c/u</th><th>Ligar al viaje</th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of lineasSinViaje; trackBy: porIdLinea">
+            <td class="fl-izq"><b>#{{ l.ventaId }}</b></td>
+            <td>{{ l.fecha | date:'dd/MM/yyyy' }}</td>
+            <td>{{ l.cantidad }}</td>
+            <td>{{ l.pendientes }}</td>
+            <td class="fl-num-celda">{{ l.precioUnitario | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td><input class="pk-input" type="number" [name]="'lg' + l.detalleVentaId" min="0" [max]="l.pendientes" step="1" inputmode="numeric" [(ngModel)]="cantidades[l.detalleVentaId]" aria-label="Piezas a ligar de esta venta"></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="fl-resumen-ligar" *ngIf="lineasSinViaje.length">Se ligarán <b>{{ piezasAligar }}</b> pieza(s).</p>
+    <ul class="fl-motivos" *ngIf="lineasSinViaje.length && motivosLigar.length" aria-live="polite"><li *ngFor="let m of motivosLigar">{{ m }}</li></ul>
+    <p class="pk-error" *ngIf="errorLigar">{{ errorLigar }}</p>
+    <p class="fl-ok" *ngIf="avisoLigar" role="status">{{ avisoLigar }}</p>
+
+    <!-- Ligas hechas a mano: aquí se deshacen si te equivocaste -->
+    <h4 class="fl-bloque__titulo" *ngIf="ligasManuales.length">Ligas hechas a mano en este viaje <span class="fl-opcional">({{ ligasManuales.length }})</span></h4>
+    <div class="fl-tabla-wrap" *ngIf="ligasManuales.length">
+      <table class="fl-tabla">
+        <thead><tr><th class="fl-izq">Venta</th><th>Fecha</th><th class="fl-izq">Producto</th><th>Piezas</th><th>Flete por pieza</th><th></th></tr></thead>
+        <tbody>
+          <tr *ngFor="let l of ligasManuales; trackBy: porIdLiga">
+            <td class="fl-izq"><b>#{{ l.ventaId }}</b></td>
+            <td>{{ l.fecha | date:'dd/MM/yyyy' }}</td>
+            <td class="fl-izq">{{ l.producto }}</td>
+            <td>{{ l.cantidad }}</td>
+            <td class="fl-num-celda">{{ l.fletePorPieza | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td><button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="deshacerLiga(l)" [disabled]="deshaciendoId != null">{{ deshaciendoId === l.ligaId ? 'Deshaciendo…' : '↩ Deshacer' }}</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="fl-acciones">
+      <button type="button" class="pk-btn pk-btn--primary" (click)="guardarLigas()" [disabled]="guardandoLigas || motivosLigar.length || !lineasSinViaje.length">{{ guardandoLigas ? 'Ligando…' : 'Ligar al viaje' }}</button>
+      <button type="button" class="pk-btn pk-btn--secondary" (click)="cerrarLigar()" [disabled]="guardandoLigas">Cerrar</button>
+    </div>
+  </section>
+
+  <!-- ── Lista de viajes ── -->
+  <div class="fl-lista-cab" *ngIf="!edicion && !ligando">
+    <h3>Viajes registrados <span class="fl-opcional" *ngIf="viajes.length">({{ viajes.length }})</span></h3>
+    <button type="button" class="pk-btn pk-btn--primary" (click)="nuevo()">＋ Nuevo viaje</button>
+  </div>
+
+  <p class="fl-vacio" *ngIf="cargando">Cargando viajes…</p>
+  <p class="pk-error" *ngIf="errorDescarga">{{ errorDescarga }}</p>
+  <p class="pk-error" *ngIf="error">{{ error }}</p>
+  <p class="fl-vacio" *ngIf="!cargando && !error && !edicion && !ligando && !viajes.length">Todavía no hay viajes. Crea el primero con «Nuevo viaje».</p>
+
+  <ul class="fl-cards" *ngIf="!edicion && !ligando && viajes.length">
+    <li class="fl-card" *ngFor="let v of viajes; trackBy: porIdViaje">
+      <div class="fl-card__cab">
+        <div>
+          <h4 class="fl-card__nombre">{{ v.nombre }}</h4>
+          <small>{{ v.fecha | date:'dd/MM/yyyy' }}<ng-container *ngIf="v.nota"> · {{ v.nota }}</ng-container></small>
+        </div>
+        <span class="fl-etiqueta" *ngIf="reporteDe(v) as r" [class.fl-etiqueta--ok]="r.estado !== 'ABIERTO'">{{ etiquetaEstado(r.estado) }}</span>
+        <span class="fl-etiqueta" *ngIf="!reporteDe(v)" [class.fl-etiqueta--ok]="(v.faltaAsignar ?? 0) === 0">{{ (v.faltaAsignar ?? 0) === 0 ? 'Flete repartido' : 'Falta repartir ' + ((v.faltaAsignar ?? 0) | currency:'MXN':'symbol':'1.2-2') }}</span>
+      </div>
+      <dl class="fl-card__datos">
+        <div><dt>Flete total</dt><dd>{{ v.fleteTotal | currency:'MXN':'symbol':'1.2-2' }}</dd></div>
+        <div><dt>Costo a cubrir</dt><dd>{{ v.costoACubrir | currency:'MXN':'symbol':'1.2-2' }}</dd></div>
+        <div><dt>Compra (sin flete)</dt><dd>{{ v.compraTotal | currency:'MXN':'symbol':'1.2-2' }}</dd></div>
+        <div><dt>Productos / piezas</dt><dd>{{ v.productos.length }} / {{ v.piezasTotal }}</dd></div>
+      </dl>
+      <!-- Cómo va el flete: lo recuperado con lo vendido -->
+      <div class="fl-avance" *ngIf="reporteDe(v) as r">
+        <div class="fl-barra" role="progressbar" [attr.aria-valuenow]="porcentajeRecuperado(r)" aria-valuemin="0" aria-valuemax="100" [attr.aria-label]="'Flete recuperado de ' + v.nombre">
+          <span class="fl-barra__lleno" [style.width.%]="porcentajeRecuperado(r)"></span>
+        </div>
+        <p class="fl-avance__texto">
+          Recuperado <b>{{ r.fleteRecuperado | currency:'MXN':'symbol':'1.2-2' }}</b> de {{ r.costoACubrir | currency:'MXN':'symbol':'1.2-2' }}
+          <ng-container *ngIf="r.faltaPorCubrir > 0"> · falta <b>{{ r.faltaPorCubrir | currency:'MXN':'symbol':'1.2-2' }}</b></ng-container>
+          <ng-container *ngIf="r.fleteComoGanancia > 0"> · ya es ganancia <b>{{ r.fleteComoGanancia | currency:'MXN':'symbol':'1.2-2' }}</b></ng-container>
+        </p>
+        <p class="fl-avance__texto">Vendidas {{ r.piezasVendidas }} de {{ r.piezasCompradas }} piezas · quedan {{ r.piezasRestantes }}<ng-container *ngIf="r.pagadoEn"> · flete cubierto el {{ r.pagadoEn | date:'dd/MM/yyyy' }}</ng-container></p>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="alternarDetalle(v)" [attr.aria-expanded]="abiertoId === v.id">{{ abiertoId === v.id ? 'Ocultar productos' : 'Ver productos' }}</button>
+        <ng-container *ngIf="abiertoId === v.id">
+          <input class="pk-input fl-filtro-card" *ngIf="r.renglones.length > 8" name="filtroDetalle" [ngModel]="filtroDetalle" (ngModelChange)="filtroDetalle = $event" autocomplete="off"
+                 placeholder="Buscar en los productos de este viaje…" aria-label="Buscar en los productos de este viaje">
+          <div class="fl-tabla-wrap fl-tabla-wrap--card">
+            <table class="fl-tabla fl-tabla--chica">
+              <thead><tr><th class="fl-izq">Producto</th><th title="Piezas que llegaron en este viaje">Llegaron</th><th>Vendidas</th><th>Quedan</th><th>Vendido $</th></tr></thead>
+              <tbody>
+                <tr *ngFor="let p of renglonesVisibles(r)">
+                  <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
+                  <td>{{ p.piezasCompradas }}</td><td>{{ p.piezasVendidas }}</td><td>{{ p.piezasRestantes }}</td>
+                  <td class="fl-num-celda">{{ p.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="pk-hint" *ngIf="filtroDetalle.trim() && !renglonesVisibles(r).length">Ningún producto de este viaje coincide.</p>
+        </ng-container>
+      </div>
+      <div class="fl-acciones">
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="descargar(v, 'XLSX')" [disabled]="!!descargando" title="Baja el reporte de este viaje en Excel">{{ descargando === v.id + '-XLSX' ? 'Armando…' : '⬇ Excel' }}</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="descargar(v, 'PDF')" [disabled]="!!descargando" title="Baja el reporte de este viaje en PDF">{{ descargando === v.id + '-PDF' ? 'Armando…' : '⬇ PDF' }}</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="abrirLigar(v)" [disabled]="!v.productos.length" title="Marca qué ventas anteriores salieron de este viaje">Ligar ventas anteriores</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="editar(v)">Editar</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="eliminar(v)" [disabled]="ocupadoId === v.id">Eliminar</button>
+      </div>
+    </li>
+  </ul>
+</section>

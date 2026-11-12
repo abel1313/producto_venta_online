@@ -149,6 +149,7 @@ export interface FilaReporteCategoria {
   piezasVenta: number; montoVenta: number; piezasRebaja: number; montoRebaja: number;
   piezasCampana: number; montoCampana: number; piezasOtro: number; montoOtro: number; piezasEstimadas: number;
   inversion: number; fleteTotal: number;
+  fleteReal: number; piezasSinViaje: number;
 }
 
 export interface TotalesReporteCategoria {
@@ -160,7 +161,7 @@ export interface TotalesReporteCategoria {
   sumaCompra: number; sumaVenta: number; sumaRebaja: number; sumaCampana: number;
   piezasVenta: number; piezasRebaja: number; piezasCampana: number; piezasOtro: number;
   montoVenta: number; montoRebaja: number; montoCampana: number; montoOtro: number; piezasEstimadas: number;
-  inversion: number;
+  inversion: number; fleteReal: number; piezasSinViaje: number;
 }
 
 export interface PaginaReporteCategoria {

@@ -238,6 +238,7 @@ export class CacheComponent implements OnInit, OnDestroy {
       case 'RIFA': return 'rifa';
       case 'CODIGO': return 'código de';
       case 'USUARIO': return 'usuario';
+      case 'CAMPANA': return 'campaña';
       default: return 'artículo de';
     }
   }

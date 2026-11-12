@@ -84,6 +84,8 @@
            title="Grupos de productos con precio de promoción cuando el cliente junta el mínimo de piezas (solo administrador)">🏷️ Grupos de precio por cantidad</a>
         <a class="sb-subitem" *ngIf="tienePantalla('productos/campanas')" routerLinkActive="sb-subitem--active" routerLink="productos/campanas" (click)="closeMobile()"
            title="Eventos con fechas (Reyes, roscas…): juguetes con precio de campaña (solo administrador)">🎁 Campañas</a>
+        <a class="sb-subitem" *ngIf="tienePantalla('productos/fletes')" routerLinkActive="sb-subitem--active" routerLink="productos/fletes" (click)="closeMobile()"
+           title="Viajes de compra: flete, gastos del viaje y los productos que llegaron (solo administrador)">🚚 Fletes</a>
         <a class="sb-subitem" *ngIf="tienePantalla('productos/agregar')" routerLinkActive="sb-subitem--active" routerLink="productos/agregar" (click)="closeMobile()"
            title="Da de alta el producto base (ej. Blusa Zara). Todavía no se vende: primero hay que agregarle artículos con su talla y color">➕ Agregar producto</a>
         <a class="sb-subitem" *ngIf="tienePantalla('tienda/venta')" routerLinkActive="sb-subitem--active" routerLink="tienda/venta" (click)="closeMobile()"

@@ -1,9 +1,10 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
 import { HttpErrorResponse } from '@angular/common/http';
-import { Subject, of } from 'rxjs';
-import { catchError, debounceTime, distinctUntilChanged, map, switchMap, takeUntil } from 'rxjs/operators';
+import { Subject, from, of } from 'rxjs';
+import { catchError, debounceTime, distinctUntilChanged, map, mergeMap, switchMap, takeUntil, toArray } from 'rxjs/operators';
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
+import { FletesService, IViaje } from '../fletes/fletes.service';
 import { CampanasService, ICampana, ICampanaProducto, IPersonaReporte, IReporteCampana } from './campanas.service';
 
 interface IProductoCatalogo { id: number; nombre: string; codigoBarras: string | null; precioVenta: number; precioRebaja: number; stock: number; categoria: string | null; }
@@ -40,6 +41,8 @@ export class CampanasComponent implements OnInit, OnDestroy {
   private readonly buscador$ = new Subject<string>();
   /** Cada carga del catálogo pasa por aquí: switchMap descarta la respuesta vieja si llega después de una más nueva (escribir rápido, cambiar de página). */
   private readonly pedirCatalogo$ = new Subject<{ pagina: number; filtro: string; categoria: string }>();
+  /** Valor del selector de categoría para «Otros» = productos SIN categoría. */
+  readonly OTROS = '__OTROS__';
   /** Categorías para elegir los juguetes (solo JUGUETES, o todas). Se cargan una vez; si falla, el selector no se muestra y se ve todo el catálogo. */
   categorias: string[] = [];
   /** Categoría del catálogo: «JUGUETES» de entrada (si existe); '' = todas. */
@@ -53,7 +56,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
   /** Buscador de los juguetes que YA están en la campaña (por nombre o código de barras). Solo es una vista: no cambia la lista de la campaña. */
   filtroCampana = '';
 
-  constructor(private readonly svc: CampanasService, private readonly productos: ProductoService) {}
+  constructor(private readonly svc: CampanasService, private readonly productos: ProductoService, private readonly fletes: FletesService) {}
 
   ngOnInit(): void {
     this.cargar();
@@ -63,7 +66,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
     this.pedirCatalogo$.pipe(
       switchMap(({ pagina, filtro, categoria }) =>
         // adminFiltrar: nombre o código de barras + categoría; sin más filtros trae también los productos sin stock o deshabilitados (un juguete puede estar agotado hoy y entrar a la campaña).
-        this.productos.adminFiltrar({ nombreOCodigo: filtro || undefined, categoria: categoria || undefined }, pagina, this.porPagina).pipe(
+        this.productos.adminFiltrar({ nombreOCodigo: filtro || undefined, categoria: categoria && categoria !== this.OTROS ? categoria : undefined, sinCategoria: categoria === this.OTROS ? true : undefined }, pagina, this.porPagina).pipe(
           map(r => ({ pagina, r, error: null as HttpErrorResponse | null })),
           catchError((e: HttpErrorResponse) => of({ pagina, r: null, error: e })))),
       takeUntil(this.destroy$)
@@ -79,7 +82,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
       }
       this.catalogo = (r?.t ?? []).map(p => ({
         id: p.idProducto, nombre: p.nombre, codigoBarras: p.codigoBarras ?? null, precioVenta: p.precioVenta, precioRebaja: +(p.precioRebaja ?? 0),
-        stock: p.stock, categoria: p.palabraClave?.nombre ?? (this.categoria || null)
+        stock: p.stock, categoria: p.palabraClave?.nombre ?? (this.categoria && this.categoria !== this.OTROS ? this.categoria : null)
       }));
       this.pagina = r?.pagina ?? pagina;
       this.totalPaginas = Math.max(1, r?.totalPaginas ?? 1);
@@ -424,6 +427,9 @@ export class CampanasComponent implements OnInit, OnDestroy {
   // ── Juguetes de la campaña ─────────────────────────────────────────────────
 
   private abrirCatalogo(): void {
+    this.cargarViajes();
+    this.avisoImportar = null;
+    this.viajeElegido = '';
     this.filtro = '';
     this.catalogo = [];
     this.cargarCatalogo(1);
@@ -484,6 +490,55 @@ export class CampanasComponent implements OnInit, OnDestroy {
   }
 
   /** Todos los de la página que se está viendo (por ejemplo, tras filtrar por «juguete»). */
+  // ── Importar los productos de un viaje (flete) ──
+  viajes: IViaje[] = [];
+  viajeElegido: number | '' = '';
+  importando = false;
+  avisoImportar: string | null = null;
+
+  /** Carga (una vez) la lista de viajes para el selector «Importar los productos de un viaje». Si falla, el selector no se muestra. */
+  private cargarViajes(): void {
+    if (this.viajes.length) return;
+    this.fletes.listar().pipe(catchError(() => of([] as IViaje[])), takeUntil(this.destroy$)).subscribe(v => this.viajes = v.filter(x => x.productos?.length));
+  }
+
+  /**
+   * Mete a la campaña todos los productos del viaje elegido que todavía no están (nunca duplica). Cada uno llega con el mismo precio que
+   * recibiría si se agregara a mano desde el catálogo, y después se puede quitar o cambiar uno por uno.
+   */
+  importarViaje(): void {
+    const c = this.edicion;
+    const v = this.viajes.find(x => x.id === this.viajeElegido);
+    if (!c || !v || this.importando) return;
+    this.importando = true; this.avisoImportar = null;
+    const yaEstaban = v.productos.filter(p => c.productos.some(x => x.productoId === p.productoId)).length;
+    const faltan = v.productos.filter(p => !c.productos.some(x => x.productoId === p.productoId));
+    if (!faltan.length) { this.importando = false; this.avisoImportar = `Los ${yaEstaban} producto(s) de «${v.nombre}» ya estaban en la campaña.`; return; }
+    // Se trae el precio de venta y de descuento de cada producto (el viaje solo guarda costo y flete), de 4 en 4.
+    from(faltan).pipe(
+      mergeMap(fp => this.productos.adminFiltrar({ nombreOCodigo: (fp.codigoBarras || fp.nombre || '').trim() || undefined }, 1, 10).pipe(
+        map(r => ({ fp, hallado: (r?.t ?? []).find((x: any) => x.idProducto === fp.productoId) })),
+        catchError(() => of({ fp, hallado: undefined }))), 4),
+      toArray(),
+      takeUntil(this.destroy$)
+    ).subscribe(res => {
+      let agregados = 0; let sinDatos = 0;
+      for (const { fp, hallado } of res) {
+        if (!this.edicion || this.edicion.productos.some(x => x.productoId === fp.productoId)) continue;
+        if (!hallado) { sinDatos++; continue; }
+        this.agregarProducto({
+          id: hallado.idProducto, nombre: hallado.nombre, codigoBarras: hallado.codigoBarras ?? null, precioVenta: hallado.precioVenta,
+          precioRebaja: +(hallado.precioRebaja ?? 0), stock: hallado.stock, categoria: hallado.palabraClave?.nombre ?? null
+        });
+        agregados++;
+      }
+      this.importando = false;
+      this.avisoImportar = `Se agregaron ${agregados} producto(s) de «${v.nombre}»`
+        + (yaEstaban ? ` y se saltaron ${yaEstaban} que ya estaban` : '')
+        + (sinDatos ? `; ${sinDatos} no se pudieron traer (agrégalos a mano)` : '') + '. Puedes quitar o agregar los que quieras.';
+    });
+  }
+
   agregarPagina(): void {
     this.catalogo.forEach(p => this.agregarProducto(p));
   }

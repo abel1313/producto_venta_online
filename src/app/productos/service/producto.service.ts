@@ -190,7 +190,7 @@ export class ProductoService {
     // = cualquiera), se combinan entre si con AND. nombreOCodigo se combina libremente con los 3.
     adminFiltrar(
         filtros: { nombreOCodigo?: string; conStock?: boolean; conImagenes?: boolean; habilitado?: boolean; codigoGenerado?: boolean;
-                   fechaDesde?: string; fechaHasta?: string; categoria?: string },
+                   fechaDesde?: string; fechaHasta?: string; categoria?: string; sinCategoria?: boolean },
         page: number, size: number
     ): Observable<IProductoPaginable<IProductoDTO[]>> {
         let params = new HttpParams()
@@ -207,6 +207,8 @@ export class ProductoService {
         if (filtros.fechaDesde) params = params.set('fechaDesde', filtros.fechaDesde);
         if (filtros.fechaHasta) params = params.set('fechaHasta', filtros.fechaHasta);
         if (filtros.categoria) params = params.set('categoria', filtros.categoria);
+        // "Otros" = productos sin categoría (back entrega 5 de fletes).
+        if (filtros.sinCategoria) params = params.set('sinCategoria', 'true');
 
         return this.http.get<IProductoPaginable<IProductoDTO[]>>(`${this.url}/admin/filtrar`, { params });
     }

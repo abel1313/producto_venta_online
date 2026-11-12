@@ -60,7 +60,7 @@ export interface IEscenarioPrueba {
  */
 export interface ICatalogoPreparado {
   clave: string;
-  tipo: 'MODELO' | 'ARTICULO' | 'RIFA' | 'CODIGO' | 'USUARIO';
+  tipo: 'MODELO' | 'ARTICULO' | 'RIFA' | 'CODIGO' | 'USUARIO' | 'CAMPANA';
   modeloId: number;
   articuloId: number;
   nombre: string;

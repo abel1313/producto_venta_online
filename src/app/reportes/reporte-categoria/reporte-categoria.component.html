@@ -87,7 +87,7 @@
     <div class="rc-tarjetas">
       <div><span class="rc-etq">Productos</span><strong>{{ resultado.totales.productos }}</strong><small>{{ resultado.totales.productosVendidos }} vendidos · {{ resultado.totales.productosSinVender }} sin vender</small></div>
       <div><span class="rc-etq">Inversión</span><strong>{{ resultado.totales.inversion | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Compra × (vendidas + en stock)</small></div>
-      <div><span class="rc-etq">Flete</span><strong>{{ resultado.totales.fleteVendido + resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendido {{ resultado.totales.fleteVendido | currency:'MXN':'symbol':'1.2-2' }} · stock {{ resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</small></div>
+      <div><span class="rc-etq">Flete</span><strong>{{ resultado.totales.fleteVendido + resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</strong><small>Vendido {{ resultado.totales.fleteVendido | currency:'MXN':'symbol':'1.2-2' }} (real {{ resultado.totales.fleteReal | currency:'MXN':'symbol':'1.2-2' }}) · stock {{ resultado.totales.fleteEnStock | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Total vendido</span><strong>{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezas | number:'1.0-0' }} piezas · costo {{ resultado.totales.costo | currency:'MXN':'symbol':'1.2-2' }}</small></div>
       <div><span class="rc-etq">Ganancia vendida</span><strong class="rc-ok">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</strong><small *ngIf="resultado.totales.margenRealPct !== null">{{ resultado.totales.margenRealPct | number:'1.2-2' }} % real</small></div>
       <div><span class="rc-etq">A precio normal</span><strong>{{ resultado.totales.montoVenta | currency:'MXN':'symbol':'1.2-2' }}</strong><small>{{ resultado.totales.piezasVenta | number:'1.0-0' }} piezas</small></div>
@@ -97,7 +97,7 @@
 
     <details class="rc-leyenda">
       <summary>¿Cómo leer las columnas?</summary>
-      <p><strong>Inversión</strong> = precio de compra × (piezas vendidas + piezas en stock). <strong>Flete</strong> = flete por pieza del último cálculo de precio × esas mismas piezas; «Sin flete» = el producto no lo trae capturado.</p>
+      <p><strong>Inversión</strong> = precio de compra × (piezas vendidas + piezas en stock). <strong>Flete</strong> = flete de lo vendido + el de lo que sigue en stock. El de lo vendido es <strong>real</strong> (el de los viajes de compra de donde salieron las piezas: «Flete real (viajes)») y, para las «Piezas sin viaje» (ventas anteriores a los viajes o stock de antes), un <strong>estimado</strong> (flete por pieza del último cálculo de precio); el del stock siempre es estimado. «Sin flete» = el producto no trae flete capturado.</p>
       <p><strong>Total vendido</strong> y <strong>ganancia vendida</strong> son lo realmente cobrado en el periodo (la ganancia ya descuenta la comisión de tarjeta).</p>
       <p><strong>Normal / rebaja / campaña / otro</strong>: a qué precio se vendió, con sus piezas, precio promedio y dinero. Queda vacío si ese producto no se vendió así. «Otro» = precio por cantidad, promoción u otro monto.</p>
       <p>Las ventas hechas antes de que se guardara el tipo de precio se clasifican comparando lo cobrado con los precios actuales y se cuentan en «Piezas con tipo estimado»; pueden equivocarse si el precio cambió.</p>
@@ -120,6 +120,7 @@
             <th class="rc-num">Inversión</th>
             <th class="rc-num">Flete</th>
             <th>¿Flete?</th>
+            <th class="rc-num">Flete real (viajes)</th><th class="rc-num">Piezas sin viaje</th>
             <th class="rc-num">Piezas vendidas</th>
             <th class="rc-num">Total vendido</th>
             <th class="rc-num">Ganancia</th>
@@ -157,6 +158,8 @@
             <td class="rc-num">{{ f.inversion | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num">{{ f.fleteTotal | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td><span class="rc-tag" [class.rc-tag--aviso]="f.sinFlete">{{ f.sinFlete ? 'Sin flete' : 'Con flete' }}</span></td>
+            <td class="rc-num">{{ f.fleteReal | currency:'MXN':'symbol':'1.2-2' }}</td>
+            <td class="rc-num">{{ f.piezasSinViaje | number:'1.0-0' }}</td>
             <td class="rc-num">{{ f.piezasVendidas | number:'1.0-0' }}</td>
             <td class="rc-num">{{ f.totalVendido | currency:'MXN':'symbol':'1.2-2' }}</td>
             <td class="rc-num" [class.rc-mal]="f.gananciaVendida < 0">{{ f.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</td>
@@ -192,6 +195,8 @@
             <th class="rc-num">{{ resultado.totales.inversion | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ (resultado.totales.fleteVendido + resultado.totales.fleteEnStock) | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th></th>
+            <th class="rc-num">{{ resultado.totales.fleteReal | currency:'MXN':'symbol':'1.2-2' }}</th>
+            <th class="rc-num">{{ resultado.totales.piezasSinViaje | number:'1.0-0' }}</th>
             <th class="rc-num">{{ resultado.totales.piezas | number:'1.0-0' }}</th>
             <th class="rc-num">{{ resultado.totales.total | currency:'MXN':'symbol':'1.2-2' }}</th>
             <th class="rc-num">{{ resultado.totales.gananciaVendida | currency:'MXN':'symbol':'1.2-2' }}</th>

@@ -94,6 +94,18 @@
           </ng-template>
         </div>
 
+        <!-- ── Viajes de compra del producto (solo lectura) ──────── -->
+        <div class="pf-calculo" *ngIf="esActualizar && viajesProducto.length">
+          <strong>🚚 Viajes de compra</strong>
+          <ul class="pf-calculo__historial">
+            <li *ngFor="let v of viajesProducto">
+              <span class="pf-calculo__fecha">{{ v.fecha | date:'dd/MM/yyyy' }}</span>
+              «{{ v.nombre }}»: {{ v.productos[0]?.piezas }} pieza(s)<ng-container *ngFor="let p of v.productos"><ng-container *ngIf="p.productoId === idProductoActual"> · costo {{ p.costoUnitario | currency:'MXN':'symbol':'1.2-2' }} · flete {{ p.fletePorPieza | currency:'MXN':'symbol':'1.2-2' }} por pieza</ng-container></ng-container>
+            </li>
+          </ul>
+          <p class="pf-hint">Solo para ver. El flete se registra y se reparte en Catálogo → Fletes; el «Precio de compra» de este formulario no debe llevar el flete (se contaría dos veces).</p>
+        </div>
+
         <!-- ── Fila 3: Precio descuento + Stock ──────────────── -->
         <div class="pf-grid">
           <div class="pf-field">
@@ -310,7 +322,7 @@
 <!-- Calcular precio: solo calcula; el precio de venta no cambia hasta «Usar este precio» -->
 <app-calculadora-precio *ngIf="formProductos" [(visible)]="calculadoraVisible"
                         [costoInicial]="valorNumero('precioCosto')" [precioActual]="valorNumero('precioVenta')"
-                        (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
+                        [productoId]="idProductoActual" (usar)="usarPrecioCalculado($event)"></app-calculadora-precio>
 
 <app-alta-articulos *ngIf="modeloParaArticulos"
                     [modelo]="modeloParaArticulos"

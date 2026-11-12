@@ -32,6 +32,12 @@ const routes: Routes = [
     canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
   },
   {
+    // Fletes: viajes de compra (solo administrador). Va ANTES de 'productos' por la misma razón. Fila en submenu: migration_flete_lote.sql.
+    path: 'productos/fletes',
+    loadChildren: () => import('./fletes/fletes.module').then(m => m.FletesModule),
+    canActivate: [CarritoGuard, AuthGuard, PantallaGuard]
+  },
+  {
     // Grupos de precio por cantidad (solo administrador). Va ANTES de 'productos' para que esa ruta de prefijo no la tape.
     // Fila en submenu: migration_grupo_precio_cantidad.sql.
     path: 'productos/grupos-precio',

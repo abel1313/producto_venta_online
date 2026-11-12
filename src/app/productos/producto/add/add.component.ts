@@ -213,21 +213,27 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
   }
 
   /** Después de guardar el producto: guarda el cálculo de precio (con el precio de venta que de verdad quedó). Si falla, el producto ya está guardado y solo se avisa. */
-  private guardarCalculoPrecio(productoId: number | undefined, precioVenta: number): void {
+  private guardarCalculoPrecio(productoId: number | undefined, precioVenta: number): Promise<void> {
     const calculo = this.calculoPendiente;
     const viaje = this.viajePendiente;
     this.calculoPendiente = null; this.viajePendiente = null;
-    if (!productoId || !calculo || !this.authService.isAdminService) return;
-    this.calculoPrecioService.guardar(productoId, { ...calculo, precioCobrado: precioVenta }).subscribe({
-      next: guardado => {
-        if (this.esActualizar) { this.ultimoCalculo = guardado; this.ultimoCalculoCargado = true; this.historialCalculos = null; }
-        if (viaje) this.preguntarActualizarViaje(productoId, viaje);
-      },
-      error: () => Swal.fire({
-        icon: 'warning',
-        title: 'El producto se guardó, pero…',
-        text: 'No se pudo guardar el cálculo de precio (el historial). El precio del producto sí quedó.'
-      })
+    if (!productoId || !calculo || !this.authService.isAdminService) return Promise.resolve();
+    // La promesa termina cuando ya se resolvió todo lo que pudo abrir un aviso (la pregunta del viaje incluida), para que el aviso de «guardado» no la tape.
+    return new Promise<void>(resolve => {
+      this.calculoPrecioService.guardar(productoId, { ...calculo, precioCobrado: precioVenta }).subscribe({
+        next: guardado => {
+          if (this.esActualizar) { this.ultimoCalculo = guardado; this.ultimoCalculoCargado = true; this.historialCalculos = null; }
+          if (viaje) this.preguntarActualizarViaje(productoId, viaje).then(() => resolve(), () => resolve());
+          else resolve();
+        },
+        error: () => {
+          Swal.fire({
+            icon: 'warning',
+            title: 'El producto se guardó, pero…',
+            text: 'No se pudo guardar el cálculo de precio (el historial). El precio del producto sí quedó.'
+          }).then(() => resolve());
+        }
+      });
     });
   }
 
@@ -244,19 +250,21 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
     });
     if (!r.isConfirmed) return;
     // Se vuelve a leer el viaje justo antes de guardar (por si alguien lo editó) y solo se cambia el flete de este producto.
-    this.fletesService.deProducto(productoId).subscribe({
-      next: viajes => {
-        const viaje = viajes.find(x => x.id === v.viajeId);
-        const renglon = viaje?.productos.find(p => p.productoId === productoId);
-        if (!viaje || !renglon) { Swal.fire({ icon: 'warning', title: 'No se encontró el producto en el viaje', text: 'El viaje ya no lo tiene: no se cambió nada.' }); return; }
-        renglon.fletePorPieza = v.fleteNuevo;
-        this.fletesService.actualizar(v.viajeId, viaje).subscribe({
-          next: () => Swal.fire({ icon: 'success', title: 'Viaje actualizado', text: `El flete de este producto en «${v.nombre}» ahora es ${fmt(v.fleteNuevo)} por pieza.`, timer: 2500, showConfirmButton: false }),
-          error: e => Swal.fire({ icon: 'error', title: 'No se pudo actualizar el viaje', text: e?.error?.mensaje || 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' })
-        });
-      },
-      error: () => Swal.fire({ icon: 'error', title: 'No se pudo leer el viaje', text: 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' })
-    });
+    try {
+      const viajes: any[] = await this.fletesService.deProducto(productoId).toPromise();
+      const viaje = viajes.find((x: any) => x.id === v.viajeId);
+      const renglon = viaje?.productos.find((p: any) => p.productoId === productoId);
+      if (!viaje || !renglon) { await Swal.fire({ icon: 'warning', title: 'No se encontró el producto en el viaje', text: 'El viaje ya no lo tiene: no se cambió nada.' }); return; }
+      renglon.fletePorPieza = v.fleteNuevo;
+      try {
+        await this.fletesService.actualizar(v.viajeId, viaje).toPromise();
+        await Swal.fire({ icon: 'success', title: 'Viaje actualizado', text: `El flete de este producto en «${v.nombre}» ahora es ${fmt(v.fleteNuevo)} por pieza.`, timer: 2500, showConfirmButton: false });
+      } catch (e: any) {
+        await Swal.fire({ icon: 'error', title: 'No se pudo actualizar el viaje', text: e?.error?.mensaje || 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' });
+      }
+    } catch {
+      await Swal.fire({ icon: 'error', title: 'No se pudo leer el viaje', text: 'El producto y su cálculo sí se guardaron. Puedes cambiarlo en Catálogo → Fletes.' });
+    }
   }
 
   /** Carga el último cálculo del producto que se edita para mostrarlo en el bloque «Último cálculo de precio». */
@@ -485,7 +493,7 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
       next: (guardado: { id?: number } | null) => {
         this.guardando = false;
         this.guardarAceptaMsi(guardado?.id ?? this.productoUpdate?.idProducto, aceptaMsi);
-        this.guardarCalculoPrecio(guardado?.id ?? this.productoUpdate?.idProducto, productoSave.precioVenta);
+        const calculoListo = this.guardarCalculoPrecio(guardado?.id ?? this.productoUpdate?.idProducto, productoSave.precioVenta);
         this.resetForm();
         this.service.invalidarProdCache();
         // Modelo nuevo: en vez del aviso, la pregunta "¿Cuántos artículos quieres hacer?"
@@ -510,7 +518,8 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
         // A1 la dejaba solo para el alta). El stock libre lo dice el back, ya con el ajuste guardado.
         const idActualizado = this.productoUpdate?.idProducto;
         if (this.esActualizar && idActualizado) {
-          this.varianteService.stockDisponible(idActualizado).subscribe({
+          // Si hubo pregunta del viaje, se espera a que se conteste antes de abrir el siguiente aviso (si no, lo tapa y la pantalla se va).
+          calculoListo.then(() => this.varianteService.stockDisponible(idActualizado).subscribe({
             next: sd => {
               const caben = sd.articulosQueAunCaben ?? Math.max(sd.disponible, 0);
               if (caben < 1) { this.avisoGuardado(); return; }
@@ -529,10 +538,10 @@ export class AddComponent implements OnInit, AfterViewInit, OnChanges, OnDestroy
               };
             },
             error: () => this.avisoGuardado()
-          });
+          }));
           return;
         }
-        this.avisoGuardado();
+        calculoListo.then(() => this.avisoGuardado());
       },
       error: (err) => {
         this.guardando = false;

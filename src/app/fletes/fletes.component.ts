@@ -330,7 +330,7 @@ export class FletesComponent implements OnInit, OnDestroy {
         paginas = Math.max(1, r?.totalPaginas ?? 1);
         pag++;
       } while (pag <= paginas && pag <= 50);
-      this.avisoCategoria = await this.incorporar(ids);
+      this.avisoCategoria = await this.incorporar(ids, true);
     } catch {
       this.avisoCategoria = 'No se pudieron traer los productos. Intenta de nuevo.';
     } finally {
@@ -347,27 +347,29 @@ export class FletesComponent implements OnInit, OnDestroy {
   }
 
   /**
-   * Mete al viaje los productos pedidos que todavía no están (nunca duplica): cada uno llega con 1 pieza, su costo de compra de hoy y el flete por pieza
+   * Mete al viaje los productos pedidos que todavía no están (nunca duplica): cada uno llega con TODO su stock actual como piezas (mínimo 1; se puede cambiar), su costo de compra de hoy y el flete por pieza
    * que YA tiene guardado en su último «Calcular precio». Los que no tienen flete guardado quedan en $0 con la marca «sin flete guardado»: después se
    * llenan con «Llenar el flete que falta» o se dejan en $0 (lo que se venda de ellos es ganancia). Devuelve el resumen para mostrar.
    */
-  private async incorporar(ids: number[]): Promise<string> {
+  private async incorporar(ids: number[], omitirSinStock = false): Promise<string> {
     const e = this.edicion;
     if (!e) return '';
     const nuevos = Array.from(new Set(ids)).filter(id => !e.productos.some(x => x.productoId === id));
     const yaEstaban = new Set(ids).size - nuevos.length;
     if (!nuevos.length) return yaEstaban ? `Los ${yaEstaban} producto(s) ya estaban en el viaje.` : 'No había productos que agregar.';
     const datos = await this.svc.productosParaViaje(nuevos).toPromise() ?? [];
-    let conFlete = 0, sinFlete = 0;
+    let conFlete = 0, sinFlete = 0, sinStock = 0;
     for (const d of datos) {
+      // Al traer muchos de una vez (categoría o campaña) los de stock 0 NO entran: no hay piezas que repartir. Si sí compraste de ellos en este viaje, se agregan uno por uno con el buscador.
+      if (omitirSinStock && !(+d.stock > 0)) { sinStock++; continue; }
       if (!this.edicion || this.edicion.productos.some(x => x.productoId === d.productoId)) continue;
       const guardado = +d.transporte > 0;
-      this.edicion.productos = [...this.edicion.productos, { productoId: d.productoId, nombre: d.nombre, codigoBarras: d.codigoBarras, piezas: 1, costoUnitario: +d.precioCosto || 0, fletePorPieza: guardado ? +d.transporte : 0 }];
+      this.edicion.productos = [...this.edicion.productos, { productoId: d.productoId, nombre: d.nombre, codigoBarras: d.codigoBarras, piezas: Math.max(1, Math.floor(+d.stock || 0)), costoUnitario: +d.precioCosto || 0, fletePorPieza: guardado ? +d.transporte : 0 }];
       if (guardado) conFlete++; else { sinFlete++; this.sinFleteIds.add(d.productoId); }
     }
     const faltan = nuevos.length - datos.length;
     return `Se agregaron ${conFlete + sinFlete} producto(s): ${conFlete} con su flete guardado y ${sinFlete} sin flete guardado`
-      + (yaEstaban ? `; se saltaron ${yaEstaban} que ya estaban` : '') + (faltan > 0 ? `; ${faltan} ya no existen` : '') + '. Ajusta las piezas de cada uno.';
+      + (yaEstaban ? `; se saltaron ${yaEstaban} que ya estaban` : '') + (sinStock ? `; ${sinStock} con stock 0 no se agregaron (agrégalos uno por uno si sí los compraste en este viaje)` : '') + (faltan > 0 ? `; ${faltan} ya no existen` : '') + '. Cada uno trae su stock actual como piezas: ajusta las que no sean de este viaje.';
   }
 
   quitarProducto(p: IProductoViaje): void {
@@ -480,7 +482,7 @@ export class FletesComponent implements OnInit, OnDestroy {
     if (!this.edicion || !c || this.importandoCampana) return;
     this.importandoCampana = true; this.avisoCategoria = null;
     try {
-      this.avisoCategoria = await this.incorporar(c.productos.map(p => p.productoId));
+      this.avisoCategoria = await this.incorporar(c.productos.map(p => p.productoId), true);
     } catch {
       this.avisoCategoria = 'No se pudieron traer los productos de la campaña. Intenta de nuevo.';
     } finally {

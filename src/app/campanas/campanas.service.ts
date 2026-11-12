@@ -8,7 +8,7 @@ import { environment } from 'src/environments/environment';
 export interface ICampanaProducto {
   productoId: number; nombre: string | null; codigoBarras?: string | null; precio: number; origen?: string | null;
   /** Solo para mostrar (vienen del catálogo, no se guardan con la campaña): el precio de venta y el precio con descuento del producto. */
-  precioVenta?: number | null; precioRebaja?: number | null;
+  precioVenta?: number | null; precioRebaja?: number | null; stock?: number | null;
 }
 
 /** Respuesta del «Verificar»: OK = el código es de este cliente; NO_COINCIDE = es de otra persona; NO_EXISTE = no es de nadie. */

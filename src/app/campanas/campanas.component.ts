@@ -472,7 +472,7 @@ export class CampanasComponent implements OnInit, OnDestroy {
     if (p.precioRebaja > 0) { precio = p.precioRebaja; origen = 'precio con descuento del producto'; }
     else if (previo) { precio = previo.precio; origen = `precio de «${previo.campana}»`; }
     else { precio = p.precioVenta > 0 ? p.precioVenta : (null as unknown as number); origen = null; }
-    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, precio, origen, precioVenta: p.precioVenta, precioRebaja: p.precioRebaja }];
+    c.productos = [...c.productos, { productoId: p.id, nombre: p.nombre, codigoBarras: p.codigoBarras, precio, origen, precioVenta: p.precioVenta, precioRebaja: p.precioRebaja, stock: p.stock }];
     this.refrescarOrden();
   }
 

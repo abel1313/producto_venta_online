@@ -960,3 +960,6 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Fletes: piezas = stock al agregar por categoría/campaña; Campañas: stock por juguete (2026-11-12)
 **Debe comprobar:** (1) Fletes → viaje → traer una categoría: cada producto entra con su stock como piezas (3 de stock = 3 piezas; flete del producto = piezas × flete por pieza); los de stock 0 no entran y el aviso dice cuántos se omitieron; agregar uno de stock 0 con el buscador sí entra (1 pieza, se edita). (2) Campañas → Editar: cada juguete ya agregado muestra «Stock: N» y, si es 0, «agotado» en rojo; al agregar desde el catálogo aparece al instante. (3) Las piezas del viaje no cambian el stock del producto.
+
+## Venta directa con campaña vigente: sin código de verificación del correo (2026-11-13)
+**Debe comprobar:** con una campaña vigente, «Guardar cliente» (cliente sin registro con correo) cierra el modal y cobra sin pedir el código de 6 dígitos, y el QR llega al correo; con un cliente registrado de correo sin verificar tampoco sale la oferta de verificar. Sin campaña vigente todo sigue igual que antes (se ofrece verificar).

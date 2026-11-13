@@ -279,7 +279,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         this.consultarAvanceDelCliente();
         this.actualizarCheckboxesTicket();
 
-        if (dto.correo_Electronico && !res.correoVerificado) {
+        // Con campaña vigente NO se pide el código de verificación del correo: el QR se manda igual (el correo solo sirve para eso).
+        if (dto.correo_Electronico && !res.correoVerificado && !this.campana) {
           this.pasoClienteSinRegistro = 'verificar';
         } else {
           this.finalizarModalClienteSinRegistro();
@@ -1071,7 +1072,8 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.clienteResolvedId = this.clienteSeleccionado.id;
       // Si el correo no está verificado, se OFRECE verificarlo — nunca se bloquea
       // la venta: si el cliente no quiere o no trae el código a la mano, se cobra igual.
-      if (this.clienteSeleccionado.correoVerificado === false && this.clienteSeleccionado.correoElectronico) {
+      // Con campaña vigente tampoco se ofrece: el QR sale al correo sin verificarlo.
+      if (this.clienteSeleccionado.correoVerificado === false && this.clienteSeleccionado.correoElectronico && !this.campana) {
         this.ofrecerVerificarCorreo();
         return;
       }

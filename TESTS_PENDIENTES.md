@@ -587,3 +587,5 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Rifa por boletos: el ✔ de un boleto nuevo se suma a la persona elegida (2026-11-15)
 **Debe comprobar:** en Rifas → Boletos, con dos participantes que tengan el MISMO perfil en la misma red, abrir a uno, pulsar «+» en su perfil y guardar con ✔ una publicación nueva: el boleto aparece en ese participante y no en el otro (antes se sumaba al primero que se encontraba). Cargar boletos con «Agregar red», editar y quitar un boleto siguen igual.
+## Venta directa con campaña vigente: sin código de verificación del correo (2026-11-13)
+**Debe comprobar:** con una campaña vigente, «Guardar cliente» (cliente sin registro con correo) cierra el modal y cobra sin pedir el código de 6 dígitos, y el QR llega al correo; con un cliente registrado de correo sin verificar tampoco sale la oferta de verificar. Sin campaña vigente todo sigue igual que antes (se ofrece verificar).

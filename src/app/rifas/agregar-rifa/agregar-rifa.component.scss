@@ -1535,3 +1535,7 @@
     flex-shrink: 0;
   }
 }
+
+/* Artículo que aparece en la búsqueda del administrador pero no se puede rifar (deshabilitado, sin stock o sin foto): se ve apagado y dice por qué. */
+.rf-dropdown__item--bloqueado { opacity: .6; cursor: not-allowed; }
+.rf-dropdown__motivo { display: block; margin-top: .15rem; font-size: .72rem; font-weight: 600; color: var(--pk-danger); }

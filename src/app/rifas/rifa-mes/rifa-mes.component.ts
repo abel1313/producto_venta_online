@@ -7,7 +7,8 @@ import { IClientePedido, IOmitidoYaRegistrado } from '../models/concursante.mode
 import { IConcursante } from '../models/concursante.model';
 import { IConfigurarRifa, IConfigurarRifaVariante, IConfigurarRifaVarianteRequest } from '../models/configurar-rifa.model';
 import { IGanadorRifa } from '../models/ganador-rifa.model';
-import { RifaService } from '../service/rifa.service';
+import { AuthService } from 'src/app/auth/auth.service';
+import { motivoNoRifable, RifaService } from '../service/rifa.service';
 import {
   IMedidasRuleta, aplicarLadoRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, numerosEnRuleta, revolverRuleta
 } from '../ruleta-visual.util';
@@ -107,6 +108,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
 
   constructor(
     private readonly rifaService: RifaService,
+    private readonly authService: AuthService,
     private readonly fb: FormBuilder
   ) {}
 
@@ -127,7 +129,7 @@ export class RifaMesComponent implements OnInit, OnDestroy {
       switchMap(t => {
         if (t.length < 3) { this.variantesBusqueda = []; return EMPTY; }
         this.buscandoVariante = true;
-        return this.rifaService.buscarVariante(t).pipe(
+        return this.rifaService.buscarPremios(t, this.authService.isAdminService).pipe(
           catchError(() => { this.buscandoVariante = false; return EMPTY; })
         );
       })
@@ -415,7 +417,13 @@ export class RifaMesComponent implements OnInit, OnDestroy {
     this.busqSubject.next(t);
   }
 
+  /** Por qué un artículo no se puede rifar (null si sí se puede): el administrador ve todos los artículos y la pantalla lo explica. */
+  motivoNoRifable(v: IVarianteResumen): string | null {
+    return motivoNoRifable(v);
+  }
+
   seleccionarVariante(v: IVarianteResumen): void {
+    if (this.motivoNoRifable(v)) return;
     this.varianteSeleccionada = v;
     this.terminoBusca = `${v.nombreProducto ?? ''} ${v.talla ?? ''} ${v.color ?? ''}`.trim();
     this.variantesBusqueda = [];

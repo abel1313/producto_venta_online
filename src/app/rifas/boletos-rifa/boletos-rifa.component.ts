@@ -21,7 +21,7 @@ import {
   normalizarUrl
 } from '../models/boleto-agrupado.model';
 import { AuthService } from 'src/app/auth/auth.service';
-import { RifaService } from '../service/rifa.service';
+import { motivoNoRifable, RifaService } from '../service/rifa.service';
 import {
   IMedidasRuleta, aplicarLadoRuleta, colorRuleta, medidasRuleta, numerosDeParticipantes, numerosEnRuleta, revolverRuleta
 } from '../ruleta-visual.util';
@@ -164,7 +164,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
         this.busqTotalPaginas = 1;
         if (t.length < 3) { this.buscandoVariante = false; return EMPTY; }
         this.buscandoVariante = true;
-        return this.rifaService.buscarVariante(t, 1, TAM_PAGINA_BUSQUEDA).pipe(
+        return this.rifaService.buscarPremios(t, this.authService.isAdminService, 1, TAM_PAGINA_BUSQUEDA).pipe(
           catchError(() => { this.buscandoVariante = false; return EMPTY; })
         );
       })
@@ -547,7 +547,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
 
     const siguiente = this.busqPagina + 1;
     this.cargandoMasVariantes = true;
-    this.rifaService.buscarVariante(termino, siguiente, TAM_PAGINA_BUSQUEDA).subscribe({
+    this.rifaService.buscarPremios(termino, this.authService.isAdminService, siguiente, TAM_PAGINA_BUSQUEDA).subscribe({
       next: res => {
         this.variantesBusqueda = [...this.variantesBusqueda, ...(res.t ?? [])];
         this.busqPagina = res.pagina ?? siguiente;
@@ -565,7 +565,13 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     return v?.imagenUrl ?? null;
   }
 
+  /** Por qué un artículo no se puede rifar (null si sí se puede): el administrador ve todos los artículos y la pantalla lo explica. */
+  motivoNoRifable(v: IVarianteResumen): string | null {
+    return motivoNoRifable(v);
+  }
+
   elegirVarianteBusqueda(v: IVarianteResumen): void {
+    if (this.motivoNoRifable(v)) return;
     this.varianteParaAgregar = v;
     this.variantesBusqueda = [];
     this.terminoBusca = `${v.nombreProducto ?? ''} ${v.color ?? ''} ${v.talla ?? ''}`.trim();

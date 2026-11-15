@@ -92,9 +92,24 @@ function encabezadoNegocio(): string {
 const fmt = (n: number | null | undefined): string =>
   n != null ? `$${n.toFixed(2)}` : '';
 
-/** dd/MM/yyyy — siempre 2 dígitos día y mes, 4 dígitos año */
-function fmtFecha(raw?: string | null): string {
-  const d = raw ? new Date(raw) : new Date();
+/**
+ * dd/MM/yyyy — siempre 2 dígitos día y mes, 4 dígitos año.
+ * Acepta: una fecha ISO (`2026-11-15`, con o sin hora), un texto ya formateado «dd/MM/yyyy[, hh:mm]» (como lo arma `formatearFechaTicket` de los
+ * detalles de pedido: `new Date('15/11/2026')` da «Invalid Date» y el ticket decía NaN/NaN/NaN, o peor, con día ≤ 12 volteaba día y mes) o nada
+ * (hoy). Si no se puede leer, usa hoy: nunca imprime NaN.
+ */
+export function fmtFecha(raw?: string | null): string {
+  const texto = (raw ?? '').toString().trim();
+  const formateada = /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(texto);
+  if (formateada) {
+    return `${formateada[1].padStart(2, '0')}/${formateada[2].padStart(2, '0')}/${formateada[3]}`;
+  }
+  // `yyyy-MM-dd` solo (sin hora) se lee con el calendario LOCAL: new Date('2026-11-15') es medianoche UTC y en México caía el día anterior.
+  const soloDia = /^(\d{4})-(\d{2})-(\d{2})$/.exec(texto);
+  let d = soloDia ? new Date(Number(soloDia[1]), Number(soloDia[2]) - 1, Number(soloDia[3])) : (texto ? new Date(texto) : new Date());
+  if (isNaN(d.getTime())) {
+    d = new Date();
+  }
   const dd   = String(d.getDate()).padStart(2, '0');
   const mm   = String(d.getMonth() + 1).padStart(2, '0');
   const yyyy = d.getFullYear();

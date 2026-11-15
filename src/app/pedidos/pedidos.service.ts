@@ -150,6 +150,11 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}`, body);
     }
 
+    /** Agrega los datos del cliente a un pedido que no los tiene (administrador): crea el cliente sin registro y lo liga al pedido. */
+    agregarDatosCliente(pedidoId: number, datos: { nombre: string; apellido?: string; correo?: string; telefono?: string }): Observable<ResponseGeneric<unknown>> {
+      return this.http.post<ResponseGeneric<unknown>>(`${this.url}/v1/pedidos/${pedidoId}/datos-cliente`, datos);
+    }
+
     /** Cambia SOLO el precio de una línea (administrador): el artículo y la cantidad no cambian y el total del pedido se recalcula. */
     cambiarPrecioArticulo(pedidoId: number, detalleId: number, precioUnitario: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}/precio`, { precioUnitario });

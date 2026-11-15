@@ -547,6 +547,10 @@
       <span class="vd-modal__icon">👤</span>
       <div>
         <h3 class="vd-modal__title">Cliente sin registro</h3>
+        <p class="vd-modal__hint" *ngIf="codigoPendienteDeDatos">
+          El QR de <b>{{ codigoPendienteDeDatos.r.nombre }}</b> todavía no tiene los datos de un cliente. Completa sus datos y pulsa «Guardar cliente» para aplicar su código;
+          si no lo registras, la venta va a precios normales.
+        </p>
         <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'form'">Datos para asignar a esta venta</small>
         <small class="vd-modal__sub" *ngIf="pasoClienteSinRegistro === 'verificar'">Verificar correo (opcional)</small>
       </div>

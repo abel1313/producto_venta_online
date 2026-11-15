@@ -795,3 +795,6 @@ $t:  all 0.22s ease;
 .vd-campana__aviso { margin: 0; font-size: .8rem; color: var(--pk-warning); }
 
 .vd-line__unidad { display: block; font-size: .72rem; color: var(--app-text-muted); text-align: right; }
+
+/* Aviso dentro de la ventana de cliente cuando el QR escaneado todavía no tiene los datos de un cliente. */
+.vd-modal__hint { margin: .4rem 0 0; font-size: .78rem; line-height: 1.35; color: var(--app-text-muted); }

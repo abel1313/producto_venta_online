@@ -47,6 +47,8 @@ export interface PedidoDetalleResponse {
   tieneJuguetesConPrecioDeCampana?: boolean;
   /** Solo viene en true y solo para el administrador: el pedido está ligado a una persona con código de campaña (se le puede reenviar). */
   tieneCodigoDeCampana?: boolean;
+  /** Solo administrador y solo en true: el pedido no tiene los datos de un cliente (se le pueden agregar desde el detalle). */
+  sinDatosDelCliente?: boolean;
   pedidoId:          number;
   tipoPedido:        string;
   estadoPedido:      string;

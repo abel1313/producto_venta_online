@@ -1534,7 +1534,7 @@ export class BoletosRifaComponent implements OnInit, OnDestroy {
     if (!rifaId || this.guardandoFila) return;
 
     this.guardandoFila = true;
-    this.rifaService.agregarParticipacion(rifaId, g.plataforma, g.urlPerfil, data).subscribe({
+    this.rifaService.agregarParticipacion(rifaId, g.plataforma, g.urlPerfil, data, g.concursanteId).subscribe({
       next: () => {
         this.guardandoFila = false;
         // La fila sigue abierta con la misma URL: lo siguiente suele ser otra acción en la

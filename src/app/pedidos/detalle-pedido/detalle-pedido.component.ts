@@ -1181,6 +1181,44 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
+  guardandoDatosCliente = false;
+
+  /** Agrega los datos del cliente a un pedido que no tiene cliente (nombre, correo y teléfono); el correo se valida. */
+  async agregarDatosDelCliente(): Promise<void> {
+    if (this.guardandoDatosCliente) return;
+    const r = await Swal.fire({
+      title: 'Datos del cliente',
+      html: '<p style="font-size:.85rem;margin:0 0 .6rem">Este pedido no tiene los datos de un cliente. Se guardan aquí para este pedido '
+        + '(correo y teléfono son opcionales, pero sin correo no se le puede mandar su ticket ni su código de campaña).</p>'
+        + '<input id="dc-nombre" class="swal2-input" type="text" placeholder="Nombre" aria-label="Nombre">'
+        + '<input id="dc-apellido" class="swal2-input" type="text" placeholder="Apellido (opcional)" aria-label="Apellido">'
+        + '<input id="dc-correo" class="swal2-input" type="email" placeholder="correo@ejemplo.com (opcional)" aria-label="Correo">'
+        + '<input id="dc-tel" class="swal2-input" type="tel" placeholder="Teléfono de 10 dígitos (opcional)" aria-label="Teléfono">',
+      showCancelButton: true, confirmButtonText: 'Guardar datos', cancelButtonText: 'Cancelar', focusConfirm: false,
+      preConfirm: () => {
+        const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim();
+        const nombre = val('dc-nombre'), apellido = val('dc-apellido'), correo = val('dc-correo'), telefono = val('dc-tel');
+        if (nombre.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '').length < 3) { Swal.showValidationMessage('El nombre debe tener al menos 3 letras'); return false; }
+        if (correo && (correo.length > 150 || !DetallePedidoComponent.CORREO_VALIDO.test(correo))) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
+        if (telefono && telefono.replace(/[\s()+-]/g, '').replace(/^52(?=\d{10}$)/, '').length !== 10) { Swal.showValidationMessage('El teléfono debe tener 10 dígitos'); return false; }
+        return { nombre, apellido: apellido || undefined, correo: correo || undefined, telefono: telefono || undefined };
+      }
+    });
+    if (!r.isConfirmed || !r.value) return;
+    this.guardandoDatosCliente = true;
+    this.pedidosService.agregarDatosCliente(this.pedido.pedido.id, r.value as { nombre: string }).subscribe({
+      next: () => {
+        this.guardandoDatosCliente = false;
+        Swal.fire({ icon: 'success', title: 'Datos guardados', timer: 1500, showConfirmButton: false });
+        this.cargarDetalleCompleto();
+      },
+      error: err => {
+        this.guardandoDatosCliente = false;
+        this.avisarError(err, 'No se pudieron guardar los datos del cliente.');
+      }
+    });
+  }
+
   /** Solo el administrador cambia el precio de una línea del pedido (con o sin campaña). */
   get puedeCambiarPrecio(): boolean {
     // Solo en Apartado o Ir pagando sin liquidar: un pedido Pagado (de contado o liquidado) ya no cambia de precio.

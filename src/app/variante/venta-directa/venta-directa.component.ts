@@ -224,6 +224,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
       this.finalizarModalClienteSinRegistro();
       return;
     }
+    this.descartarCodigoPendiente();
     this.modalClienteSinRegistro = false;
     this.pasoClienteSinRegistro = 'form';
     this.cobrarPendiente = false;
@@ -239,6 +240,7 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   /** Con campaña: el cliente no quiere registrarse. Se cierra el modal y se cobra sin cliente (a nombre del administrador), sin QR. */
   noRegistrarYCobrar(): void {
+    this.descartarCodigoPendiente();
     this.modalClienteSinRegistro = false;
     this.pasoClienteSinRegistro = 'form';
     this.errorClienteSinRegistro = '';
@@ -276,6 +278,14 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
         const privacidad = this.campanaPrivacidad;
         this.olvidarCodigoDelClienteAnterior();
         this.campanaPrivacidad = privacidad;
+        // El QR que estaba esperando los datos del cliente ya se puede aplicar.
+        const pendiente = this.codigoPendienteDeDatos;
+        this.codigoPendienteDeDatos = null;
+        if (pendiente) {
+          this.campanaCodigo = pendiente.codigo;
+          this.verificacion = { estado: 'OK', nombre: pendiente.r.nombre, acumulado: pendiente.r.acumulado, meta: pendiente.r.meta, falta: pendiente.r.falta };
+          this.recalcularSubtotales();
+        }
         this.consultarAvanceDelCliente();
         this.actualizarCheckboxesTicket();
 
@@ -802,6 +812,21 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     });
   }
 
+  /** El QR escaneado es de una persona sin datos de cliente: espera a que se registren para aplicarlo (si no, no se usa). */
+  codigoPendienteDeDatos: { codigo: string; r: IBuscarPorCodigo } | null = null;
+
+  /** Se cerró la ventana sin registrar los datos: el código no se aplica y los precios quedan normales. */
+  private descartarCodigoPendiente(): void {
+    if (!this.codigoPendienteDeDatos) return;
+    this.codigoPendienteDeDatos = null;
+    this.campanaCodigo = '';
+    this.verificacion = null;
+    this.campanaPrivacidad = false;
+    this.recalcularSubtotales();
+    Swal.fire({ icon: 'info', title: 'Sin datos del cliente no se aplica el código',
+      text: 'La venta sigue a precios normales. Si registras al cliente, vuelve a escanear su QR.', timer: 3500, showConfirmButton: false });
+  }
+
   private async aplicarCodigo(codigo: string, r: IBuscarPorCodigo): Promise<void> {
     if (!r.valido) {
       this.verificacion = { estado: 'NO_EXISTE', nombre: '', acumulado: 0, meta: r.meta, falta: 0 };
@@ -810,13 +835,16 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
     }
     const tieneCliente = !!(r.clienteId || r.clienteSinRegistroId);
     if (!tieneCliente) {
-      // Código anterior al ligado con el cliente: no se sabe a cuál pertenece. Se deja elegir al cliente y se valida por correo o teléfono.
-      if (this.clienteTieneContacto) {
-        this.verificarCodigo();
-      } else {
-        Swal.fire({ icon: 'info', title: `Código de ${r.nombre || 'un cliente'}`,
-          text: 'Este código no tiene un cliente ligado. Elige al cliente de la venta y pulsa «Buscar código».' });
-      }
+      // El código es de una persona que todavía no tiene los datos de un cliente (por ejemplo, su QR se mandó desde un pedido): se abre la ventana
+      // para completar sus datos, ya con lo que se sabe de ella. Si no se registran, el código NO se aplica y la venta va a precios normales.
+      this.codigoPendienteDeDatos = { codigo, r };
+      this.campanaCodigo = '';
+      this.clienteForm.reset();
+      this.clienteForm.patchValue({ nombre_persona: r.nombre ?? '', correo_Electronico: r.correo ?? '', numero_Telefonico: r.telefono ?? '' });
+      this.errorClienteSinRegistro = '';
+      this.pasoClienteSinRegistro = 'form';
+      this.campanaPrivacidad = true;        // la persona ya dio su consentimiento al recibir su código
+      this.modalClienteSinRegistro = true;
       return;
     }
     const mismo = (!!r.clienteId && this.clienteSeleccionado?.id === r.clienteId)

@@ -578,3 +578,6 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Fletes: piezas = stock al agregar por categoría/campaña; Campañas: stock por juguete (2026-11-12)
 **Debe comprobar:** (1) Fletes → viaje → traer una categoría: cada producto entra con su stock como piezas (3 de stock = 3 piezas; flete del producto = piezas × flete por pieza); los de stock 0 no entran y el aviso dice cuántos se omitieron; agregar uno de stock 0 con el buscador sí entra (1 pieza, se edita). (2) Campañas → Editar: cada juguete ya agregado muestra «Stock: N» y, si es 0, «agotado» en rojo; al agregar desde el catálogo aparece al instante. (3) Las piezas del viaje no cambian el stock del producto.
+
+## Rifas → Agregar rifa: el administrador ve todos los artículos al buscar un premio (2026-11-15)
+**Debe comprobar:** como administrador, buscar por nombre o código de barras un artículo recién creado, sin foto, con 1 de stock: aparece apagado con «Sin foto: agrégala para poder rifarlo» y no se puede elegir; uno deshabilitado dice «Deshabilitado: no se puede rifar»; uno con stock 0 dice «Sin stock: no hay pieza que entregar»; uno con stock, habilitado y con foto se elige como siempre. Un usuario que no es administrador sigue viendo solo los artículos que sí se pueden rifar.

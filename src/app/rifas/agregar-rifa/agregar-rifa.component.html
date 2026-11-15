@@ -208,12 +208,16 @@
           </div>
           <div class="rf-dropdown" *ngIf="variantesBusqueda.length > 0" [ngStyle]="dropdownStyleVariante">
             <div class="rf-dropdown__item" *ngFor="let v of variantesBusqueda"
+                 [class.rf-dropdown__item--bloqueado]="!!motivoNoRifable(v)"
+                 [attr.aria-disabled]="!!motivoNoRifable(v)"
+                 [title]="motivoNoRifable(v) || ''"
                  (mousedown)="$event.preventDefault(); seleccionarVariante(v)">
               <span class="rf-dropdown__name">{{ v.nombreProducto }} {{ v.talla | uppercase }} {{ v.color | uppercase }}</span>
               <span class="rf-dropdown__meta">
                 Stock {{ v.stock }}
                 <span *ngIf="v.codigoBarras"> · {{ v.codigoBarras | uppercase }}</span>
               </span>
+              <span class="rf-dropdown__motivo" *ngIf="motivoNoRifable(v) as motivo">{{ motivo }}</span>
             </div>
           </div>
         </div>

@@ -981,3 +981,6 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Rifa por boletos: el ✔ de un boleto nuevo se suma a la persona elegida (2026-11-15)
 **Debe comprobar:** en Rifas → Boletos, con dos participantes que tengan el MISMO perfil en la misma red, abrir a uno, pulsar «+» en su perfil y guardar con ✔ una publicación nueva: el boleto aparece en ese participante y no en el otro (antes se sumaba al primero que se encontraba). Cargar boletos con «Agregar red», editar y quitar un boleto siguen igual.
+
+## Datos del cliente: pedido con un cliente que solo tiene nombre (2026-11-15)
+**Debe comprobar:** en el detalle de un pedido cuyo cliente aparece solo con nombre (sin correo ni teléfono), como administrador sale «👤 Agregar datos del cliente» con el nombre ya puesto; al guardar solo el correo o solo el teléfono se completan los datos de ese mismo cliente (no se crea otro) y el botón desaparece; sin correo ni teléfono pide al menos uno; un cliente que ya tiene correo o teléfono no muestra el botón.

@@ -1186,11 +1186,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   /** Agrega los datos del cliente a un pedido que no tiene cliente (nombre, correo y teléfono); el correo se valida. */
   async agregarDatosDelCliente(): Promise<void> {
     if (this.guardandoDatosCliente) return;
+    // Si el pedido ya tiene un cliente con nombre pero sin correo ni teléfono, se parte de su nombre; si es la cuenta de quien vende (tiene correo propio) no se precarga nada.
+    const c = this.pedido?.cliente;
+    const solo = !c?.correoElectronico && !c?.numeroTelefonico;
+    const nombreInicial = solo ? (c?.nombreCliente ?? '') : '';
     const r = await Swal.fire({
       title: 'Datos del cliente',
       html: '<p style="font-size:.85rem;margin:0 0 .6rem">Este pedido no tiene los datos de un cliente. Se guardan aquí para este pedido '
         + '(correo y teléfono son opcionales, pero sin correo no se le puede mandar su ticket ni su código de campaña).</p>'
-        + '<input id="dc-nombre" class="swal2-input" type="text" placeholder="Nombre" aria-label="Nombre">'
+        + `<input id="dc-nombre" class="swal2-input" type="text" placeholder="Nombre" aria-label="Nombre" value="${escaparHtml(nombreInicial)}">`
         + '<input id="dc-apellido" class="swal2-input" type="text" placeholder="Apellido (opcional)" aria-label="Apellido">'
         + '<input id="dc-correo" class="swal2-input" type="email" placeholder="correo@ejemplo.com (opcional)" aria-label="Correo">'
         + '<input id="dc-tel" class="swal2-input" type="tel" placeholder="Teléfono de 10 dígitos (opcional)" aria-label="Teléfono">',

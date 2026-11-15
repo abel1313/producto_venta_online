@@ -150,6 +150,11 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}`, body);
     }
 
+    /** Cambia SOLO el precio de una línea (administrador): el artículo y la cantidad no cambian y el total del pedido se recalcula. */
+    cambiarPrecioArticulo(pedidoId: number, detalleId: number, precioUnitario: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
+      return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}/precio`, { precioUnitario });
+    }
+
     /** Quita una promoción completa del pedido — todas sus líneas de una vez. */
     quitarPromocion(pedidoId: number, promocionId: number): Observable<ResponseGeneric<PedidoDetalleResponse>> {
       return this.http.delete<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/promociones/${promocionId}`);

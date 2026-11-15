@@ -135,7 +135,7 @@ export class CampanasService {
   }
 
   /** Vuelve a mandar por correo el código de la persona de este pedido (botón de Mis pedidos). */
-  reenviarCodigo(pedidoId: number): Observable<void> {
-    return this.http.post(`${this.url}/pedidos/${pedidoId}/enviar-codigo`, {}).pipe(map(() => void 0));
+  reenviarCodigo(pedidoId: number, datos: { correo?: string; nombre?: string; telefono?: string } = {}): Observable<void> {
+    return this.http.post(`${this.url}/pedidos/${pedidoId}/enviar-codigo`, datos).pipe(map(() => void 0));
   }
 }

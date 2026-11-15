@@ -17,6 +17,8 @@ import {
 } from '../ruleta-visual.util';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import { ClienteService } from 'src/app/clietes/cliente.service';
+import { VarianteService } from 'src/app/variante/service/variante.service';
+import { AuthService } from 'src/app/auth/auth.service';
 import { IClienteBusquedaDto } from 'src/app/productos/producto/detalle-productos/models/pedidos.model';
 
 import { hoyIso } from '../../shared/fecha.util';
@@ -173,6 +175,8 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     private readonly rifaService: RifaService,
     private readonly webSocketService: WebSocketServiceService,
     private readonly clienteService: ClienteService,
+    private readonly varianteService: VarianteService,
+    private readonly authService: AuthService,
     private readonly fb: FormBuilder,
     readonly router: Router
   ) {}
@@ -217,7 +221,10 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
       switchMap(t => {
         if (t.length < 3) { this.variantesBusqueda = []; return EMPTY; }
         this.buscandoVariante = true;
-        return this.rifaService.buscarVariante(t).pipe(
+        // El administrador ve TODOS los artículos (también deshabilitados, sin stock o sin foto) y la pantalla dice por qué uno no se puede elegir;
+        // los demás usuarios siguen viendo solo los que se pueden rifar.
+        const busqueda$ = this.authService.isAdminService ? this.varianteService.adminFiltrar({ nombreOCodigo: t }, 1, 10) : this.rifaService.buscarVariante(t);
+        return busqueda$.pipe(
           catchError(() => { this.buscandoVariante = false; return EMPTY; })
         );
       })
@@ -363,7 +370,16 @@ export class AgregarRifaComponent implements OnInit, OnDestroy {
     this.busqSubject.next(t);
   }
 
+  /** Por qué un artículo no se puede rifar (null si sí se puede): deshabilitado, sin stock o sin foto para la ruleta. */
+  motivoNoRifable(v: IVarianteResumen): string | null {
+    if (v.habilitado === '0') return 'Deshabilitado: no se puede rifar';
+    if ((v.stock ?? 0) <= 0) return 'Sin stock: no hay pieza que entregar';
+    if (!v.imagenUrl) return 'Sin foto: agrégala para poder rifarlo';
+    return null;
+  }
+
   seleccionarVariante(v: IVarianteResumen): void {
+    if (this.motivoNoRifable(v)) return;
     this.varianteParaAgregar = v;
     this.terminoBusca = `${v.nombreProducto ?? ''} ${v.talla ?? ''} ${v.color ?? ''}`.trim();
     this.variantesBusqueda = [];

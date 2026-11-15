@@ -581,3 +581,6 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Rifas → Agregar rifa: el administrador ve todos los artículos al buscar un premio (2026-11-15)
 **Debe comprobar:** como administrador, buscar por nombre o código de barras un artículo recién creado, sin foto, con 1 de stock: aparece apagado con «Sin foto: agrégala para poder rifarlo» y no se puede elegir; uno deshabilitado dice «Deshabilitado: no se puede rifar»; uno con stock 0 dice «Sin stock: no hay pieza que entregar»; uno con stock, habilitado y con foto se elige como siempre. Un usuario que no es administrador sigue viendo solo los artículos que sí se pueden rifar.
+
+## Rifa del mes y Rifa por boletos: misma búsqueda de premios para el administrador (2026-11-15)
+**Debe comprobar:** en Rifas → Rifa del mes y Rifas → Boletos, como administrador, buscar por nombre o código de barras un artículo sin foto, deshabilitado o sin stock: aparece apagado con su motivo y no se puede elegir; uno que sí se puede rifar se elige igual que antes. Un usuario que no es administrador sigue viendo solo los que se pueden rifar.

@@ -607,11 +607,42 @@ export class VentaDirectaComponent implements OnInit, OnDestroy {
 
   // ── Líneas de venta ────────────────────────────────────────────────
 
+  /** Cuántas piezas de este artículo ya están en la venta en curso. */
+  enVentaDe(v: IVarianteResumen): number {
+    return this.lineas.filter(l => l.variante.id === v.id).reduce((s, l) => s + l.cantidad, 0);
+  }
+
+  /** El artículo (o su producto) está deshabilitado: aparece en la búsqueda del administrador pero el cobro lo rechaza. */
+  estaDeshabilitado(v: IVarianteResumen): boolean {
+    return v.habilitado === '0';
+  }
+
+  /** Lo que todavía se puede agregar: el stock menos lo que ya está en la venta (la lista de resultados no baja sola al agregar). */
+  disponibleDe(v: IVarianteResumen): number {
+    if (this.estaDeshabilitado(v)) return 0;
+    return Math.max(0, (v.stock ?? 0) - this.enVentaDe(v));
+  }
+
+  textoStock(v: IVarianteResumen): string {
+    const stock = v.stock ?? 0;
+    if (this.estaDeshabilitado(v)) return 'Deshabilitado: no se puede vender';
+    if (stock === 0) return 'Agotado';
+    const enVenta = this.enVentaDe(v);
+    if (enVenta === 0) return `${stock} en stock`;
+    const disp = this.disponibleDe(v);
+    return disp > 0 ? `${disp} más disponible${disp === 1 ? '' : 's'} · ${enVenta} en la venta` : `Todo el stock ya está en la venta (${enVenta})`;
+  }
+
   agregarAVenta(v: IVarianteResumen): void {
+    if (this.estaDeshabilitado(v)) {
+      Swal.fire({ icon: 'warning', title: 'Artículo deshabilitado',
+        text: 'Este artículo o su producto está deshabilitado: no se puede vender. Habilítalo en Productos para poder cobrarlo.' });
+      return;
+    }
     const idx = this.lineas.findIndex(l => l.variante.id === v.id);
     if (idx !== -1) {
       if (this.lineas[idx].cantidad >= (v.stock ?? 0)) {
-        Swal.fire({ icon: 'warning', title: 'Sin stock suficiente', timer: 1400, showConfirmButton: false });
+        Swal.fire({ icon: 'warning', title: 'Sin stock suficiente', text: `Ya agregaste las ${this.lineas[idx].cantidad} pieza(s) que hay en stock.`, timer: 1800, showConfirmButton: false });
         return;
       }
       this.lineas[idx].cantidad++;

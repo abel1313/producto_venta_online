@@ -975,3 +975,6 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 
 ## Venta directa: la tarjeta descuenta lo que ya está en la venta y los artículos deshabilitados no se ofrecen (2026-11-15)
 **Debe comprobar:** buscar un artículo con 1 de stock y agregarlo: su tarjeta pasa a «Todo el stock ya está en la venta (1)» con el ➕ desactivado (con 3 de stock, agregar 1 dice «2 más disponibles · 1 en la venta»); un artículo o producto deshabilitado sale con «Deshabilitado: no se puede vender» y el ➕ desactivado; el cobro ya no falla con «ya no está a la venta».
+
+## Rifa del mes y Rifa por boletos: misma búsqueda de premios para el administrador (2026-11-15)
+**Debe comprobar:** en Rifas → Rifa del mes y Rifas → Boletos, como administrador, buscar por nombre o código de barras un artículo sin foto, deshabilitado o sin stock: aparece apagado con su motivo («Sin foto…», «Deshabilitado…», «Sin stock…») y no se puede elegir; uno que sí se puede rifar se elige igual que antes. Un usuario que no es administrador sigue viendo solo los que se pueden rifar.

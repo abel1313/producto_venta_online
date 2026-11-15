@@ -202,12 +202,16 @@
           <div class="br-resultados" *ngIf="variantesBusqueda.length"
                (scroll)="alScrollearResultados($event)">
             <button type="button" class="br-resultado" *ngFor="let v of variantesBusqueda"
+                    [class.br-resultado--bloqueado]="!!motivoNoRifable(v)"
+                    [disabled]="!!motivoNoRifable(v)"
+                    [title]="motivoNoRifable(v) || ''"
                     (click)="elegirVarianteBusqueda(v)">
               <img *ngIf="imageSrc(v) as src" [src]="src" alt="" />
               <span class="br-premio__ph" *ngIf="!imageSrc(v)">📦</span>
               <span class="br-resultado__txt">
                 <span class="pk-text pk-text--bold">{{ v.nombreProducto }}</span>
                 <span class="pk-text pk-text--sm pk-text--muted">{{ v.color | uppercase }} {{ v.talla | uppercase }} · stock {{ v.stock }}</span>
+                <span class="pk-text pk-text--sm br-resultado__motivo" *ngIf="motivoNoRifable(v) as motivo">{{ motivo }}</span>
               </span>
             </button>
 

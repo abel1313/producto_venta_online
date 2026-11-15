@@ -34,6 +34,14 @@ import {
 
 export type ModoContinuacion = 'RESTANTES' | 'CERO' | 'NUEVOS';
 
+/** Por qué un artículo no se puede rifar (null si sí se puede): deshabilitado, sin stock o sin foto para la ruleta. */
+export function motivoNoRifable(v: { habilitado?: string | null; stock?: number | null; imagenUrl?: string | null }): string | null {
+  if (v.habilitado === '0') return 'Deshabilitado: no se puede rifar';
+  if ((v.stock ?? 0) <= 0) return 'Sin stock: no hay pieza que entregar';
+  if (!v.imagenUrl) return 'Sin foto: agrégala para poder rifarlo';
+  return null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class RifaService {
   private readonly url = environment.api_Url;
@@ -54,6 +62,17 @@ export class RifaService {
   buscarVariante(termino: string, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
     return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
       `${this.url}/v2/articulos/buscar-filtrado?termino=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
+    ).pipe(map(r => r.data));
+  }
+
+  /**
+   * El administrador ve TODOS los artículos al buscar un premio (también deshabilitados, sin stock o sin foto) y la pantalla dice por qué uno no se
+   * puede elegir; los demás usuarios siguen viendo solo los que sí se pueden rifar ({@link buscarVariante}).
+   */
+  buscarPremios(termino: string, esAdmin: boolean, pagina = 1, size = 10): Observable<IVarianteResumenPaginable> {
+    if (!esAdmin) return this.buscarVariante(termino, pagina, size);
+    return this.http.get<{ code: number; data: IVarianteResumenPaginable }>(
+      `${this.url}/v2/articulos/admin/filtrar?nombreOCodigo=${encodeURIComponent(termino)}&pagina=${pagina}&size=${size}`
     ).pipe(map(r => r.data));
   }
 

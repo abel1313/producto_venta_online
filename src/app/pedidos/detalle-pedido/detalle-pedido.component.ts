@@ -580,6 +580,9 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       error: () => {}
     });
 
+    if (this.isAdmin) {
+      this.campanasService.activa().pipe(takeUntil(this.destroy$)).subscribe({ next: c => this.campanaVigente = !!c, error: () => this.campanaVigente = false });
+    }
     this.prepararBuscadorArticulo();
     this.cargarDetalleCompleto();
   }
@@ -1121,19 +1124,89 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   }
 
   enviandoCodigoCampana = false;
+  /** Hay una campaña vigente hoy: solo entonces el administrador puede mandar el código de cliente (QR) desde el pedido. */
+  campanaVigente = false;
 
-  /** Vuelve a mandar por correo el código de campaña de la persona de este pedido. */
-  enviarCodigoDeCampana(): void {
+  /** Formato de un correo (el back lo vuelve a validar). */
+  private static readonly CORREO_VALIDO = /^[A-Za-z0-9._%+'\-]+@[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?(?:\.[A-Za-z0-9](?:[A-Za-z0-9\-]*[A-Za-z0-9])?)*\.[A-Za-z]{2,}$/;
+
+  /**
+   * Manda por correo el código (QR) de campaña de este pedido, solo con campaña vigente. Pregunta el correo (ya viene el del cliente si lo tiene,
+   * se puede escribir otro) y, si el pedido todavía no tiene código, también el nombre y el teléfono para crear a la persona. El correo se valida.
+   */
+  async enviarCodigoDeCampana(): Promise<void> {
     if (this.enviandoCodigoCampana) return;
+    const yaTiene = !!this.detalle?.tieneCodigoDeCampana;
+    const c = this.pedido?.cliente;
+    const esc = (t: string | null | undefined) => (t ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const r = await Swal.fire({
+      title: yaTiene ? 'Enviar el código de campaña' : 'Crear y enviar el código de campaña',
+      html: `<p style="font-size:.85rem;margin:0 0 .6rem">${yaTiene
+        ? 'Se vuelve a mandar su código al correo que escribas. Déjalo como está para usar el que ya tiene.'
+        : 'Este pedido todavía no tiene código. Se le crea a la persona, esta compra cuenta para su meta y se le manda su QR.'}</p>`
+        + `<input id="qr-correo" class="swal2-input" type="email" placeholder="correo@ejemplo.com" value="${esc(c?.correoElectronico)}">`
+        + (yaTiene ? '' : `<input id="qr-nombre" class="swal2-input" type="text" placeholder="Nombre de la persona" value="${esc(c?.nombreCliente)}">`
+          + `<input id="qr-tel" class="swal2-input" type="tel" placeholder="Teléfono (opcional)" value="${esc(c?.numeroTelefonico)}">`),
+      showCancelButton: true, confirmButtonText: 'Enviar código', cancelButtonText: 'Cancelar',
+      focusConfirm: false,
+      preConfirm: () => {
+        const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim();
+        const correo = val('qr-correo'), nombre = val('qr-nombre'), telefono = val('qr-tel');
+        if (correo && !DetallePedidoComponent.CORREO_VALIDO.test(correo)) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
+        if (!yaTiene && !correo) { Swal.showValidationMessage('Escribe el correo al que se manda el código'); return false; }
+        if (!yaTiene && !nombre) { Swal.showValidationMessage('Escribe el nombre de la persona'); return false; }
+        return { correo, nombre, telefono };
+      }
+    });
+    if (!r.isConfirmed || !r.value) return;
     this.enviandoCodigoCampana = true;
-    this.campanasService.reenviarCodigo(this.pedido.pedido.id).subscribe({
+    this.campanasService.reenviarCodigo(this.pedido.pedido.id, r.value as { correo: string; nombre: string; telefono: string }).subscribe({
       next: () => {
         this.enviandoCodigoCampana = false;
         Swal.fire({ icon: 'success', title: 'Código enviado', timer: 1800, showConfirmButton: false });
+        this.cargarDetalleCompleto();
       },
       error: err => {
         this.enviandoCodigoCampana = false;
         Swal.fire({ icon: 'warning', title: 'No se pudo enviar', text: err?.error?.mensaje || 'Intenta de nuevo.' });
+      }
+    });
+  }
+
+  /** Solo el administrador cambia el precio de una línea del pedido (con o sin campaña). */
+  get puedeCambiarPrecio(): boolean {
+    return this.isAdmin && !this.esPedidoDeFlores;
+  }
+
+  /** Cambia SOLO el precio de esta línea (el artículo y la cantidad quedan igual); el back recalcula el total del pedido. */
+  async cambiarPrecioDeLinea(item: PedidoDetalleItem, pedidoId: number = this.pedido.pedido.id): Promise<void> {
+    if (this.guardandoArticulo || item?.id == null) return;
+    const actual = Number(item.precioUnitario) || 0;
+    const r = await Swal.fire({
+      title: 'Cambiar el precio',
+      html: `<p style="font-size:.85rem;margin:0 0 .4rem">Solo cambia el precio de «${(item.productoNombre ?? 'este artículo').toString().replace(/</g, '&lt;')}» en el pedido #${pedidoId}: `
+        + 'no cambia el catálogo. El total y el saldo del pedido se recalculan.</p>',
+      input: 'number', inputValue: actual.toFixed(2), inputLabel: `Precio por pieza (ahora $${actual.toFixed(2)})`,
+      inputAttributes: { min: '0.01', step: '0.01' },
+      showCancelButton: true, confirmButtonText: 'Guardar precio', cancelButtonText: 'Cancelar',
+      inputValidator: v => {
+        const n = Number(v);
+        if (!v || !(n > 0)) return 'Escribe un precio mayor a cero';
+        if (Math.abs(n - actual) < 0.005) return 'Es el mismo precio de ahora';
+        return null;
+      }
+    });
+    if (!r.isConfirmed) return;
+    this.guardandoArticulo = true;
+    this.pedidosService.cambiarPrecioArticulo(pedidoId, item.id as number, Number(r.value)).subscribe({
+      next: resp => {
+        this.guardandoArticulo = false;
+        if (pedidoId === this.pedido.pedido.id) this.detalle = resp?.data ?? this.detalle;
+        Swal.fire({ icon: 'success', title: 'Precio cambiado', timer: 1500, showConfirmButton: false }).then(() => this.cargarDetalleCompleto());
+      },
+      error: err => {
+        this.guardandoArticulo = false;
+        this.avisarError(err, 'No se pudo cambiar el precio.');
       }
     });
   }

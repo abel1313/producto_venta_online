@@ -272,6 +272,12 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         && this.authService.tieneAccion('pedidos/mis-pedidos', 'cambiar-articulo');
   }
 
+  /** «$» de un pedido unido: depende del estado de ESE pedido (Apartado o Ir pagando sin liquidar), no del que está abierto. */
+  puedeCambiarPrecioDeOtro(o: OtroPedidoDelGrupo): boolean {
+    const estado = (o.estado ?? '').toUpperCase();
+    return this.isAdmin && !o.esRamo && (estado === 'APARTADO' || estado === 'FIADO');
+  }
+
   /** Los pedidos a los que se les puede agregar: este y los del grupo que no estén cerrados. */
   private get destinosParaAgregar(): { pedidoId: number; cliente: string }[] {
     const propio = this.pedidoEstaCerrado || this.esPedidoDeFlores
@@ -581,7 +587,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
 
     if (this.isAdmin) {
-      this.campanasService.activa().pipe(takeUntil(this.destroy$)).subscribe({ next: c => this.campanaVigente = !!c, error: () => this.campanaVigente = false });
+      this.campanasService.activa().pipe(takeUntil(this.destroy$)).subscribe({ next: c => this.campanaVigente = !!c });
     }
     this.prepararBuscadorArticulo();
     this.cargarDetalleCompleto();
@@ -1138,7 +1144,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     if (this.enviandoCodigoCampana) return;
     const yaTiene = !!this.detalle?.tieneCodigoDeCampana;
     const c = this.pedido?.cliente;
-    const esc = (t: string | null | undefined) => (t ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    const esc = (t: string | null | undefined) => escaparHtml(t ?? '');
     const r = await Swal.fire({
       title: yaTiene ? 'Enviar el código de campaña' : 'Crear y enviar el código de campaña',
       html: `<p style="font-size:.85rem;margin:0 0 .6rem">${yaTiene
@@ -1152,15 +1158,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       preConfirm: () => {
         const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim();
         const correo = val('qr-correo'), nombre = val('qr-nombre'), telefono = val('qr-tel');
-        if (correo && !DetallePedidoComponent.CORREO_VALIDO.test(correo)) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
+        if (correo && (correo.length > 254 || !DetallePedidoComponent.CORREO_VALIDO.test(correo))) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
         if (!yaTiene && !correo) { Swal.showValidationMessage('Escribe el correo al que se manda el código'); return false; }
         if (!yaTiene && !nombre) { Swal.showValidationMessage('Escribe el nombre de la persona'); return false; }
-        return { correo, nombre, telefono };
+        return { correo: correo || undefined, nombre: nombre || undefined, telefono: telefono || undefined };
       }
     });
     if (!r.isConfirmed || !r.value) return;
     this.enviandoCodigoCampana = true;
-    this.campanasService.reenviarCodigo(this.pedido.pedido.id, r.value as { correo: string; nombre: string; telefono: string }).subscribe({
+    this.campanasService.reenviarCodigo(this.pedido.pedido.id, r.value as { correo?: string; nombre?: string; telefono?: string }).subscribe({
       next: () => {
         this.enviandoCodigoCampana = false;
         Swal.fire({ icon: 'success', title: 'Código enviado', timer: 1800, showConfirmButton: false });
@@ -1168,14 +1174,18 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       },
       error: err => {
         this.enviandoCodigoCampana = false;
-        Swal.fire({ icon: 'warning', title: 'No se pudo enviar', text: err?.error?.mensaje || 'Intenta de nuevo.' });
+        if (err?.status === 409) this.campanaVigente = false;      // la campaña venció con la pantalla abierta
+        if (err?.status === 502) this.cargarDetalleCompleto();      // la persona ya quedó creada aunque el correo no salió
+        this.avisarError(err, 'No se pudo enviar el código.');
       }
     });
   }
 
   /** Solo el administrador cambia el precio de una línea del pedido (con o sin campaña). */
   get puedeCambiarPrecio(): boolean {
-    return this.isAdmin && !this.esPedidoDeFlores;
+    // Solo en Apartado o Ir pagando sin liquidar: un pedido Pagado (de contado o liquidado) ya no cambia de precio.
+    const estado = (this.detalle?.estadoPedido ?? '').toUpperCase();
+    return this.isAdmin && !this.esPedidoDeFlores && (estado === 'APARTADO' || estado === 'FIADO');
   }
 
   /** Cambia SOLO el precio de esta línea (el artículo y la cantidad quedan igual); el back recalcula el total del pedido. */
@@ -1184,25 +1194,27 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     const actual = Number(item.precioUnitario) || 0;
     const r = await Swal.fire({
       title: 'Cambiar el precio',
-      html: `<p style="font-size:.85rem;margin:0 0 .4rem">Solo cambia el precio de «${(item.productoNombre ?? 'este artículo').toString().replace(/</g, '&lt;')}» en el pedido #${pedidoId}: `
+      html: `<p style="font-size:.85rem;margin:0 0 .4rem">Solo cambia el precio de «${escaparHtml(this.nombreVisible(item.productoNombre))}» en el pedido #${pedidoId}: `
         + 'no cambia el catálogo. El total y el saldo del pedido se recalculan.</p>',
       input: 'number', inputValue: actual.toFixed(2), inputLabel: `Precio por pieza (ahora $${actual.toFixed(2)})`,
-      inputAttributes: { min: '0.01', step: '0.01' },
+      inputAttributes: { min: '0.01', max: '1000000', step: '0.01' },
       showCancelButton: true, confirmButtonText: 'Guardar precio', cancelButtonText: 'Cancelar',
       inputValidator: v => {
         const n = Number(v);
-        if (!v || !(n > 0)) return 'Escribe un precio mayor a cero';
+        if (!v || !(n > 0)) return 'Escribe un precio mayor a cero (usa punto para los decimales)';
+        if (n > 1000000) return 'Ese precio es demasiado grande: revisa que no tenga un cero de más';
         if (Math.abs(n - actual) < 0.005) return 'Es el mismo precio de ahora';
         return null;
       }
     });
     if (!r.isConfirmed) return;
     this.guardandoArticulo = true;
-    this.pedidosService.cambiarPrecioArticulo(pedidoId, item.id as number, Number(r.value)).subscribe({
-      next: resp => {
+    this.pedidosService.cambiarPrecioArticulo(pedidoId, item.id as number, Math.round(Number(r.value) * 100) / 100).subscribe({
+      next: () => {
         this.guardandoArticulo = false;
-        if (pedidoId === this.pedido.pedido.id) this.detalle = resp?.data ?? this.detalle;
-        Swal.fire({ icon: 'success', title: 'Precio cambiado', timer: 1500, showConfirmButton: false }).then(() => this.cargarDetalleCompleto());
+        // La respuesta del back no tiene la forma del detalle: se vuelve a leer el detalle completo (no se reemplaza con ella).
+        this.cargarDetalleCompleto();
+        Swal.fire({ icon: 'success', title: 'Precio cambiado', timer: 1500, showConfirmButton: false });
       },
       error: err => {
         this.guardandoArticulo = false;

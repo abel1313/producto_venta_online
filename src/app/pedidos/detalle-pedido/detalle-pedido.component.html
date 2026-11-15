@@ -54,6 +54,11 @@
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
         🖨️ Imprimir ticket
       </button>
+      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && detalle?.sinDatosDelCliente"
+              [disabled]="guardandoDatosCliente" (click)="agregarDatosDelCliente()"
+              title="Este pedido no tiene los datos de un cliente: se guardan aquí (nombre, correo, teléfono) para mandarle su ticket y su código de campaña">
+        👤 {{ guardandoDatosCliente ? 'Guardando…' : 'Agregar datos del cliente' }}
+      </button>
       <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && campanaVigente && detalle && !estaCancelado"
               [disabled]="enviandoCodigoCampana" (click)="enviarCodigoDeCampana()"
               title="Manda por correo el código de cliente de la campaña (si el pedido todavía no tiene código, se le crea a la persona)">

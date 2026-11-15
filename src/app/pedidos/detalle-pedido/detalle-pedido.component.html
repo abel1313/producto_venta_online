@@ -54,7 +54,7 @@
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
         🖨️ Imprimir ticket
       </button>
-      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && campanaVigente"
+      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && campanaVigente && detalle && !estaCancelado"
               [disabled]="enviandoCodigoCampana" (click)="enviarCodigoDeCampana()"
               title="Manda por correo el código de cliente de la campaña (si el pedido todavía no tiene código, se le crea a la persona)">
         🎁 {{ enviandoCodigoCampana ? 'Enviando…' : 'Enviar código de campaña' }}
@@ -492,7 +492,8 @@
             </button>
             <!-- Cambiar SOLO el precio de esta línea (administrador, con o sin campaña); el total se recalcula. -->
             <button class="cantidad-btn cantidad-btn--cambiar" type="button"
-              *ngIf="puedeCambiarPrecio && !pedidoEstaCerrado && !item.promocionId"
+              *ngIf="puedeCambiarPrecio && !item.promocionId"
+              [attr.aria-label]="'Cambiar precio de ' + nombreVisible(item.productoNombre)"
               (click)="cambiarPrecioDeLinea(item)"
               [disabled]="guardandoArticulo"
               title="Cambiar solo el precio de este artículo en este pedido">
@@ -615,7 +616,8 @@
                   ⇄
                 </button>
                 <button class="cantidad-btn cantidad-btn--cambiar" type="button"
-                  *ngIf="puedeCambiarPrecio && !item.promocionId && !pedidoEstaCerrado"
+                  *ngIf="puedeCambiarPrecioDeOtro(o) && !item.promocionId"
+                  [attr.aria-label]="'Cambiar precio de ' + nombreVisible(item.productoNombre)"
                   (click)="cambiarPrecioDeLinea(item, o.pedidoId)"
                   [disabled]="guardandoArticulo"
                   [title]="'Cambiar solo el precio de este artículo del pedido #' + o.pedidoId">

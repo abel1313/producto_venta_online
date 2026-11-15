@@ -307,8 +307,10 @@ export class RifaService {
 
   /** Suma una participación a un grupo que ya existe, sin recargar la cabecera. */
   agregarParticipacion(rifaId: number, plataforma: string, urlPerfil: string,
-                       data: INuevaParticipacion): Observable<IGrupoBoletosPerfil> {
-    const q = `plataforma=${encodeURIComponent(plataforma)}&urlPerfil=${encodeURIComponent(urlPerfil)}`;
+                       data: INuevaParticipacion, concursanteId?: number): Observable<IGrupoBoletosPerfil> {
+    // Con el participante, el back suma al grupo de ESA persona: si dos cargaron el mismo perfil, antes se sumaba a la primera que encontraba.
+    const q = `plataforma=${encodeURIComponent(plataforma)}&urlPerfil=${encodeURIComponent(urlPerfil)}`
+      + (concursanteId != null ? `&concursanteId=${concursanteId}` : '');
     return this.http.post<{ code: number; data: IGrupoBoletosPerfil }>(
       `${this.url}/v1/rifas/${rifaId}/boletos-agrupados/participaciones?${q}`, data
     ).pipe(map(r => r.data));

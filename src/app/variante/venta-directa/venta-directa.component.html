@@ -49,7 +49,7 @@
 
       <div class="vd-results" *ngIf="resultados.length > 0; else sinResultados">
         <div class="vd-result-row" *ngFor="let v of resultados"
-             [class.vd-result-row--agotado]="(v.stock ?? 0) === 0">
+             [class.vd-result-row--agotado]="disponibleDe(v) <= 0">
           <div class="vd-result-row__thumb"
                (click)="verImagen(v.imagenUrl, labelVariante(v))"
                [title]="v.imagenUrl ? 'Ver imagen' : 'Sin imagen'">
@@ -63,15 +63,15 @@
             <div class="vd-result-row__meta">
               <span class="vd-result-row__precio">{{ v.precio | currency:'$' }}</span>
               <span class="vd-result-row__stock"
-                    [class.vd-result-row__stock--ok]="(v.stock ?? 0) > 0"
-                    [class.vd-result-row__stock--agotado]="(v.stock ?? 0) === 0">
-                {{ (v.stock ?? 0) === 0 ? 'Agotado' : v.stock + ' en stock' }}
+                    [class.vd-result-row__stock--ok]="disponibleDe(v) > 0"
+                    [class.vd-result-row__stock--agotado]="disponibleDe(v) <= 0">
+                {{ textoStock(v) }}
               </span>
             </div>
             <span *ngIf="v.codigoBarras" class="vd-result-row__codigo">{{ v.codigoBarras | uppercase }}</span>
           </div>
           <button type="button" class="vd-btn-add" aria-label="Agregar a la venta"
-                  [disabled]="(v.stock ?? 0) === 0"
+                  [disabled]="disponibleDe(v) <= 0"
                   (click)="agregarAVenta(v)" title="Agregar a la venta">
             ➕
           </button>

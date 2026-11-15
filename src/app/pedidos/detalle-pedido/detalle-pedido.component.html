@@ -54,9 +54,9 @@
               [title]="puedeGenerarTicket ? 'Imprimir ticket' : 'Primero hay que cobrar/recoger el pedido, o registrar al menos un abono'">
         🖨️ Imprimir ticket
       </button>
-      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && detalle?.tieneCodigoDeCampana"
+      <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && campanaVigente"
               [disabled]="enviandoCodigoCampana" (click)="enviarCodigoDeCampana()"
-              title="Vuelve a mandar por correo el código de cliente de la campaña a la persona de este pedido">
+              title="Manda por correo el código de cliente de la campaña (si el pedido todavía no tiene código, se le crea a la persona)">
         🎁 {{ enviandoCodigoCampana ? 'Enviando…' : 'Enviar código de campaña' }}
       </button>
       <button class="dp-btn-reenviar" type="button" *ngIf="puedeReenviarComprobante"
@@ -490,6 +490,14 @@
               title="Cambiar este artículo por otro">
               ⇄
             </button>
+            <!-- Cambiar SOLO el precio de esta línea (administrador, con o sin campaña); el total se recalcula. -->
+            <button class="cantidad-btn cantidad-btn--cambiar" type="button"
+              *ngIf="puedeCambiarPrecio && !pedidoEstaCerrado && !item.promocionId"
+              (click)="cambiarPrecioDeLinea(item)"
+              [disabled]="guardandoArticulo"
+              title="Cambiar solo el precio de este artículo en este pedido">
+              $
+            </button>
           </div>
         </div>
 
@@ -605,6 +613,13 @@
                   [disabled]="guardandoArticulo"
                   [title]="'Cambiar este artículo del pedido #' + o.pedidoId + ' por otro'">
                   ⇄
+                </button>
+                <button class="cantidad-btn cantidad-btn--cambiar" type="button"
+                  *ngIf="puedeCambiarPrecio && !item.promocionId && !pedidoEstaCerrado"
+                  (click)="cambiarPrecioDeLinea(item, o.pedidoId)"
+                  [disabled]="guardandoArticulo"
+                  [title]="'Cambiar solo el precio de este artículo del pedido #' + o.pedidoId">
+                  $
                 </button>
               </div>
             </div>

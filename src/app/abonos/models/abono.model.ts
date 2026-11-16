@@ -49,6 +49,16 @@ export interface PedidoDetalleResponse {
   tieneCodigoDeCampana?: boolean;
   /** Solo administrador y solo en true: el pedido no tiene los datos de un cliente (se le pueden agregar desde el detalle). */
   sinDatosDelCliente?: boolean;
+  /** Solo administrador, y solo si el cliente del pedido es un «cliente sin registro»: sus datos completos para corregirlos. */
+  clienteSinRegistro?: { id: number; nombre?: string; segundoNombre?: string; apellido?: string; apellidoMaterno?: string; fechaNacimiento?: string; sexo?: string; correo?: string; telefono?: string };
+  /** Solo administrador: el pedido tiene un cliente real con nombre (no la cuenta de quien cobra). */
+  tieneDatosDeCliente?: boolean;
+  /** Solo administrador: nombre del titular del pedido (cliente sin registro o cuenta), sin caer al de quien recibe. */
+  clienteTitular?: string | null;
+  /** Solo administrador: el cliente sin registro de este pedido se puede corregir desde aquí (no es la cuenta de un cliente). */
+  puedeEditarCliente?: boolean;
+  /** CLIENTE o RECEPTOR: cuál dato se muestra del pedido (sin valor = se muestran los dos). */
+  datosVisibles?: 'CLIENTE' | 'RECEPTOR' | null;
   pedidoId:          number;
   tipoPedido:        string;
   estadoPedido:      string;

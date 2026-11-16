@@ -13,6 +13,8 @@ export interface IPedidoQuery {
     // urlFacebook ya vienen en este mismo objeto; nombreReceptor no está confirmado que
     // venga aquí todavía (solo en GET /{id}/detalle) — se deja opcional por si acaso.
     nombreReceptor?: string;
+    /** CLIENTE o RECEPTOR: cuál dato se muestra del pedido (sin valor = los dos). */
+    datosVisibles?: 'CLIENTE' | 'RECEPTOR' | null;
     lugarEntregaId?: number;
     lugarEntregaNombre?: string;
     urlFacebook?: string;

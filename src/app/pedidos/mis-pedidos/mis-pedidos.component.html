@@ -234,7 +234,8 @@
         <!-- Cuerpo -->
         <div class="pk-card__body">
 
-          <div class="info-row">
+          <!-- «Qué datos se muestran» (administrador, en el detalle del pedido): solo el del cliente, solo el de quien recibe, o los dos si no se ha elegido. -->
+          <div class="info-row" *ngIf="!ocultaDatosDelCliente(item)">
             <i class="pi pi-user info-icon"></i>
             <div class="info-content">
               <span class="info-label">Cliente</span>
@@ -242,7 +243,7 @@
             </div>
           </div>
 
-          <div class="info-row" *ngIf="item.pedido.nombreReceptor">
+          <div class="info-row" *ngIf="item.pedido.nombreReceptor && !ocultaQuienRecibe(item)">
             <i class="pi pi-map-marker info-icon"></i>
             <div class="info-content">
               <span class="info-label">Recibe</span>
@@ -250,7 +251,7 @@
             </div>
           </div>
 
-          <div class="info-row" *ngIf="item.cliente.correoElectronico">
+          <div class="info-row" *ngIf="item.cliente.correoElectronico && !ocultaDatosDelCliente(item)">
             <i class="pi pi-envelope info-icon"></i>
             <div class="info-content">
               <span class="info-label">Correo</span>
@@ -258,7 +259,7 @@
             </div>
           </div>
 
-          <div class="info-row" *ngIf="item.cliente.numeroTelefonico">
+          <div class="info-row" *ngIf="item.cliente.numeroTelefonico && !ocultaDatosDelCliente(item)">
             <i class="pi pi-phone info-icon"></i>
             <div class="info-content">
               <span class="info-label">Teléfono</span>

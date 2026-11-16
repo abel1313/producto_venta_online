@@ -55,7 +55,7 @@
         🖨️ Imprimir ticket
       </button>
       <button class="dp-btn-reenviar" type="button" *ngIf="isAdmin && detalle?.sinDatosDelCliente"
-              [disabled]="guardandoDatosCliente" (click)="agregarDatosDelCliente()"
+              [disabled]="guardandoDatosCliente || cargandoDetalle" (click)="agregarDatosDelCliente()"
               title="Este pedido no tiene los datos de un cliente: se guardan aquí (nombre, correo, teléfono) para mandarle su ticket y su código de campaña">
         👤 {{ guardandoDatosCliente ? 'Guardando…' : 'Agregar datos del cliente' }}
       </button>
@@ -253,6 +253,45 @@
     <div class="dp-art-buscador__acciones">
       <button class="dp-btn-cancelar" type="button" (click)="cerrarBuscadorArticulo()">Cerrar</button>
     </div>
+  </div>
+
+  <!-- DATOS DEL PEDIDO (administrador): corregir los datos del cliente y de quien recibe, y elegir cuál se muestra en el pedido. -->
+  <div class="dp-entrega dp-datos" *ngIf="isAdmin && detalle && !estaCancelado">
+    <p class="dp-entrega__title">👤 Datos del cliente y de quien recibe</p>
+    <div class="dp-datos__fila">
+      <p class="dp-entrega__item">
+        <strong>Cliente:</strong>
+        <ng-container *ngIf="tieneNombreDeCliente; else sinCliente">
+          {{ detalle.clienteTitular || detalle.clienteNombre }}<ng-container *ngIf="detalle.clienteCorreo"> · {{ detalle.clienteCorreo }}</ng-container><ng-container *ngIf="detalle.clienteTelefono"> · {{ detalle.clienteTelefono }}</ng-container>
+        </ng-container>
+        <ng-template #sinCliente><em>sin datos</em></ng-template>
+      </p>
+      <button class="dp-btn-reenviar" type="button" *ngIf="detalle.clienteSinRegistro && detalle.puedeEditarCliente" [disabled]="guardandoDatosCliente || cargandoDetalle" (click)="editarDatosDelCliente()"
+              title="Corregir el nombre, correo, teléfono y demás datos de este cliente">✏️ Editar datos del cliente</button>
+    </div>
+    <div class="dp-datos__fila">
+      <p class="dp-entrega__item">
+        <strong>Recibe:</strong>
+        <ng-container *ngIf="tieneNombreDeReceptor; else sinReceptor">{{ detalle.nombreReceptor }}</ng-container>
+        <ng-template #sinReceptor><em>sin nombre</em></ng-template>
+      </p>
+      <button class="dp-btn-reenviar" type="button" [disabled]="guardandoDatosCliente || cargandoDetalle" (click)="editarQuienRecibe()"
+              [title]="tieneNombreDeReceptor ? 'Corregir el nombre de quien recibe' : 'Agregar el nombre de quien recibe'">
+        ✏️ {{ tieneNombreDeReceptor ? 'Editar datos de quien recibe' : 'Agregar quien recibe' }}
+      </button>
+    </div>
+    <fieldset class="dp-datos__mostrar">
+      <legend>¿Qué datos se muestran en el pedido?</legend>
+      <label [class.dp-datos__opcion--off]="!tieneNombreDeCliente">
+        <input type="radio" value="CLIENTE" [name]="'dp-mostrar-' + pedido.pedido.id" [checked]="datosVisibles === 'CLIENTE'" [disabled]="guardandoDatosCliente || cargandoDetalle || !tieneNombreDeCliente" [attr.title]="tieneNombreDeCliente ? null : 'Este pedido no tiene datos de cliente'"
+               (change)="mostrarDatosDe('CLIENTE', $event)"> Los del cliente
+      </label>
+      <label [class.dp-datos__opcion--off]="!tieneNombreDeReceptor">
+        <input type="radio" value="RECEPTOR" [name]="'dp-mostrar-' + pedido.pedido.id" [checked]="datosVisibles === 'RECEPTOR'" [disabled]="guardandoDatosCliente || cargandoDetalle || !tieneNombreDeReceptor" [attr.title]="tieneNombreDeReceptor ? null : 'Este pedido no tiene nombre de quien recibe'"
+               (change)="mostrarDatosDe('RECEPTOR', $event)"> Los de quien recibe
+      </label>
+      <small *ngIf="!datosVisibles">Ahora se muestran los dos. Si capturaste mal uno de los dos, elige el correcto y solo ese se mostrará.</small>
+    </fieldset>
   </div>
 
   <!-- DATOS DE ENTREGA — solo lectura acá; se editan desde la card en "Mis pedidos" -->

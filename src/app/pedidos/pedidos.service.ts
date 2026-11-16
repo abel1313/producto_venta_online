@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import type { DatosDelCliente } from './datos-cliente-form.util';
 import { htmlTicketParaCorreo } from '../shared/ticket-correo.util';
 import { CrudGenericService } from '../crud-generic.service';
 import { IPedidos } from '../productos/producto/detalle-productos/models/pedidos.model';
@@ -157,8 +158,18 @@ export class PedidosService extends CrudGenericService<IPedidos> {
     }
 
     /** Agrega los datos del cliente a un pedido que no los tiene (administrador): crea el cliente sin registro y lo liga al pedido. */
-    agregarDatosCliente(pedidoId: number, datos: { nombre: string; apellido?: string; correo?: string; telefono?: string }): Observable<ResponseGeneric<unknown>> {
+    agregarDatosCliente(pedidoId: number, datos: DatosDelCliente): Observable<ResponseGeneric<unknown>> {
       return this.http.post<ResponseGeneric<unknown>>(`${this.url}/v1/pedidos/${pedidoId}/datos-cliente`, datos);
+    }
+
+    /** Corrige los datos del cliente (sin registro) de un pedido (administrador). */
+    editarDatosCliente(pedidoId: number, datos: DatosDelCliente): Observable<ResponseGeneric<unknown>> {
+      return this.http.put<ResponseGeneric<unknown>>(`${this.url}/v1/pedidos/${pedidoId}/datos-cliente`, datos);
+    }
+
+    /** Elige cuál dato se muestra del pedido: el del cliente o el de quien recibe (administrador). */
+    cambiarDatosVisibles(pedidoId: number, mostrar: 'CLIENTE' | 'RECEPTOR'): Observable<ResponseGeneric<unknown>> {
+      return this.http.put<ResponseGeneric<unknown>>(`${this.url}/v1/pedidos/${pedidoId}/datos-visibles`, { mostrar });
     }
 
     /** Cambia SOLO el precio de una línea (administrador): el artículo y la cantidad no cambian y el total del pedido se recalcula. */

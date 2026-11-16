@@ -504,6 +504,15 @@
               title="Cambiar solo el precio de este artículo en este pedido">
               $
             </button>
+            <!-- Pasar este artículo (o parte de sus piezas) a OTRO cliente, en un pedido nuevo (administrador; Apartado o Ir pagando sin liquidar). -->
+            <button class="cantidad-btn cantidad-btn--cambiar" type="button"
+              *ngIf="puedeCambiarPrecio && !item.promocionId"
+              [attr.aria-label]="'Pasar a otro cliente ' + nombreVisible(item.productoNombre)"
+              (click)="pasarACliente(item)"
+              [disabled]="guardandoArticulo"
+              title="Pasar este artículo a otro cliente (se crea un pedido nuevo)">
+              👥
+            </button>
           </div>
         </div>
 

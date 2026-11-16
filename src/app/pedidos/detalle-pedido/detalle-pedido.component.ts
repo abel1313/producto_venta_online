@@ -58,6 +58,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
   @Output() regresarProductos = new EventEmitter<boolean>();
   /** Abrir otro pedido del grupo: la lista lo busca por número y abre su detalle. */
   @Output() abrirPedido = new EventEmitter<number>();
+  /** Pide a la lista abrir el modal de entrega (dónde, lugar, fecha, mapa) de ese pedido: el mismo del botón «Dirección» de la card. */
+  @Output() editarEntrega = new EventEmitter<number>();
   /** Abrir el detalle ya en «🔁 Cambiar forma de cobro» con ese tipo elegido (Mis pedidos → Liquidar Apartado → «Cámbialo a Ir pagando»). */
   @Input() abrirCambioDeTipo: TipoPedido | null = null;
 
@@ -598,7 +600,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
 
-  private cargarDetalleCompleto(): void {
+  /** Vuelve a pedir el detalle del pedido (la lista lo usa después de guardar la entrega desde su modal). */
+  cargarDetalleCompleto(): void {
     this.cargandoDetalle = true;
     this.pedidosService.getDetallePedido(this.pedido.pedido.id).subscribe({
       next: r => {
@@ -1233,9 +1236,11 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     });
   }
 
-  /** Agrega o corrige el nombre de quien recibe el pedido (solo administrador; el resto de la dirección se edita en «Dirección» de la card). */
+  /** Datos de quien recibe: con permiso abre el formulario completo de entrega; sin él, solo se corrige el nombre. */
   async editarQuienRecibe(): Promise<void> {
     if (this.guardandoDatosCliente || this.guardandoArticulo) return;
+    // Con permiso de editar entrega se abre el formulario completo de la card (quien recibe, dirección, referencias, lugar, fecha, mapa…), como en Venta directa.
+    if (this.authService.tieneAccion('pedidos/mis-pedidos', 'editar-entrega')) { this.editarEntrega.emit(this.pedido.pedido.id); return; }
     const actual = this.detalle?.nombreReceptor ?? '';
     const r = await Swal.fire({
       title: actual ? 'Editar datos de quien recibe' : 'Datos de quien recibe',
@@ -1376,8 +1381,15 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
       next: r => {
         this.guardandoArticulo = false;
         const nuevo = (r?.data as any)?.pedidoNuevoId;
-        Swal.fire({ icon: 'success', title: 'Listo', text: nuevo ? `Se creó el pedido #${nuevo} para ${nombreDestino}.` : 'El artículo se pasó al otro cliente.' });
         this.cargarDetalleCompleto();
+        if (!nuevo) { Swal.fire({ icon: 'success', title: 'Listo', text: 'El artículo se pasó al otro cliente.' }); return; }
+        // El pedido nuevo nace sin entrega (es de otro cliente): se ofrece capturarla ya, con el mismo formulario de la card (quien recibe, dirección, lugar, fecha y mapa).
+        const puedeEntrega = this.authService.tieneAccion('pedidos/mis-pedidos', 'editar-entrega');
+        Swal.fire({
+          icon: 'success', title: `Se creó el pedido #${nuevo}`,
+          text: `Para ${nombreDestino}.` + (puedeEntrega ? ' ¿Quieres poner ahora dónde, a qué lugar y cuándo se le entrega?' : ''),
+          showCancelButton: puedeEntrega, confirmButtonText: puedeEntrega ? 'Poner datos de entrega' : 'Aceptar', cancelButtonText: 'Más tarde'
+        }).then(x => { if (x.isConfirmed && puedeEntrega) this.editarEntrega.emit(nuevo); });
       },
       error: err => { this.guardandoArticulo = false; this.avisarError(err, 'No se pudo pasar el artículo.'); }
     });

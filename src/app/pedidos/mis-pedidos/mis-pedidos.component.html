@@ -537,4 +537,5 @@
 
 <app-detalle-pedido *ngIf="mostrarDetalle" [pedido]="item" [abrirCambioDeTipo]="abrirCambioDeTipo"
     (regresarProductos)="mostrarProductos($event)"
-    (abrirPedido)="abrirOtroPedido($event)"></app-detalle-pedido>
+    (abrirPedido)="abrirOtroPedido($event)"
+    (editarEntrega)="abrirEntregaDePedido($event)"></app-detalle-pedido>

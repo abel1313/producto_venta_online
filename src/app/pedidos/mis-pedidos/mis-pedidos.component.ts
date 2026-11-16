@@ -1,4 +1,5 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { DetallePedidoComponent } from '../detalle-pedido/detalle-pedido.component';
 import { Subject, of } from 'rxjs';
 import { catchError, debounceTime, switchMap, takeUntil } from 'rxjs/operators';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -460,6 +461,14 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
    * Desde el detalle se abre otro pedido del grupo. Los que no son titulares no salen en la lista,
    * así que se buscan por número (el back sí los devuelve con el número exacto) y se abren solos.
    */
+  /** Abre el modal de entrega (el del botón «Dirección») de un pedido por su número; lo usa el detalle al separar un pedido para otro cliente. */
+  abrirEntregaDePedido(pedidoId: number): void {
+    // Al guardar, el detalle que está abierto se recarga para que muestre lo nuevo.
+    this.abrirInfoEntrega({ pedido: { id: pedidoId } } as unknown as IPedidoGenerico, () => this.detalleAbierto?.cargarDetalleCompleto());
+  }
+
+  @ViewChild(DetallePedidoComponent) detalleAbierto?: DetallePedidoComponent;
+
   abrirOtroPedido(pedidoId: number): void {
     this.mostrarDetalle = false;
     this.pedidoIdDesdeUrl = pedidoId;
@@ -645,16 +654,16 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   ocultaDatosDelCliente(item: IPedidoGenerico): boolean { return this.isAdminUser && item.pedido.datosVisibles === 'RECEPTOR'; }
   ocultaQuienRecibe(item: IPedidoGenerico): boolean { return this.isAdminUser && item.pedido.datosVisibles === 'CLIENTE'; }
 
-  abrirInfoEntrega(item: IPedidoGenerico): void {
+  abrirInfoEntrega(item: IPedidoGenerico, alGuardar?: () => void): void {
     const pedidoId = item.pedido.id;
 
     this.pedidoService.getDetallePedido(pedidoId).subscribe({
-      next: r => this.mostrarModalEntrega(pedidoId, r?.data ?? null),
-      error: () => this.mostrarModalEntrega(pedidoId, null)
+      next: r => this.mostrarModalEntrega(pedidoId, r?.data ?? null, alGuardar),
+      error: () => this.mostrarModalEntrega(pedidoId, null, alGuardar)
     });
   }
 
-  private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null): void {
+  private mostrarModalEntrega(pedidoId: number, actual: PedidoDetalleResponse | null, alGuardar?: () => void): void {
     // Lo escribe el cliente al hacer su pedido: se escapa porque va dentro del HTML del aviso, y
     // un nombre con `"><img onerror=…>` corría código en la sesión del administrador.
     const esc = MisPedidosComponent.escaparHtml;
@@ -883,7 +892,7 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
     }).then(result => {
       if (!result.isConfirmed) return;
       this.pedidoService.actualizarEntrega(pedidoId, result.value).subscribe({
-        next: () => Swal.fire({ icon: 'success', title: 'Dirección y fecha guardadas', timer: 1800, showConfirmButton: false }),
+        next: () => { Swal.fire({ icon: 'success', title: 'Dirección y fecha guardadas', timer: 1800, showConfirmButton: false }); alGuardar?.(); },
         error: err => Swal.fire({ icon: 'error', title: 'Error', text: (err?.error?.mensaje ?? err?.error?.message) ?? 'No se pudo guardar la información de entrega.' })
       });
     });

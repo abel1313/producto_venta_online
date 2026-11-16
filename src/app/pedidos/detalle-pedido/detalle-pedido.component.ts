@@ -3,7 +3,7 @@ import { AVISO_IR_PAGANDO_CAMPANA } from '../aviso-ir-pagando-campana';
 import { Component, EventEmitter, Input, OnDestroy, OnInit, Output } from '@angular/core';
 import { Router } from '@angular/router';
 import { Constants } from 'src/app/Constants';
-import { Subject, of } from 'rxjs';
+import { Observable, Subject, of } from 'rxjs';
 import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operators';
 import { IPedidoGenerico } from '../mis-pedidos/models/IPedidoGenerico.model';
 import { environment } from 'src/environments/environment';
@@ -30,6 +30,7 @@ import {
 
 import { hoyIso } from '../../shared/fecha.util';
 import { escaparHtml } from '../../shared/escapar-html.util';
+import { pedirDatosDelCliente } from '../datos-cliente-form.util';
 import { preguntarYEntregar } from '../entrega/entrega';
 import { GrupoPedidos } from '../models/grupo-pedido.model';
 
@@ -1185,44 +1186,84 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   guardandoDatosCliente = false;
 
-  /** Agrega los datos del cliente a un pedido que no tiene cliente (nombre, correo y teléfono); el correo se valida. */
+  /** Agrega los datos del cliente a un pedido que no tiene cliente: el mismo formulario que «Cliente sin registro» de Venta directa. */
   async agregarDatosDelCliente(): Promise<void> {
-    if (this.guardandoDatosCliente) return;
-    // Si el pedido ya tiene un cliente con nombre pero sin correo ni teléfono, se parte de su nombre; si es la cuenta de quien vende (tiene correo propio) no se precarga nada.
+    if (this.guardandoDatosCliente || this.guardandoArticulo) return;
+    // Si el cliente ya es un «cliente sin registro» (solo con nombre), se corrige con el mismo formulario ya lleno: el PUT guarda todos los campos.
+    if (this.detalle?.clienteSinRegistro) { await this.editarDatosDelCliente(); return; }
+    // Si el pedido ya tiene un cliente con nombre pero sin correo ni teléfono, se parte de sus datos; si es la cuenta de quien vende (tiene correo propio) no se precarga nada.
     const c = this.pedido?.cliente;
     const solo = !c?.correoElectronico && !c?.numeroTelefonico;
-    const nombreInicial = solo ? (c?.nombreCliente ?? '') : '';
+    const datos = await pedirDatosDelCliente({
+      titulo: 'Datos del cliente',
+      aviso: 'Este pedido no tiene los datos de un cliente. Correo y teléfono son opcionales, pero sin correo no se le puede mandar su ticket ni su código de campaña.',
+      textoBoton: 'Guardar datos',
+      inicial: { nombre: solo ? (this.detalle?.clienteTitular ?? '') : '' }
+    });
+    if (!datos) return;
+    this.guardarDatosCliente(this.pedidosService.agregarDatosCliente(this.pedido.pedido.id, datos), 'No se pudieron guardar los datos del cliente.', 'Datos del cliente guardados');
+  }
+
+  /** Corrige los datos del cliente (los que se capturaron en Venta directa o en el pedido): mismo formulario, ya lleno. */
+  async editarDatosDelCliente(): Promise<void> {
+    const p = this.detalle?.clienteSinRegistro;
+    if (this.guardandoDatosCliente || this.guardandoArticulo || !p) return;
+    const datos = await pedirDatosDelCliente({
+      titulo: 'Editar datos del cliente',
+      aviso: 'Corrige los datos de este cliente. Si cambias el correo, hay que volver a verificarlo.',
+      textoBoton: 'Guardar cambios',
+      inicial: { nombre: p.nombre, segundoNombre: p.segundoNombre, apellido: p.apellido, apellidoMaterno: p.apellidoMaterno,
+        fechaNacimiento: p.fechaNacimiento, sexo: p.sexo, correo: p.correo, telefono: p.telefono }
+    });
+    if (!datos) return;
+    this.guardarDatosCliente(this.pedidosService.editarDatosCliente(this.pedido.pedido.id, datos), 'No se pudieron guardar los cambios del cliente.', 'Datos del cliente actualizados');
+  }
+
+  /** El indicador de «guardando» se quita hasta que llega el detalle recargado (si no, se podría volver a pulsar con datos viejos en pantalla). */
+  private guardarDatosCliente(llamada: Observable<unknown>, errorPorDefecto: string, exito = 'Datos guardados', alFallar?: () => void, alGuardar?: () => void): void {
+    this.guardandoDatosCliente = true;
+    llamada.subscribe({
+      next: () => {
+        alGuardar?.();
+        if (!Swal.isVisible()) Swal.fire({ icon: 'success', title: exito, timer: 1500, showConfirmButton: false });
+        this.guardandoDatosCliente = false;
+        this.cargarDetalleCompleto();    // mientras llega el detalle nuevo, los botones de datos siguen apagados (cargandoDetalle)
+      },
+      error: err => { this.guardandoDatosCliente = false; alFallar?.(); this.avisarError(err, errorPorDefecto); }
+    });
+  }
+
+  /** Agrega o corrige el nombre de quien recibe el pedido (solo administrador; el resto de la dirección se edita en «Dirección» de la card). */
+  async editarQuienRecibe(): Promise<void> {
+    if (this.guardandoDatosCliente || this.guardandoArticulo) return;
+    const actual = this.detalle?.nombreReceptor ?? '';
     const r = await Swal.fire({
-      title: 'Datos del cliente',
-      html: '<p style="font-size:.85rem;margin:0 0 .6rem">Este pedido no tiene los datos de un cliente. Se guardan aquí para este pedido '
-        + '(correo y teléfono son opcionales, pero sin correo no se le puede mandar su ticket ni su código de campaña).</p>'
-        + `<input id="dc-nombre" class="swal2-input" type="text" placeholder="Nombre" aria-label="Nombre" value="${escaparHtml(nombreInicial)}">`
-        + '<input id="dc-apellido" class="swal2-input" type="text" placeholder="Apellido (opcional)" aria-label="Apellido">'
-        + '<input id="dc-correo" class="swal2-input" type="email" placeholder="correo@ejemplo.com (opcional)" aria-label="Correo">'
-        + '<input id="dc-tel" class="swal2-input" type="tel" placeholder="Teléfono de 10 dígitos (opcional)" aria-label="Teléfono">',
-      showCancelButton: true, confirmButtonText: 'Guardar datos', cancelButtonText: 'Cancelar', focusConfirm: false,
+      title: actual ? 'Editar datos de quien recibe' : 'Datos de quien recibe',
+      html: '<p style="font-size:.85rem;margin:0 0 .4rem">La persona que recibe el pedido, si no es el mismo cliente.</p>'
+        + `<input id="qr-nombre" class="swal2-input" type="text" maxlength="150" placeholder="Nombre de quien recibe" aria-label="Nombre de quien recibe" value="${escaparHtml(actual)}">`,
+      showCancelButton: true, confirmButtonText: 'Guardar', cancelButtonText: 'Cancelar', focusConfirm: false,
       preConfirm: () => {
-        const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim();
-        const nombre = val('dc-nombre'), apellido = val('dc-apellido'), correo = val('dc-correo'), telefono = val('dc-tel');
-        if (nombre.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '').length < 3) { Swal.showValidationMessage('El nombre debe tener al menos 3 letras'); return false; }
-        if (correo && (correo.length > 150 || !DetallePedidoComponent.CORREO_VALIDO.test(correo))) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
-        if (telefono && telefono.replace(/[\s()+-]/g, '').replace(/^52(?=\d{10}$)/, '').length !== 10) { Swal.showValidationMessage('El teléfono debe tener 10 dígitos'); return false; }
-        return { nombre, apellido: apellido || undefined, correo: correo || undefined, telefono: telefono || undefined };
+        const n = ((document.getElementById('qr-nombre') as HTMLInputElement | null)?.value ?? '').trim();
+        if (n.replace(/[^\p{L}]/gu, '').length < 3) { Swal.showValidationMessage('El nombre debe tener al menos 3 letras'); return false; }
+        return n;
       }
     });
     if (!r.isConfirmed || !r.value) return;
-    this.guardandoDatosCliente = true;
-    this.pedidosService.agregarDatosCliente(this.pedido.pedido.id, r.value as { nombre: string }).subscribe({
-      next: () => {
-        this.guardandoDatosCliente = false;
-        Swal.fire({ icon: 'success', title: 'Datos guardados', timer: 1500, showConfirmButton: false });
-        this.cargarDetalleCompleto();
-      },
-      error: err => {
-        this.guardandoDatosCliente = false;
-        this.avisarError(err, 'No se pudieron guardar los datos del cliente.');
-      }
-    });
+    this.guardarDatosCliente(this.pedidosService.actualizarEntrega(this.pedido.pedido.id, { nombreReceptor: r.value as string }), 'No se pudo guardar el nombre de quien recibe.', 'Datos de quien recibe guardados');
+  }
+
+  /** Cuál dato se muestra del pedido en la card de Mis pedidos: el del cliente o el de quien recibe. Siempre tiene que haber uno (tickets y otras pantallas siguen igual por ahora). */
+  get datosVisibles(): 'CLIENTE' | 'RECEPTOR' | null { return this.detalle?.datosVisibles ?? null; }
+  get tieneNombreDeCliente(): boolean { return !!this.detalle?.tieneDatosDeCliente; }
+  get tieneNombreDeReceptor(): boolean { return !!(this.detalle?.nombreReceptor ?? '').trim(); }
+
+  mostrarDatosDe(quien: 'CLIENTE' | 'RECEPTOR', ev?: Event): void {
+    if (this.guardandoDatosCliente || this.datosVisibles === quien) return;
+    const radio = ev?.target as HTMLInputElement | undefined;
+    // Si el back lo rechaza, el radio vuelve a quedar como estaba (el navegador ya lo había marcado).
+    this.guardarDatosCliente(this.pedidosService.cambiarDatosVisibles(this.pedido.pedido.id, quien), 'No se pudo cambiar cuál dato se muestra.', 'Listo, se mostrarán esos datos',
+      () => radio?.closest('fieldset')?.querySelectorAll<HTMLInputElement>('input[type=radio]').forEach(r => { r.checked = r.value === this.datosVisibles; }),
+      () => { if (this.detalle) this.detalle.datosVisibles = quien; });
   }
 
   /**
@@ -1230,7 +1271,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
    * queda aquí. Pasos: cuántas piezas y a qué tipo de cliente → buscar al cliente registrado, o capturar uno nuevo → confirmar.
    */
   async pasarACliente(item: PedidoDetalleItem): Promise<void> {
-    if (this.guardandoArticulo || item?.id == null) return;
+    if (this.guardandoArticulo || this.guardandoDatosCliente || item?.id == null) return;
     if (this.grupo) { Swal.fire({ icon: 'info', title: 'Pedido unido', text: 'Este pedido está unido a otros: sepáralo del grupo antes de pasar un artículo a otro cliente.' }); return; }
     if ((item as any).conPrecioDeCampana) { Swal.fire({ icon: 'info', title: 'Precio de campaña', text: 'Este artículo lleva el precio de campaña de este cliente y ese precio no se pasa a otro cliente. Cambia su precio con el botón «$» si quieres pasarlo.' }); return; }
     const total = Math.max(1, Number(item.cantidad) || 1);
@@ -1351,7 +1392,7 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
 
   /** Cambia SOLO el precio de esta línea (el artículo y la cantidad quedan igual); el back recalcula el total del pedido. */
   async cambiarPrecioDeLinea(item: PedidoDetalleItem, pedidoId: number = this.pedido.pedido.id): Promise<void> {
-    if (this.guardandoArticulo || item?.id == null) return;
+    if (this.guardandoArticulo || this.guardandoDatosCliente || item?.id == null) return;
     const actual = Number(item.precioUnitario) || 0;
     const r = await Swal.fire({
       title: 'Cambiar el precio',

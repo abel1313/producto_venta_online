@@ -688,6 +688,10 @@ export class MisPedidosComponent implements OnInit, OnDestroy {
   // Modal (Swal) para capturar/editar nombreReceptor, direccionEntrega, fechaEntrega y
   // observaciones — PUT /v1/pedidos/{id}/entrega, no requiere admin (cualquiera puede editar
   // su propio pedido), el back solo lo rechaza si el pedido ya está "cancelado".
+  /** «Qué datos se muestran» lo elige el administrador: a él se le oculta lo que no eligió; el cliente dueño del pedido ve siempre sus propios datos. */
+  ocultaDatosDelCliente(item: IPedidoGenerico): boolean { return this.isAdminUser && item.pedido.datosVisibles === 'RECEPTOR'; }
+  ocultaQuienRecibe(item: IPedidoGenerico): boolean { return this.isAdminUser && item.pedido.datosVisibles === 'CLIENTE'; }
+
   abrirInfoEntrega(item: IPedidoGenerico): void {
     const pedidoId = item.pedido.id;
 

@@ -150,6 +150,12 @@ export class PedidosService extends CrudGenericService<IPedidos> {
       return this.http.put<ResponseGeneric<PedidoDetalleResponse>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}`, body);
     }
 
+    /** Pasa un artículo (o parte de sus piezas) a OTRO cliente en un pedido nuevo (administrador). Los abonos se quedan en este pedido. */
+    pasarArticuloACliente(pedidoId: number, detalleId: number,
+                          body: { cantidad?: number; clienteId?: number; clienteSinRegistroId?: number }): Observable<ResponseGeneric<{ pedidoNuevoId: number }>> {
+      return this.http.post<ResponseGeneric<{ pedidoNuevoId: number }>>(`${this.url}/v1/pedidos/${pedidoId}/articulos/${detalleId}/pasar-a-cliente`, body);
+    }
+
     /** Agrega los datos del cliente a un pedido que no los tiene (administrador): crea el cliente sin registro y lo liga al pedido. */
     agregarDatosCliente(pedidoId: number, datos: { nombre: string; apellido?: string; correo?: string; telefono?: string }): Observable<ResponseGeneric<unknown>> {
       return this.http.post<ResponseGeneric<unknown>>(`${this.url}/v1/pedidos/${pedidoId}/datos-cliente`, datos);

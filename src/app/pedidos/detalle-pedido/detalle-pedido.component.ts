@@ -19,6 +19,7 @@ import Swal from 'sweetalert2';
 import { articuloDeDetalle, generarHtmlTicket, imprimirTicket, ITicketData } from 'src/app/shared/ticket.util';
 
 import { VarianteService } from 'src/app/variante/service/variante.service';
+import { ClienteService } from 'src/app/clietes/cliente.service';
 import { IVarianteResumen } from 'src/app/variante/models/variante.model';
 import {
   CambiarTipoPedidoRequest,
@@ -570,7 +571,8 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
     private readonly varianteService: VarianteService,
     private readonly router:         Router,
     private readonly grupoPedidoService: GrupoPedidoService,
-    private readonly campanasService: CampanasService
+    private readonly campanasService: CampanasService,
+    private readonly clienteService: ClienteService
   ) {}
 
   ngOnInit(): void {
@@ -1220,6 +1222,123 @@ export class DetallePedidoComponent implements OnInit, OnDestroy {
         this.guardandoDatosCliente = false;
         this.avisarError(err, 'No se pudieron guardar los datos del cliente.');
       }
+    });
+  }
+
+  /**
+   * Pasa un artículo (o parte de sus piezas) de este pedido a OTRO cliente, en un pedido nuevo con la misma forma de cobro. Lo ya pagado en este pedido se
+   * queda aquí. Pasos: cuántas piezas y a qué tipo de cliente → buscar al cliente registrado, o capturar uno nuevo → confirmar.
+   */
+  async pasarACliente(item: PedidoDetalleItem): Promise<void> {
+    if (this.guardandoArticulo || item?.id == null) return;
+    if (this.grupo) { Swal.fire({ icon: 'info', title: 'Pedido unido', text: 'Este pedido está unido a otros: sepáralo del grupo antes de pasar un artículo a otro cliente.' }); return; }
+    if ((item as any).conPrecioDeCampana) { Swal.fire({ icon: 'info', title: 'Precio de campaña', text: 'Este artículo lleva el precio de campaña de este cliente y ese precio no se pasa a otro cliente. Cambia su precio con el botón «$» si quieres pasarlo.' }); return; }
+    const total = Math.max(1, Number(item.cantidad) || 1);
+    const unico = this.lineasVisibles.filter(d => !d.promocionId).length <= 1;
+    // Si es el único artículo del pedido no se pueden pasar todas las piezas (el pedido no se deja vacío).
+    const max = unico ? total - 1 : total;
+    if (max < 1) { Swal.fire({ icon: 'info', title: 'No se puede', text: 'Es el único artículo del pedido y tiene una sola pieza: el pedido no se puede dejar vacío. Cancélalo o cambia su cliente.' }); return; }
+    const nombre = escaparHtml(this.nombreVisible(item.productoNombre));
+    const p1 = await Swal.fire({
+      title: 'Pasar a otro cliente',
+      html: `<p style="font-size:.85rem;margin:0 0 .6rem">Se crea un pedido nuevo para el otro cliente con «${nombre}». Lo que ya se pagó en este pedido se queda aquí.</p>`
+        + `<label style="display:block;font-size:.85rem">Piezas a pasar (máximo ${max})<input id="pc-cant" class="swal2-input" type="number" min="1" max="${max}" step="1" value="${max}"></label>`
+        + '<div style="text-align:left;margin:.5rem auto;max-width:18rem;font-size:.9rem">'
+        + '<label style="display:block"><input type="radio" name="pc-tipo" value="registrado" checked> Cliente registrado</label>'
+        + '<label style="display:block"><input type="radio" name="pc-tipo" value="nuevo"> Cliente nuevo (nombre y contacto)</label></div>',
+      showCancelButton: true, confirmButtonText: 'Siguiente', cancelButtonText: 'Cancelar', focusConfirm: false,
+      preConfirm: () => {
+        const cant = Number((document.getElementById('pc-cant') as HTMLInputElement | null)?.value);
+        const tipo = (document.querySelector('input[name="pc-tipo"]:checked') as HTMLInputElement | null)?.value ?? 'registrado';
+        if (!Number.isInteger(cant) || cant < 1 || cant > max) { Swal.showValidationMessage(`Escribe de 1 a ${max} pieza(s)`); return false; }
+        return { cant, tipo };
+      }
+    });
+    if (!p1.isConfirmed || !p1.value) return;
+    const { cant, tipo } = p1.value as { cant: number; tipo: string };
+
+    let destino: { clienteId?: number; clienteSinRegistroId?: number } | null = null;
+    let nuevoCliente: { n: string; ap: string; co: string; te: string } | null = null;
+    let nombreDestino = '';
+    try {
+      if (tipo === 'registrado') {
+        const t = await Swal.fire({ title: 'Buscar cliente', input: 'text', inputLabel: 'Escribe parte del nombre', inputPlaceholder: 'Nombre del cliente',
+          showCancelButton: true, confirmButtonText: 'Buscar', cancelButtonText: 'Cancelar',
+          inputValidator: v => (v ?? '').trim().length < 2 ? 'Escribe al menos 2 letras' : null });
+        if (!t.isConfirmed) return;
+        this.guardandoArticulo = true;
+        let res: any;
+        try { res = await this.clienteService.buscarClientes((t.value as string).trim(), 0, 10).toPromise(); } finally { this.guardandoArticulo = false; }
+        const lista: any[] = res?.data?.list ?? [];
+        if (!lista.length) { Swal.fire({ icon: 'info', title: 'Sin resultados', text: 'No hay clientes registrados con ese nombre. Prueba con «Cliente nuevo».' }); return; }
+        const opciones = new Map<string, string>();   // lo que ve el select: ESCAPADO (Swal lo pone como HTML)
+        const nombres = new Map<string, string>();    // para el texto de confirmación: sin escapar
+        lista.forEach(c => {
+          const etiqueta = `${c.nombrePersona ?? ''} ${c.apeidoPaterno ?? ''}`.trim() + (c.correoElectronico ? ' — ' + c.correoElectronico : '') + ` (#${c.id})`;
+          opciones.set(String(c.id), escaparHtml(etiqueta));
+          nombres.set(String(c.id), etiqueta);
+        });
+        const e = await Swal.fire({ title: 'Elige al cliente', input: 'select', inputOptions: opciones, inputPlaceholder: 'Selecciona…',
+          showCancelButton: true, confirmButtonText: 'Elegir', cancelButtonText: 'Cancelar', inputValidator: v => v ? null : 'Elige un cliente' });
+        if (!e.isConfirmed) return;
+        destino = { clienteId: Number(e.value) };
+        nombreDestino = nombres.get(String(e.value)) ?? '';
+      } else {
+        const f = await Swal.fire({
+          title: 'Cliente nuevo',
+          html: '<input id="cn-nombre" class="swal2-input" type="text" placeholder="Nombre" aria-label="Nombre">'
+            + '<input id="cn-apellido" class="swal2-input" type="text" placeholder="Apellido (opcional)" aria-label="Apellido">'
+            + '<input id="cn-correo" class="swal2-input" type="email" placeholder="correo@ejemplo.com (opcional)" aria-label="Correo">'
+            + '<input id="cn-tel" class="swal2-input" type="tel" placeholder="Teléfono de 10 dígitos (opcional)" aria-label="Teléfono">',
+          showCancelButton: true, confirmButtonText: 'Siguiente', cancelButtonText: 'Cancelar', focusConfirm: false,
+          preConfirm: () => {
+            const val = (id: string) => ((document.getElementById(id) as HTMLInputElement | null)?.value ?? '').trim();
+            const n = val('cn-nombre'), ap = val('cn-apellido'), co = val('cn-correo'), te = val('cn-tel');
+            if (n.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '').length < 3) { Swal.showValidationMessage('El nombre debe tener al menos 3 letras'); return false; }
+            if (co && (co.length > 150 || !DetallePedidoComponent.CORREO_VALIDO.test(co))) { Swal.showValidationMessage('El correo no es válido: debe verse como nombre@dominio.com'); return false; }
+            if (ap && ap.replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/g, '').length < 3) { Swal.showValidationMessage('El apellido debe tener al menos 3 letras (o déjalo vacío)'); return false; }
+            if (te && !/^\d{10}$/.test(te.replace(/[\s()+-]/g, '').replace(/^52(?=\d{10}$)/, ''))) { Swal.showValidationMessage('El teléfono debe tener 10 dígitos (solo números)'); return false; }
+            return { n, ap, co, te };
+          }
+        });
+        if (!f.isConfirmed || !f.value) return;
+        nuevoCliente = f.value as { n: string; ap: string; co: string; te: string };
+        nombreDestino = `${nuevoCliente.n} ${nuevoCliente.ap}`.trim();
+      }
+    } catch (err) {
+      this.avisarError(err, 'No se pudo preparar al cliente.');
+      return;
+    }
+    if (!destino && !nuevoCliente) return;
+
+    const ok = await Swal.fire({ icon: 'question', title: '¿Pasar el artículo?',
+      html: `Se pasan <b>${cant}</b> pieza(s) de «${nombre}» a <b>${escaparHtml(nombreDestino)}</b> en un pedido nuevo. El total de este pedido baja.`,
+      showCancelButton: true, confirmButtonText: 'Sí, pasarlo', cancelButtonText: 'Cancelar' });
+    if (!ok.isConfirmed || this.guardandoArticulo) return;
+    this.guardandoArticulo = true;
+    // El cliente nuevo se crea hasta aquí (ya confirmado): si el usuario cancela antes, no queda ningún cliente huérfano.
+    if (nuevoCliente) {
+      try {
+        const creado: any = await this.varianteService.crearClienteSinRegistro({
+          nombre_persona: nuevoCliente.n, segundo_nombre: '', apeido_Paterno: nuevoCliente.ap, apeido_Materno: '', fecha_Nacimiento: '', sexo: '',
+          correo_Electronico: nuevoCliente.co, numero_Telefonico: nuevoCliente.te
+        }).toPromise();
+        if (creado?.id == null) throw new Error('sin id');
+        destino = { clienteSinRegistroId: creado.id };
+      } catch (err) {
+        this.guardandoArticulo = false;
+        this.avisarError(err, 'No se pudo guardar al cliente nuevo.');
+        return;
+      }
+    }
+    this.pedidosService.pasarArticuloACliente(this.pedido.pedido.id, item.id, { cantidad: cant, ...destino! }).subscribe({
+      next: r => {
+        this.guardandoArticulo = false;
+        const nuevo = (r?.data as any)?.pedidoNuevoId;
+        Swal.fire({ icon: 'success', title: 'Listo', text: nuevo ? `Se creó el pedido #${nuevo} para ${nombreDestino}.` : 'El artículo se pasó al otro cliente.' });
+        this.cargarDetalleCompleto();
+      },
+      error: err => { this.guardandoArticulo = false; this.avisarError(err, 'No se pudo pasar el artículo.'); }
     });
   }
 

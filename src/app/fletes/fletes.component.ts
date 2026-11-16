@@ -5,7 +5,7 @@ import { catchError, debounceTime, map, switchMap, takeUntil } from 'rxjs/operat
 import Swal from 'sweetalert2';
 import { ProductoService } from '../productos/service/producto.service';
 import { CampanasService, ICampana } from '../campanas/campanas.service';
-import { FletesService, IGastoViaje, ILigaManual, ILineaSinViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
+import { FletesService, IGastoViaje, ILigaManual, ILineaSinViaje, IProductoParaViaje, IProductoViaje, IReporteViaje, IViaje } from './fletes.service';
 
 interface IProductoBuscado { id: number; nombre: string; codigoBarras: string | null; precioCosto: number; stock: number; }
 
@@ -55,6 +55,8 @@ export class FletesComponent implements OnInit, OnDestroy {
   readonly OTROS = '__OTROS__';
   categorias: string[] = [];
   categoria = '';
+  /** El buscador del viaje arranca en JUGUETES (si existe esa categoría): es lo que más se compra; «Todas» sigue en el selector. */
+  private get categoriaPorDefecto(): string { return this.categorias.find(c => c.toUpperCase() === 'JUGUETES') ?? ''; }
   pagina = 1;
   totalPaginas = 1;
   totalRegistros = 0;
@@ -71,7 +73,10 @@ export class FletesComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     this.cargar();
     this.cargarCampanas();
-    this.productos.categoriasAdmin().pipe(catchError(() => of([] as string[])), takeUntil(this.destroy$)).subscribe(cs => this.categorias = cs);
+    this.productos.categoriasAdmin().pipe(catchError(() => of([] as string[])), takeUntil(this.destroy$)).subscribe(cs => {
+      this.categorias = cs;
+      if (!this.categoria && !this.texto && !this.resultados.length) { this.categoria = this.categoriaPorDefecto; if (this.edicion) this.buscador$.next(); }
+    });
     this.buscador$.pipe(
       debounceTime(350),
       switchMap(() => {
@@ -274,6 +279,8 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.sinFleteIds.clear();
     this.filtroViaje = ''; this.paginaViaje = 1;
     this.edicion = { nombre: '', fecha: this.hoy(), fleteTotal: 0, nota: null, gastos: [], productos: [] };
+    this.stockActual.clear();
+    if (this.categoria) this.buscador$.next();
   }
 
   editar(v: IViaje): void {
@@ -282,6 +289,9 @@ export class FletesComponent implements OnInit, OnDestroy {
     this.sinFleteIds.clear();
     this.filtroViaje = ''; this.paginaViaje = 1;
     this.edicion = { ...v, gastos: v.gastos.map(g => ({ ...g })), productos: v.productos.map(p => ({ ...p })) };
+    this.stockActual.clear();
+    this.cargarStockDelViaje(v.productos.map(p => p.productoId));
+    if (this.categoria) this.buscador$.next();
   }
 
   cancelar(): void { this.edicion = null; this.limpiarBuscador(); }
@@ -308,7 +318,7 @@ export class FletesComponent implements OnInit, OnDestroy {
   alEscribir(t: string): void { this.texto = t; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
   alElegirCategoria(c: string): void { this.categoria = c; this.pagina = 1; this.avisoCategoria = null; this.buscador$.next(); }
   irAPagina(n: number): void { if (n < 1 || n > this.totalPaginas || n === this.pagina) return; this.pagina = n; this.buscador$.next(); }
-  private limpiarBuscador(): void { this.texto = ''; this.categoria = ''; this.pagina = 1; this.totalPaginas = 1; this.totalRegistros = 0; this.resultados = []; this.avisoCategoria = null; }
+  private limpiarBuscador(): void { this.texto = ''; this.categoria = this.categoriaPorDefecto; this.pagina = 1; this.totalPaginas = 1; this.totalRegistros = 0; this.resultados = []; this.avisoCategoria = null; }
 
   /** Productos de la búsqueda actual (categoría y/o texto) que todavía NO están en el viaje, de la lista que se ve en pantalla. */
   get pendientesDeLaPagina(): number { return this.resultados.filter(p => !this.estaAgregado(p)).length; }
@@ -363,6 +373,7 @@ export class FletesComponent implements OnInit, OnDestroy {
       // Al traer muchos de una vez (categoría o campaña) los de stock 0 NO entran: no hay piezas que repartir. Si sí compraste de ellos en este viaje, se agregan uno por uno con el buscador.
       if (omitirSinStock && !(+d.stock > 0)) { sinStock++; continue; }
       if (!this.edicion || this.edicion.productos.some(x => x.productoId === d.productoId)) continue;
+      this.stockActual.set(d.productoId, Math.max(0, Math.floor(+d.stock || 0)));
       const guardado = +d.transporte > 0;
       this.edicion.productos = [...this.edicion.productos, { productoId: d.productoId, nombre: d.nombre, codigoBarras: d.codigoBarras, piezas: Math.max(1, Math.floor(+d.stock || 0)), costoUnitario: +d.precioCosto || 0, fletePorPieza: guardado ? +d.transporte : 0 }];
       if (guardado) conFlete++; else { sinFlete++; this.sinFleteIds.add(d.productoId); }
@@ -370,6 +381,44 @@ export class FletesComponent implements OnInit, OnDestroy {
     const faltan = nuevos.length - datos.length;
     return `Se agregaron ${conFlete + sinFlete} producto(s): ${conFlete} con su flete guardado y ${sinFlete} sin flete guardado`
       + (yaEstaban ? `; se saltaron ${yaEstaban} que ya estaban` : '') + (sinStock ? `; ${sinStock} con stock 0 no se agregaron (agrégalos uno por uno si sí los compraste en este viaje)` : '') + (faltan > 0 ? `; ${faltan} ya no existen` : '') + '. Cada uno trae su stock actual como piezas: ajusta las que no sean de este viaje.';
+  }
+
+  // ── Piezas del viaje contra el stock de hoy ────────────────────────────────────
+  /** Stock actual de cada producto del viaje (para avisar si las piezas del viaje superan lo que hay). Se llena al abrir el viaje y al agregar productos. */
+  stockActual = new Map<number, number>();
+
+  private cargarStockDelViaje(ids: number[]): void {
+    if (!ids.length) return;
+    this.svc.productosParaViaje(ids).pipe(catchError(() => of([] as IProductoParaViaje[])), takeUntil(this.destroy$))
+      .subscribe(ds => ds.forEach(d => this.stockActual.set(d.productoId, Math.max(0, Math.floor(+d.stock || 0)))));
+  }
+
+  stockDe(p: IProductoViaje): number | null { return this.stockActual.has(p.productoId) ? this.stockActual.get(p.productoId)! : null; }
+
+  /** Las piezas del viaje son más que el stock de hoy: casi seguro falta subir el stock en Catálogo → Productos. */
+  piezasSobreStock(p: IProductoViaje): boolean {
+    const s = this.stockDe(p);
+    if (s == null) return false;
+    // En un viaje ya guardado, parte de las piezas ya se vendió: solo cuenta lo que debería seguir en stock.
+    const vendidas = this.edicion?.id != null ? (this.reportes.get(this.edicion.id)?.renglones ?? []).filter((r: any) => r.productoId === p.productoId).reduce((a: number, r: any) => a + (+r.piezasVendidas || 0), 0) : 0;
+    return Math.max(0, (+p.piezas || 0) - vendidas) > s;
+  }
+
+  get cuantosSobreStock(): number { return (this.edicion?.productos ?? []).filter(p => this.piezasSobreStock(p)).length; }
+
+  /** Pone en cada producto las piezas = su stock actual (mínimo 1). Pisa lo escrito a mano, por eso pide confirmación. */
+  async ponerPiezasComoStock(): Promise<void> {
+    const e = this.edicion;
+    if (!e || !e.productos.length) return;
+    const conStock = e.productos.filter(p => this.stockDe(p) != null);
+    if (!conStock.length) { Swal.fire({ icon: 'info', title: 'Todavía no se conoce el stock', text: 'Espera un momento a que cargue el stock de los productos y vuelve a intentarlo.' }); return; }
+    const r = await Swal.fire({
+      icon: 'question', title: '¿Poner las piezas igual al stock actual?',
+      text: `Se cambian las piezas de ${conStock.length} producto(s) a lo que hay hoy en stock (mínimo 1). Lo que escribiste a mano en «Piezas del viaje» se pierde. Recuerda: las piezas del viaje deberían ser solo las que llegaron en este viaje.`,
+      showCancelButton: true, confirmButtonText: 'Sí, ponerlas', cancelButtonText: 'Cancelar'
+    });
+    if (!r.isConfirmed) return;
+    conStock.forEach(p => { p.piezas = Math.max(1, this.stockDe(p) ?? 1); });
   }
 
   quitarProducto(p: IProductoViaje): void {

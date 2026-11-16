@@ -998,3 +998,8 @@ Debe comprobar: Catálogo → Campañas → Editar una campaña con juguetes: el
 3. «¿Qué datos se muestran en el pedido?»: elegir «Los del cliente» o «Los de quien recibe»; la opción sin datos sale desactivada; en la card de Mis pedidos solo se ve el elegido (RECEPTOR: no se ve Cliente/correo/teléfono; CLIENTE: no se ve «Recibe»); sin elegir se ven los dos como siempre.
 4. Pedido en un grupo, pagado, Apartado e Ir pagando: se puede editar igual; pedido cancelado: no sale el panel.
 5. Error repetido de código de barras en Nuevo producto / Agregar artículo: sale un texto claro, no el error técnico.
+
+## Separar un pedido: poner los datos de entrega del pedido nuevo (2026-11-16)
+**Debe comprobar (administrador):** al pasar un artículo a otro cliente (👥), después de «Se creó el pedido #N» sale «Poner datos de entrega»; al aceptar se abre el mismo modal de la card («Dirección»): quien recibe, dirección, referencias, lugar de entrega, fecha, mapa, Facebook y notas, y al guardar el pedido nuevo los trae. «Más tarde» lo deja sin entrega (se puede poner después con el botón «Dirección» de su card). Un usuario sin la acción «editar-entrega» solo ve «Aceptar».
+
+**Ajuste (2026-11-16):** «✏️ Editar datos de quien recibe» / «Agregar quien recibe» del panel del detalle ahora abre el formulario completo de entrega (quien recibe, dirección, referencias, lugar, fecha, mapa, Facebook y notas) si el usuario tiene la acción «editar-entrega»; al guardar, el detalle se recarga solo. Sin ese permiso sigue siendo el modal de solo el nombre.

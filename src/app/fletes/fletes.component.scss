@@ -96,3 +96,6 @@
     .fl-motivos { font-size: .8rem; }
   }
 }
+
+/* Aviso cuando las piezas de un producto del viaje superan su stock de hoy. */
+.fl-aviso-stock { display: block; font-size: .7rem; font-weight: 600; color: var(--pk-warning); }

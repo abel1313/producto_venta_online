@@ -56,6 +56,8 @@
         <h4>Productos que llegaron en el viaje <span class="fl-opcional">({{ v.productos.length }})</span></h4>
         <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="repartirPorIgual()" [disabled]="!v.productos.length"
                 title="Pone en todos el mismo flete por pieza: el costo a cubrir ÷ las piezas del viaje">Repartir el flete por igual</button>
+        <button type="button" class="pk-btn pk-btn--secondary pk-btn--sm" (click)="ponerPiezasComoStock()" [disabled]="!v.productos.length"
+                title="Pone en cada producto las piezas del viaje = su stock de hoy. Pisa lo que escribiste a mano">Piezas = stock actual</button>
       </div>
 
       <div class="fl-importar" *ngIf="campanas.length">
@@ -119,7 +121,7 @@
           <tbody>
             <tr *ngFor="let p of productosDeLaPaginaViaje; trackBy: porIdProducto">
               <td class="fl-izq"><b>{{ p.nombre || ('Producto ' + p.productoId) }}</b><small *ngIf="p.codigoBarras">{{ p.codigoBarras }}</small></td>
-              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"></td>
+              <td><input class="pk-input" type="number" [name]="'pz' + p.productoId" min="1" step="1" inputmode="numeric" [(ngModel)]="p.piezas" aria-label="Piezas"><small class="fl-aviso-stock" *ngIf="piezasSobreStock(p)" title="Las piezas del viaje son más que el stock de hoy: ¿ya subiste el stock en Catálogo → Productos?">Stock hoy: {{ stockDe(p) }}</small></td>
               <td><input class="pk-input" type="number" [name]="'co' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.costoUnitario" aria-label="Costo por pieza"></td>
               <td><input class="pk-input" type="number" [name]="'fl' + p.productoId" min="0" step="0.01" inputmode="decimal" [(ngModel)]="p.fletePorPieza" (ngModelChange)="alEscribirFlete(p)" aria-label="Flete por pieza"><small class="fl-auto" *ngIf="sinFleteGuardado(p)" title="Este producto no tenía flete guardado en «Calcular precio»: queda en $0 hasta que lo escribas o pulses «Llenar el flete que falta»">sin flete guardado</small></td>
               <td class="fl-num-celda">{{ fleteRenglon(p) | currency:'MXN':'symbol':'1.2-2' }}</td>
@@ -130,6 +132,7 @@
       </div>
       <p class="pk-hint" *ngIf="v.productos.length && !productosDelViaje.length">Ningún producto del viaje coincide con lo que escribiste.</p>
       <p class="pk-hint" *ngIf="v.productos.length">«Piezas del viaje» son las que llegaron en este viaje (sirven para repartir el flete y saber cuántas quedan por vender). <b>No cambian el stock</b> del producto: el stock se actualiza en Catálogo → Productos.</p>
+      <p class="fl-aviso" *ngIf="cuantosSobreStock">⚠ {{ cuantosSobreStock }} producto{{ cuantosSobreStock === 1 ? '' : 's' }} con más piezas en el viaje que stock hoy: revisa que ya hayas subido el stock en Catálogo → Productos (las piezas del viaje no lo cambian).</p>
       <p class="pk-hint" *ngIf="!v.productos.length">Todavía no hay productos. Busca arriba y agrégalos con ＋.</p>
     </div>
 
